@@ -1,12 +1,11 @@
-# [Fluxo](https://github.com/fluxo-kt/fluxo) BCV for JS
+# Binary Compatibility Validator for Kotlin/JS by [Fluxo][fluxo]
 
 [![Gradle Plugin Portal][badge-plugin]][plugin]
-[![KotlinX BCV][badge-bcv]][bcv-tag]
 [![Build](../../actions/workflows/build.yml/badge.svg)](../../actions/workflows/build.yml)
 
-![KotlinX BCV Compatibility](http://img.shields.io/badge/KotlinX%20BCV-0.12%20--%200.13-7F52FF?logo=kotlin&logoWidth=10&logoColor=7F52FF&labelColor=2B2B2B)
-![Kotlin Compatibility](http://img.shields.io/badge/Kotlin-1.4%20--%201.8-7F52FF?logo=kotlin&logoWidth=10&logoColor=7F52FF&labelColor=2B2B2B)
-![Gradle Compatibility](http://img.shields.io/badge/Gradle-7.4%20--%208.1-f68244?logo=gradle)
+[![KotlinX BCV Compatibility](http://img.shields.io/badge/KotlinX%20BCV-0.12%20--%200.13-7F52FF?logo=kotlin&logoWidth=10&logoColor=7F52FF&labelColor=2B2B2B)][bcv]
+[![Kotlin Compatibility](http://img.shields.io/badge/Kotlin-1.4+-7F52FF?logo=kotlin&logoWidth=10&logoColor=7F52FF&labelColor=2B2B2B)](https://github.com/JetBrains/Kotlin)
+[![Gradle Compatibility](http://img.shields.io/badge/Gradle-7.4+-f68244?logo=gradle&labelColor=2B2B2B)](https://gradle.org/releases/)
 
 A tiny Gradle plugin that adds JS/TS API support to the
 KotlinX [Binary Compatibility Validator][bcv].
@@ -15,14 +14,21 @@ The tool allows dumping TypeScript definitions of a JS part of a Kotlin mult
 that's public in the sense of npm package visibility, and ensures that the public definitions
 haven't been changed in a way that makes this change binary incompatible.
 
-Initially made for the [Fluxo][fluxo] state management framework,
+Initially was made for the [Fluxo][fluxo] state management framework,
 but then prepared for general use.
+
+As [mentioned](https://github.com/Kotlin/binary-compatibility-validator/issues/42#issuecomment-1435031047)
+in the Kotlin/Kotlin/binary-compatibility-validator#42, the Kotlin team is not yet ready to accept
+a contribution for JS/TS support, or even to do due diligence
+and see if this is a reasonable addition for the future.
+
+This plugin will be supported until the official Kotlin/JS support is added to [BCV][bcv].
 
 ### Compatibility
 
-| Version |     BCV     |  Kotlin   |  Gradle   |
-|:-------:|:-----------:|:---------:|:---------:|
-|  0.0.1  | 0.12 - 0.13 | 1.4 - 1.8 | 7.4 - 8.1 |
+| Version |     BCV     | Kotlin | Gradle |
+|:-------:|:-----------:|:------:|:------:|
+|  0.0.1  | 0.12 - 0.13 |  1.4+  |  7.4+  |
 
 ### Versioning
 
