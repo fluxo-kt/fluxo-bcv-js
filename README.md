@@ -18,7 +18,7 @@ Initially was made for the [Fluxo][fluxo] state management framework,
 but then prepared for general use.
 
 As [mentioned](https://github.com/Kotlin/binary-compatibility-validator/issues/42#issuecomment-1435031047)
-in the Kotlin/Kotlin/binary-compatibility-validator#42, the Kotlin team is not yet ready to accept
+in the Kotlin/binary-compatibility-validator#42, the Kotlin team is not yet ready to accept
 a contribution for JS/TS support, or even to do due diligence
 and see if this is a reasonable addition for the future.
 
