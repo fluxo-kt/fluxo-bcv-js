@@ -20,4 +20,4 @@ rootProject.name = "fluxo-bcv-js"
 
 // On module update, don't forget to update '.github/workflows/deps-submission.yml'!
 
-include(":plugin")
+include(":fluxo-bcv-js")

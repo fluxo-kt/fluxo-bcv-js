@@ -1,0 +1,7 @@
+org.jetbrains.kotlin:kotlin-gradle-plugin-api:1.6.0
+org.jetbrains.kotlin:kotlin-gradle-plugin-model:1.6.0
+org.jetbrains.kotlin:kotlin-gradle-plugin:1.6.0
+org.jetbrains.kotlin:kotlin-native-utils:1.6.0
+org.jetbrains.kotlin:kotlin-project-model:1.6.0
+org.jetbrains.kotlin:kotlin-util-io:1.6.0
+org.jetbrains.kotlinx:binary-compatibility-validator:0.12.1
