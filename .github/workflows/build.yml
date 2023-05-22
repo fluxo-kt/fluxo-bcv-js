@@ -1,0 +1,80 @@
+name: Build
+
+on:
+  pull_request:
+    paths-ignore:
+      - '**-check.yml'
+      - '**-submission.yml'
+      - '**-validation.yml'
+      - '**.*ignore'
+      - '**.md'
+      - '**.txt'
+      - '**benchmark.yml'
+      - '**dependabot.yml'
+  push:
+    paths-ignore:
+      - '**-check.yml'
+      - '**-submission.yml'
+      - '**-validation.yml'
+      - '**.*ignore'
+      - '**.md'
+      - '**.txt'
+      - '**benchmark.yml'
+      - '**dependabot.yml'
+
+env:
+  CI: true
+  BUILD_NUMBER: ${{ github.run_number }}
+  SCM_TAG: ${{ github.sha }}
+
+jobs:
+  os-checks:
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [ '17' ]
+        os: [ 'macos-latest' ]
+
+    name: 'Test on ${{ matrix.os }} JDK ${{ matrix.java }}'
+    timeout-minutes: 25
+    runs-on: ${{ matrix.os }}
+    if: ${{ !contains(github.event.head_commit.message, 'ci skip') }}
+
+    steps:
+      - name: Harden Runner
+        if: matrix.os == 'ubuntu-latest'
+        uses: step-security/harden-runner@39fa126de8af73ab0d455b56764f8fe42b5e6a91
+        with:
+          disable-sudo: true
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: 'Set up JDK ${{ matrix.java }}'
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '${{ matrix.java }}'
+
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
+        with:
+          gradle-home-cache-cleanup: true
+          cache-read-only: ${{ (github.ref != 'refs/heads/main' && github.ref != 'refs/heads/dev') || matrix.java != '17' }}
+
+      - name: 'Build and check on ${{ matrix.os }} (complete, non-release)'
+        run: ./gradlew build assemble check --stacktrace --scan
+
+      - name: "Add build scan URL as PR comment"
+        uses: actions/github-script@v6
+        if: github.event_name == 'pull_request' && failure()
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ ${{ github.workflow }} failed: ${{ steps.gradle.outputs.build-scan-url }}'
+            })
