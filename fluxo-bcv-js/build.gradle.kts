@@ -1,15 +1,15 @@
-//import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-//import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.gradle.jvm.tasks.Jar
 
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
     alias(libs.plugins.kotlin.jvm)
-    `java-gradle-plugin`
-    signing
     alias(libs.plugins.gradle.plugin.publish)
     alias(libs.plugins.kotlinx.binCompatValidator)
     alias(libs.plugins.deps.guard)
 }
+
+group = "fluxo.kotlinx"
+version = libs.versions.fluxoBcvJs.get()
 
 libs.versions.javaLangTarget.get().let { javaLangTarget ->
     logger.lifecycle("> Conf Java compatibility $javaLangTarget")
@@ -19,14 +19,15 @@ libs.versions.javaLangTarget.get().let { javaLangTarget ->
             targetCompatibility = v
         }
     }
-    val compileKotlin: org.jetbrains.kotlin.gradle.tasks.KotlinCompile by tasks
-    compileKotlin.kotlinOptions {
-        jvmTarget = javaLangTarget
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+        kotlinOptions {
+            jvmTarget = javaLangTarget
 
-        val kotlinLangVersion = libs.versions.kotlinLangVersion.get()
-        logger.lifecycle("> Conf Kotlin language and API $kotlinLangVersion")
-        languageVersion = kotlinLangVersion
-        apiVersion = kotlinLangVersion
+            val kotlinLangVersion = libs.versions.kotlinLangVersion.get()
+            logger.lifecycle("> Conf Kotlin language and API $kotlinLangVersion")
+            languageVersion = kotlinLangVersion
+            apiVersion = kotlinLangVersion
+        }
     }
 }
 
@@ -45,14 +46,88 @@ dependencies {
 }
 
 gradlePlugin {
-    plugins.create(project.name) {
+    val shortDescr = "JS/TS API support for KotlinX Binary Compatibility Validator"
+    plugins.create("fluxo-bcv-js") {
         id = "fluxo.kotlinx.binary-compatibility-validator.js"
         implementationClass = "fluxo.bcvjs.FluxoBcvJsPlugin"
-        displayName = "JS/TS API support for KotlinX Binary Compatibility Validator"
+        displayName = shortDescr
         description = "Allows dumping TypeScript definitions of a JS part of a Kotlin multiplatform library" +
             " that's public in the sense of npm package visibility," +
             " and ensures that the public definitions haven’t been changed in a way" +
             " that makes this change binary incompatible."
+    }
+
+    val projectUrl = "https://github.com/fluxo-kt/fluxo-bcv-js"
+    val scmUrl = "scm:git:git://github.com/fluxo-kt/fluxo-bcv-js.git"
+    val publicationUrl = "$projectUrl/tree/main"
+    pluginBundle {
+        website = projectUrl
+        vcsUrl = publicationUrl
+        tags = listOf(
+            "kotlin",
+            "kotlin-js",
+            "api-management",
+            "binary-compatibility",
+            "javascript",
+            "typescript",
+            "kotlin-multiplatform",
+        )
+    }
+
+    tasks.create("sourceJarTask", Jar::class.java) {
+        from(pluginSourceSet.java.srcDirs)
+        archiveClassifier.set("sources")
+    }
+
+    publishing {
+        repositories {
+            maven {
+                name = "localDev"
+                url = uri("../_/local-repo")
+            }
+        }
+
+        publications.withType<MavenPublication>().configureEach {
+            pom {
+                name.set("Fluxo BCV JS")
+                description.set(shortDescr)
+                url.set(publicationUrl)
+
+                licenses {
+                    license {
+                        name.set("The Apache License, Version 2.0")
+                        url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
+                    }
+                }
+
+                developers {
+                    developer {
+                        id.set("amal")
+                        name.set("Artyom Shendrik")
+                        email.set("artyom.shendrik@gmail.com")
+                    }
+                }
+
+                scm {
+                    url.set(projectUrl)
+                    connection.set(scmUrl)
+                    developerConnection.set(scmUrl)
+                }
+            }
+        }
+
+        val signingKey = providers.environmentVariable("SIGNING_KEY").orNull?.replace("\\n", "\n")
+        if (!signingKey.isNullOrEmpty()) {
+            logger.lifecycle("> Conf SIGNING_KEY SET, applying signing configuration")
+            project.plugins.apply("signing")
+            extensions.configure<SigningExtension> {
+                val signingPassword = providers.environmentVariable("SIGNING_PASSWORD").orNull
+                useInMemoryPgpKeys(signingKey, signingPassword)
+                sign(publications)
+            }
+        } else {
+            logger.warn("> Conf SIGNING_KEY IS NOT SET! Publications are unsigned")
+        }
     }
 }
 
