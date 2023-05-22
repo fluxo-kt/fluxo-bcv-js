@@ -1,6 +1,7 @@
 # Binary Compatibility Validator for Kotlin/JS by [Fluxo][fluxo]
 
 [![Gradle Plugin Portal][badge-plugin]][plugin]
+[![JitPack][badge-jitpack]][jitpack]
 [![Build](../../actions/workflows/build.yml/badge.svg)](../../actions/workflows/build.yml)
 
 [![KotlinX BCV Compatibility](http://img.shields.io/badge/KotlinX%20BCV-0.12%20--%200.13-7F52FF?logo=kotlin&logoWidth=10&logoColor=7F52FF&labelColor=2B2B2B)][bcv]
@@ -24,15 +25,45 @@ and see if this is a reasonable addition for the future.
 
 This plugin will be supported until the official Kotlin/JS support is added to [BCV][bcv].
 
+
 ### Compatibility
 
 | Version |     BCV     | Kotlin | Gradle |
 |:-------:|:-----------:|:------:|:------:|
 |  0.0.1  | 0.12 - 0.13 |  1.4+  |  7.4+  |
 
+
+### How to use
+
+[![JitPack][badge-jitpack]][jitpack]
+
+Plugin can be used from the [JitPack][jitpack] like this:
+
+```kotlin
+// in the `build.gradle.kts` of the target module
+plugins {
+    id("fluxo.kotlinx.binary-compatibility-validator.js")
+}
+```
+```kotlin
+// in the `settings.gradle.kts` of the project
+pluginManagement {
+  repositories {
+    gradlePluginPortal()
+    maven("https://jitpack.io")
+  }
+  resolutionStrategy.eachPlugin {
+    if (requested.id.toString() == "fluxo.kotlinx.binary-compatibility-validator.js")
+      useModule("com.github.fluxo-kt.fluxo-bcv-js:fluxo-bcv-js:56f7ac7af7") // Specify version
+  }
+}
+```
+
+
 ### Versioning
 
 Uses [SemVer](http://semver.org/) for versioning.
+
 
 ### License
 
@@ -48,5 +79,8 @@ This project is licensed under the Apache License, Version 2.0 — see the
 
 [plugin]: https://plugins.gradle.org/plugin/fluxo.kotlinx.binary-compatibility-validator.js
 [badge-plugin]: https://img.shields.io/gradle-plugin-portal/v/fluxo.kotlinx.binary-compatibility-validator.js?label=Gradle%20Plugin&logo=gradle
+
+[jitpack]: https://www.jitpack.io/#fluxo-kt/fluxo-bcv-js
+[badge-jitpack]: https://www.jitpack.io/v/fluxo-kt/fluxo-bcv-js.svg
 
 [fluxo]: https://github.com/fluxo-kt/fluxo
