@@ -19,12 +19,12 @@ libs.versions.javaLangTarget.get().let { javaLangTarget ->
             targetCompatibility = v
         }
     }
+
+    val kotlinLangVersion = libs.versions.kotlinLangVersion.get()
+    logger.lifecycle("> Conf Kotlin language and API $kotlinLangVersion")
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
         kotlinOptions {
             jvmTarget = javaLangTarget
-
-            val kotlinLangVersion = libs.versions.kotlinLangVersion.get()
-            logger.lifecycle("> Conf Kotlin language and API $kotlinLangVersion")
             languageVersion = kotlinLangVersion
             apiVersion = kotlinLangVersion
         }
