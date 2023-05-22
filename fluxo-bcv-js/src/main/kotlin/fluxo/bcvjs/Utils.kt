@@ -10,12 +10,14 @@ import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.TaskProvider
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJsCompilation
 import org.jetbrains.kotlin.gradle.targets.js.dsl.KotlinJsBinaryMode
 import org.jetbrains.kotlin.gradle.targets.js.ir.JsIrBinary
-import org.jetbrains.kotlin.gradle.targets.js.ir.KotlinJsIrCompilation
+import org.jetbrains.kotlin.gradle.targets.js.ir.KotlinJsBinaryContainer
 import org.jetbrains.kotlin.gradle.targets.js.ir.KotlinJsIrLink
 import org.jetbrains.kotlin.gradle.targets.js.ir.KotlinJsIrTarget
 import java.io.File
+import java.lang.reflect.AccessibleObject
 
 private const val EXT = ".d.ts"
 
@@ -75,7 +77,7 @@ private fun apiCheckEnabled(projectName: String, extension: ApiValidationExtensi
 
 
 private fun Project.configureKotlinCompilation(
-    compilation: KotlinJsIrCompilation,
+    compilation: KotlinJsCompilation,
     extension: ApiValidationExtension?,
     targetConfig: TargetConfig,
     commonApiDump: TaskProvider<Task>? = null,
@@ -85,10 +87,13 @@ private fun Project.configureKotlinCompilation(
     val apiDirProvider = targetConfig.apiDir
     val apiBuildDir = apiDirProvider.map { buildDir.resolve(it) }
 
-    @Suppress("INVISIBLE_MEMBER")
-    val binaries = compilation.binaries
+    val binaries = compilation.binariesCompat
         .withType(JsIrBinary::class.java)
         .matching { it.mode == KotlinJsBinaryMode.PRODUCTION && it.generateTsCompat != false }
+
+    val linkTasks: Provider<Set<KotlinJsIrLink>> = provider {
+        binaries.mapTo(LinkedHashSet()) { it.linkTask.get() }
+    }
 
     if (binaries.isEmpty()) {
         logger.warn(
@@ -103,9 +108,6 @@ private fun Project.configureKotlinCompilation(
         task.isEnabled = apiCheckEnabled(projectName, extension) &&
             compilation.allKotlinSourceSets.any { it.kotlin.srcDirs.any { d -> d.exists() } }
 
-        val linkTasks: Provider<Set<KotlinJsIrLink>> = provider {
-            binaries.mapTo(LinkedHashSet()) { it.linkTask.get() }
-        }
         val definitions: Provider<Set<File>> = linkTasks.flatMap { set ->
             provider {
                 set.flatMapTo(LinkedHashSet()) { link ->
@@ -121,6 +123,31 @@ private fun Project.configureKotlinCompilation(
     configureCheckTasks(apiBuildDir, apiBuild, extension, targetConfig, commonApiDump, commonApiCheck)
 }
 
+private val KotlinJsCompilationBinariesCaller: (KotlinJsCompilation.() -> KotlinJsBinaryContainer) = run {
+    val clazz = KotlinJsCompilation::class.java
+    try {
+        val method = clazz.methods.firstOrNull { it.name.startsWith("getBinaries") }
+            ?: clazz.methods.firstOrNull { "getBinaries" in it.name }
+        if (method != null) {
+            return@run { method.invoke(this) as KotlinJsBinaryContainer }
+        }
+    } catch (_: Throwable) {
+    }
+    val field = JsIrBinary::class.java.getDeclaredField("binaries")
+    setAccessible(field)
+    return@run { field.get(this) as KotlinJsBinaryContainer }
+}
+
+private val KotlinJsCompilation.binariesCompat: KotlinJsBinaryContainer
+    get() {
+        return try {
+            KotlinJsCompilationBinariesCaller(this)
+        } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
+            val error = "Can't access KotlinJsCompilation.binaries, please check Kotlin version compatibility"
+            throw IllegalStateException(error, e)
+        }
+    }
+
 /** Compatibility for old Kotlin versions */
 private val JsIrBinaryGenerateTsCaller: (JsIrBinary.() -> Boolean?) = run {
     try {
@@ -130,19 +157,23 @@ private val JsIrBinaryGenerateTsCaller: (JsIrBinary.() -> Boolean?) = run {
     }
     try {
         val field = JsIrBinary::class.java.getDeclaredField("generateTs")
-        try {
-            @Suppress("Since15")
-            field.trySetAccessible()
-        } catch (_: Throwable) {
-            try {
-                field.isAccessible = true
-            } catch (_: Throwable) {
-            }
-        }
+        setAccessible(field)
         return@run { field.get(this) as? Boolean }
     } catch (_: Throwable) {
     }
     return@run { null }
+}
+
+private fun setAccessible(field: AccessibleObject) {
+    try {
+        @Suppress("Since15")
+        field.trySetAccessible()
+    } catch (_: Throwable) {
+        try {
+            field.isAccessible = true
+        } catch (_: Throwable) {
+        }
+    }
 }
 
 private val JsIrBinary.generateTsCompat: Boolean?

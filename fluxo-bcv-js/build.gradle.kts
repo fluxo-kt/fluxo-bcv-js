@@ -1,5 +1,3 @@
-import org.gradle.jvm.tasks.Jar
-
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
     alias(libs.plugins.kotlin.jvm)
@@ -7,6 +5,8 @@ plugins {
     alias(libs.plugins.kotlinx.binCompatValidator)
     alias(libs.plugins.deps.guard)
 }
+
+val pluginId = "fluxo.kotlinx.binary-compatibility-validator.js"
 
 group = "fluxo.kotlinx"
 version = libs.versions.fluxoBcvJs.get()
@@ -48,7 +48,7 @@ dependencies {
 gradlePlugin {
     val shortDescr = "JS/TS API support for KotlinX Binary Compatibility Validator"
     plugins.create("fluxo-bcv-js") {
-        id = "fluxo.kotlinx.binary-compatibility-validator.js"
+        id = pluginId
         implementationClass = "fluxo.bcvjs.FluxoBcvJsPlugin"
         displayName = shortDescr
         description = "Allows dumping TypeScript definitions of a JS part of a Kotlin multiplatform library" +
@@ -74,7 +74,7 @@ gradlePlugin {
         )
     }
 
-    tasks.create("sourceJarTask", Jar::class.java) {
+    tasks.create("sourceJarTask", org.gradle.jvm.tasks.Jar::class.java) {
         from(pluginSourceSet.java.srcDirs)
         archiveClassifier.set("sources")
     }
