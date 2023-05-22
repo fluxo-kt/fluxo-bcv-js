@@ -13,7 +13,7 @@ fluxoBcvJs = "0.0.1-SNAPSHOT"
 # Public API management tool
 # https://github.com/Kotlin/binary-compatibility-validator/releases
 # 0.13+ uses Kotlin metadata 0.6.0 (conflicts with AtomicFU!)
-bin-compat-validator = "0.12.1"
+bin-compat-validator = "0.13.1"
 
 # Java/Kotlin compatibility, aligned with BCV
 # https://github.com/Kotlin/binary-compatibility-validator/blob/0.12.1/build.gradle.kts#L99
