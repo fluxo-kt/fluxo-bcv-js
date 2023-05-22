@@ -23,7 +23,7 @@ kotlinLangVersion = "1.4"
 # Kotlin version, aligned with BCV
 # https://github.com/Kotlin/binary-compatibility-validator/blob/0.12.1/gradle.properties#L4
 # https://mvnrepository.com/artifact/org.jetbrains.kotlin/kotlin-gradle-plugin
-kotlin = "1.6.0"
+kotlin = "1.8.21"
 
 
 [libraries]
