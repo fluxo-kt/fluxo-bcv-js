@@ -5,27 +5,26 @@ import org.gradle.api.Project
 import org.gradle.api.provider.Provider
 
 /**
- * Copy of [kotlinx.validation.TargetConfig]
+ * Copy of the [kotlinx.validation.TargetConfig]
  *
  * @see kotlinx.validation.TargetConfig
  */
 internal class TargetConfig(
     project: Project,
     val targetName: String? = null,
-    private val dirConfig: Provider<DirConfig>? = null,
+    val dirConfig: Provider<DirConfig>? = null,
 ) {
-    private val apiDirProvider = project.provider { API_DIR }
+    fun apiTaskName(suffix: String) = apiTaskName(targetName, suffix)
 
-    fun apiTaskName(suffix: String) = when (targetName) {
-        null, "" -> "api$suffix"
-        else -> "${targetName}Api$suffix"
-    }
+    val apiDir: Provider<String> = dirConfig?.map { dirConfig ->
+        when (dirConfig) {
+            is DirConfig.COMMON -> API_DIR
+            else -> "$API_DIR/$targetName"
+        }
+    } ?: project.provider { API_DIR }
+}
 
-    val apiDir: Provider<String>
-        get() = dirConfig?.map { dirConfig ->
-            when (dirConfig) {
-                DirConfig.COMMON -> API_DIR
-                else -> "$API_DIR/$targetName"
-            }
-        } ?: apiDirProvider
+fun apiTaskName(targetName: String?, suffix: String) = when (targetName) {
+    null, "" -> "api$suffix"
+    else -> "${targetName}Api$suffix"
 }

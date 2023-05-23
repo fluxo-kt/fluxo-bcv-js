@@ -33,8 +33,6 @@ import org.gradle.work.NormalizeLineEndings
 internal abstract class KotlinJsApiBuildTask : DefaultTask() {
 
     @get:InputFiles
-    @get:SkipWhenEmpty
-    @get:IgnoreEmptyDirectories
     @get:NormalizeLineEndings
     @get:PathSensitive(PathSensitivity.RELATIVE)
     abstract val generatedDefinitions: ConfigurableFileCollection
@@ -43,8 +41,8 @@ internal abstract class KotlinJsApiBuildTask : DefaultTask() {
     abstract val outputFile: RegularFileProperty
 
     init {
-        // 'group' isn't specified deliberately, so it will be hidden from ./gradlew tasks.
-        description = "Collects built Kotlin TS definitions as API for 'js' compilations of ${project.name}. " +
+        // No 'group' to hide it from ./gradlew tasks.
+        description = "Collects built Kotlin TS definitions as API for 'js' compilations of :${project.name}. " +
             "Complementary task and shouldn't be called manually"
     }
 
@@ -52,10 +50,23 @@ internal abstract class KotlinJsApiBuildTask : DefaultTask() {
     fun generate() {
         val files = generatedDefinitions.files
         if (files.isEmpty()) {
+            val code = when {
+                !hasGenerateTypeScriptDefinitions -> ""
+                else -> "and `generateTypeScriptDefinitions()`"
+            }
+            val message = "No generated Kotlin TS definitions found for :${project.name}! " +
+                "Kotlin/JS API verification is not possible. \n" +
+                "Please, enable TS definitions with `binaries.executable()`$code. \n" +
+                "More instructions at " +
+                "https://kotlinlang.org/docs/whatsnew1820.html#opt-in-for-generation-of-typescript-definition-files"
+            logger.warn(message)
             return
         }
         if (files.size > 1) {
-            logger.warn("Ambigous generated definitions, taking only first: $generatedDefinitions")
+            logger.warn(
+                "Ambigous generated definitions, taking only first:" +
+                    " \n  ${files.joinToString("\n  ")}"
+            )
         }
         files.first().copyTo(outputFile.asFile.get(), overwrite = true)
     }

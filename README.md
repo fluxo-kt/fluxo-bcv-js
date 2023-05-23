@@ -1,4 +1,5 @@
-# Binary Compatibility Validator for Kotlin/JS by [Fluxo][fluxo]
+# Fluxo-BCV-JS
+## Binary Compatibility Validator for Kotlin/JS by [Fluxo][fluxo]
 
 [![Gradle Plugin Portal][badge-plugin]][plugin]
 [![JitPack][badge-jitpack]][jitpack]
@@ -9,21 +10,23 @@
 [![Gradle Compatibility](http://img.shields.io/badge/Gradle-7.4+-f68244?logo=gradle&labelColor=2B2B2B)](https://gradle.org/releases/)
 
 A tiny Gradle plugin that adds JS/TS API support to the
-KotlinX [Binary Compatibility Validator][bcv].
+KotlinX [Binary Compatibility Validator][bcv] (BCV).
 
-The tool allows dumping TypeScript definitions of a JS part of a Kotlin multiplatform library
-that's public in the sense of npm package visibility, and ensures that the public definitions
-haven't been changed in a way that makes this change binary incompatible.
-
-Initially was made for the [Fluxo][fluxo] state management framework,
-but then prepared for general use.
+Integrates with the default BCV pipeline, providing more features with same Gradle tasks.
 
 As [mentioned](https://github.com/Kotlin/binary-compatibility-validator/issues/42#issuecomment-1435031047)
 in the Kotlin/binary-compatibility-validator#42, the Kotlin team is not yet ready to accept
 a contribution for JS/TS support, or even to do due diligence
 and see if this is a reasonable addition for the future.
 
+The tool allows dumping TypeScript definitions of a JS part of a Kotlin multiplatform library
+that's public in the sense of npm package visibility, and ensures that the public definitions
+haven't been changed in a way that makes this change binary incompatible.
+
 This plugin will be supported until the official Kotlin/JS support is added to [BCV][bcv].
+
+Initially was made for the [Fluxo][fluxo] state management framework,
+but then published for general use.
 
 
 ### Compatibility
@@ -42,7 +45,9 @@ Plugin can be used from the [JitPack][jitpack] like this:
 ```kotlin
 // in the `build.gradle.kts` of the target module
 plugins {
-    id("io.github.fluxo-kt.binary-compatibility-validator-js")
+  kotlin("multiplatform") version "1.8.21" // <-- 1.4 .. 1.9, use multiplatform or js
+  id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.12.1" // <-- 0.12.0 .. 0.13.1
+  id("io.github.fluxo-kt.binary-compatibility-validator-js") // <-- added here
 }
 ```
 ```kotlin
@@ -50,11 +55,11 @@ plugins {
 pluginManagement {
   repositories {
     gradlePluginPortal()
-    maven("https://jitpack.io")
+    maven("https://jitpack.io") // <-- add jitpack repo
   }
   resolutionStrategy.eachPlugin {
     if (requested.id.toString() == "io.github.fluxo-kt.binary-compatibility-validator-js")
-      useModule("com.github.fluxo-kt.fluxo-bcv-js:fluxo-bcv-js:56f7ac7af7") // Specify version
+      useModule("com.github.fluxo-kt.fluxo-bcv-js:fluxo-bcv-js:56f7ac7af7") // <-- specify version or commit
   }
 }
 ```
