@@ -42,7 +42,7 @@ Plugin can be used from the [JitPack][jitpack] like this:
 ```kotlin
 // in the `build.gradle.kts` of the target module
 plugins {
-    id("fluxo.kotlinx.binary-compatibility-validator.js")
+    id("io.github.fluxo-kt.binary-compatibility-validator-js")
 }
 ```
 ```kotlin
@@ -53,7 +53,7 @@ pluginManagement {
     maven("https://jitpack.io")
   }
   resolutionStrategy.eachPlugin {
-    if (requested.id.toString() == "fluxo.kotlinx.binary-compatibility-validator.js")
+    if (requested.id.toString() == "io.github.fluxo-kt.binary-compatibility-validator-js")
       useModule("com.github.fluxo-kt.fluxo-bcv-js:fluxo-bcv-js:56f7ac7af7") // Specify version
   }
 }
@@ -77,8 +77,8 @@ This project is licensed under the Apache License, Version 2.0 — see the
 [bcv-tag]: https://github.com/Kotlin/binary-compatibility-validator/releases/tag/0.12.1
 [badge-bcv]: http://img.shields.io/badge/KotlinX%20BCV-0.12.1-7F52FF?logo=kotlin&logoWidth=10&logoColor=7F52FF&labelColor=2B2B2B
 
-[plugin]: https://plugins.gradle.org/plugin/fluxo.kotlinx.binary-compatibility-validator.js
-[badge-plugin]: https://img.shields.io/gradle-plugin-portal/v/fluxo.kotlinx.binary-compatibility-validator.js?label=Gradle%20Plugin&logo=gradle
+[plugin]: https://plugins.gradle.org/plugin/io.github.fluxo-kt.binary-compatibility-validator-js
+[badge-plugin]: https://img.shields.io/gradle-plugin-portal/v/io.github.fluxo-kt.binary-compatibility-validator-js?label=Gradle%20Plugin&logo=gradle
 
 [jitpack]: https://www.jitpack.io/#fluxo-kt/fluxo-bcv-js
 [badge-jitpack]: https://www.jitpack.io/v/fluxo-kt/fluxo-bcv-js.svg

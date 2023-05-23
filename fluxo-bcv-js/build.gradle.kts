@@ -6,9 +6,9 @@ plugins {
     alias(libs.plugins.deps.guard)
 }
 
-val pluginId = "fluxo.kotlinx.binary-compatibility-validator.js"
+val pluginId = "io.github.fluxo-kt.binary-compatibility-validator-js"
 
-group = "fluxo.kotlinx"
+group = "io.github.fluxo-kt"
 version = libs.versions.fluxoBcvJs.get()
 
 libs.versions.javaLangTarget.get().let { javaLangTarget ->
