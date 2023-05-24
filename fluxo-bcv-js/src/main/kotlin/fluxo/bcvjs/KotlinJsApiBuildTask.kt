@@ -62,6 +62,30 @@ internal abstract class KotlinJsApiBuildTask : DefaultTask() {
                     " \n  ${files.joinToString("\n  ")}"
             )
         }
-        files.first().copyTo(outputFile.asFile.get(), overwrite = true)
+
+        // 1) Copy the built TS definitions.
+        // 2) Make sure the file uses \n line endings and has a final new line.
+        val lines = mutableListOf<String>()
+        var lastEmpty = 0
+        files.first().useLines { linesSeq ->
+            for (line in linesSeq) {
+                val cleanLine = line.trimEnd()
+                lines.add(cleanLine)
+                if (cleanLine.isEmpty()) {
+                    lastEmpty++
+                } else {
+                    lastEmpty = 0
+                }
+            }
+        }
+        if (lastEmpty == 0) {
+            lines.add("")
+        } else if (lastEmpty > 1) {
+            val size = lines.size
+            lines.subList(size - (lastEmpty - 1), size).clear()
+        }
+        outputFile.asFile.get().bufferedWriter().use {
+            lines.joinTo(it, "\n")
+        }
     }
 }
