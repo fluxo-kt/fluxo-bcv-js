@@ -57,7 +57,7 @@ plugins {
 }
 kotlin {
   js(IR) {
-    binaries.executable() // required to generate definitions
+    binaries.executable() // required to generate TS definitions
     nodejs() // or browser()
   }
 }
