@@ -29,7 +29,7 @@ haven't been changed in a way that makes this change binary incompatible.
 
 This plugin will be supported until the official Kotlin/JS support is added to [BCV][bcv].
 
-Initially was made for the [Fluxo][fluxo] state management framework,
+Initially [was made][fluxo-bcv-commit] for the [Fluxo][fluxo] state management framework,
 but then published for general use.
 
 
@@ -52,7 +52,7 @@ Compatibility tested with:
 plugins {
   kotlin("multiplatform") version "1.8.21" // <-- multiplatform or js, versions from 1.6.20 to 1.9
   id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.12.1" // <-- 0.8 .. 0.13
-  id("io.github.fluxo-kt.binary-compatibility-validator-js") version "0.0.1-rc" // <-- add here
+  id("io.github.fluxo-kt.binary-compatibility-validator-js") version "0.1.0" // <-- add here
 }
 kotlin {
   js(IR) {
@@ -128,3 +128,4 @@ This project is licensed under the Apache License, Version 2.0 — see the
 [badge-jitpack]: https://www.jitpack.io/v/fluxo-kt/fluxo-bcv-js.svg
 
 [fluxo]: https://github.com/fluxo-kt/fluxo
+[fluxo-bcv-commit]: https://github.com/fluxo-kt/fluxo/commit/252e5d859078ea28e5bf496067424b0b5b5c8f73
