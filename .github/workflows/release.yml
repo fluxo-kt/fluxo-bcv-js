@@ -1,0 +1,41 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f70248679df316796ffb7123cb0b916bd98cde22
+        with:
+          disable-sudo: true
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Print Release Version
+        run: |
+          if echo "$GITHUB_REF_NAME" | grep "beta|alpha|rc|RC" > /dev/null ; then
+            echo "Pre release!"
+            echo "RELEASE_PRE=true" >> $GITHUB_ENV
+            echo "RELEASE_SUFFIX= (pre release)" >> $GITHUB_ENV
+          else
+            echo "Normal release!"
+            echo "RELEASE_PRE=false" >> $GITHUB_ENV
+            echo "RELEASE_SUFFIX=" >> $GITHUB_ENV
+          fi
+
+      - name: Release
+        uses: docker://antonyurchenko/git-release:latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRAFT_RELEASE: "true"
+          PRE_RELEASE: "${{ env.RELEASE_PRE }}"
+          RELEASE_NAME_SUFFIX: "${{ env.RELEASE_SUFFIX }}"
+          CHANGELOG_FILE: "CHANGELOG.md"
+          ALLOW_EMPTY_CHANGELOG: "false"

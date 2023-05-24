@@ -8,7 +8,7 @@
 
 [versions]
 
-fluxoBcvJs = "0.0.1-SNAPSHOT"
+fluxoBcvJs = "0.0.1-rc"
 
 # Public API management tool
 # https://github.com/Kotlin/binary-compatibility-validator/releases
