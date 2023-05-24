@@ -60,8 +60,12 @@ jobs:
       - name: 'Build and check plugin itself'
         run: ./gradlew build assemble check --continue --stacktrace --scan
 
-      - name: 'Check latest setup example'
-        working-directory: ./checks/latest
+      - name: 'Check "latest" setup example'
+        working-directory: checks/latest
+        run: ./gradlew check --continue --stacktrace --scan
+
+      - name: 'Check "js-only" setup example'
+        working-directory: checks/js-only
         run: ./gradlew check --continue --stacktrace --scan
 
       - name: "Add build scan URL as PR comment"
