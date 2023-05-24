@@ -26,23 +26,17 @@ env:
   CI: true
   BUILD_NUMBER: ${{ github.run_number }}
   SCM_TAG: ${{ github.sha }}
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false"
 
 jobs:
-  os-checks:
-    strategy:
-      fail-fast: false
-      matrix:
-        java: [ '17' ]
-        os: [ 'macos-latest' ]
-
-    name: 'Test on ${{ matrix.os }} JDK ${{ matrix.java }}'
+  checks:
+    name: 'Build and check'
     timeout-minutes: 25
-    runs-on: ${{ matrix.os }}
+    runs-on: 'ubuntu-latest'
     if: ${{ !contains(github.event.head_commit.message, 'ci skip') }}
 
     steps:
       - name: Harden Runner
-        if: matrix.os == 'ubuntu-latest'
         uses: step-security/harden-runner@f70248679df316796ffb7123cb0b916bd98cde22
         with:
           disable-sudo: true
@@ -51,20 +45,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: 'Set up JDK ${{ matrix.java }}'
+      - name: 'Set up JDK 17'
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '${{ matrix.java }}'
+          java-version: '17'
 
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
         with:
           gradle-home-cache-cleanup: true
-          cache-read-only: ${{ (github.ref != 'refs/heads/main' && github.ref != 'refs/heads/dev') || matrix.java != '17' }}
+          cache-read-only: ${{ (github.ref != 'refs/heads/main' && github.ref != 'refs/heads/dev') }}
 
-      - name: 'Build and check on ${{ matrix.os }} (complete, non-release)'
-        run: ./gradlew build assemble check --stacktrace --scan
+      - name: 'Build and check plugin itself'
+        run: ./gradlew build assemble check --continue --stacktrace --scan
+
+      - name: 'Check latest setup example'
+        run: ./checks/latest/gradlew check --continue --stacktrace --scan
 
       - name: "Add build scan URL as PR comment"
         uses: actions/github-script@v6
