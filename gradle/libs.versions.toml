@@ -13,7 +13,8 @@ fluxoBcvJs = "0.0.1-SNAPSHOT"
 # Public API management tool
 # https://github.com/Kotlin/binary-compatibility-validator/releases
 # 0.13+ uses Kotlin metadata 0.6.0 (conflicts with AtomicFU!)
-bin-compat-validator = "0.12.1"
+bcv = "0.12.1"
+bcvLatest = "0.13.1"
 
 # Java/Kotlin compatibility, aligned with BCV
 # https://github.com/Kotlin/binary-compatibility-validator/blob/0.12.1/build.gradle.kts#L99
@@ -23,7 +24,9 @@ kotlinLangVersion = "1.4"
 # Kotlin version, aligned with BCV
 # https://github.com/Kotlin/binary-compatibility-validator/blob/0.12.1/gradle.properties#L4
 # https://mvnrepository.com/artifact/org.jetbrains.kotlin/kotlin-gradle-plugin
+# https://github.com/JetBrains/kotlin/releases
 kotlin = "1.6.0"
+kotlinLatest = "1.9.0-Beta"
 
 # Diffutils version, aligned with BCV
 # https://github.com/Kotlin/binary-compatibility-validator/blob/0.12.1/build.gradle.kts#L80
@@ -35,13 +38,13 @@ diffutils = "1.3.0"
 diffutils = { module = "com.googlecode.java-diff-utils:diffutils", version.ref = "diffutils" }
 
 plugin-kotlin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
-plugin-binCompatValidator = { module = "org.jetbrains.kotlinx:binary-compatibility-validator", version.ref = "bin-compat-validator" }
+plugin-binCompatValidator = { module = "org.jetbrains.kotlinx:binary-compatibility-validator", version.ref = "bcv" }
 
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 
-kotlinx-binCompatValidator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "bin-compat-validator" }
+kotlinx-binCompatValidator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "bcv" }
 
 # Publish plugins to the Gradle Plugin Portal
 # https://plugins.gradle.org/plugin/com.gradle.plugin-publish

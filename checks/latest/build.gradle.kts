@@ -1,8 +1,7 @@
-
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
-    kotlin("multiplatform") version "1.8.21"
-    id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.13.1"
+    kotlin("multiplatform") version libs.versions.kotlinLatest
+    id("org.jetbrains.kotlinx.binary-compatibility-validator") version libs.versions.bcvLatest
     id("io.github.fluxo-kt.binary-compatibility-validator-js")
 }
 
