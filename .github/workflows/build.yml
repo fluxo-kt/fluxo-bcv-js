@@ -61,7 +61,8 @@ jobs:
         run: ./gradlew build assemble check --continue --stacktrace --scan
 
       - name: 'Check latest setup example'
-        run: ./checks/latest/gradlew check --continue --stacktrace --scan
+        working-directory: ./checks/latest
+        run: ./gradlew check --continue --stacktrace --scan
 
       - name: "Add build scan URL as PR comment"
         uses: actions/github-script@v6
