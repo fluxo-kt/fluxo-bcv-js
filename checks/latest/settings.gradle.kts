@@ -6,6 +6,10 @@ pluginManagement {
     includeBuild("../../")
 }
 
+plugins {
+    id("com.gradle.enterprise") version "3.13.2"
+}
+
 dependencyResolutionManagement {
     repositories {
         mavenCentral()

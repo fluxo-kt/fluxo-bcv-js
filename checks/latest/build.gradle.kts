@@ -12,3 +12,10 @@ kotlin {
         nodejs()
     }
 }
+
+if (hasProperty("buildScan")) {
+    buildScan {
+        termsOfServiceUrl = "https://gradle.com/terms-of-service"
+        termsOfServiceAgree = "yes"
+    }
+}
