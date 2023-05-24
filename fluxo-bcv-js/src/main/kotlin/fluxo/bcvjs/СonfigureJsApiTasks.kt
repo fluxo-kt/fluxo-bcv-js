@@ -1,4 +1,10 @@
-@file:Suppress("NoConsecutiveBlankLines", "KDocUnresolvedReference", "LoopWithTooManyJumpStatements")
+@file:Suppress(
+    "KDocUnresolvedReference",
+    "KotlinConstantConditions",
+    "LongMethod",
+    "LoopWithTooManyJumpStatements",
+    "NoConsecutiveBlankLines",
+)
 
 package fluxo.bcvjs
 
@@ -29,6 +35,8 @@ import org.jetbrains.kotlin.gradle.targets.js.ir.KotlinJsIrTarget
 import java.io.File
 import java.lang.reflect.AccessibleObject
 
+
+private const val DBG = 0
 
 private const val EXT = ".d.ts"
 private const val API = "api"
@@ -83,14 +91,8 @@ internal fun Project.configureJsApiTasks() {
     }
 
     for (target in targets) {
-        val compilations = target.jsCompilationsCompat?.matching { it.name == "main" }
-        if (compilations.isNullOrEmpty()) {
-            continue
-        }
-
-        // Don't enable task for empty umbrella modules
-        val hasFiles = compilations.any { it.allKotlinSourceSets.any { s -> s.kotlin.srcDirs.any { d -> d.exists() } } }
-        if (!hasFiles) {
+        val compilations = target.jsCompilationsCompat?.matching { it.name == "main" }.orEmpty()
+        if (compilations.isEmpty() && !target.isJsCompat) {
             continue
         }
 
@@ -98,10 +100,19 @@ internal fun Project.configureJsApiTasks() {
         val binaries = LinkedHashSet<JsBinary>().also { binaries ->
             target.jsBinariesCompat?.let { binaries.addAll(it) }
             for (compilation in compilations) {
+                if (DBG > 0) {
+                    logger.lifecycle(" >> compilation ${compilation.name}: $compilation // ${compilation.javaClass}")
+                }
                 compilation.binariesCompat?.let { binaries.addAll(it) }
             }
         }.filterIsInstance<JsIrBinary>()
             .filter { it.mode == KotlinJsBinaryMode.PRODUCTION && it.generateTsCompat != false }
+
+        if (DBG > 0) {
+            binaries.forEach {
+                logger.warn(" >> binary ${it.name}: $it // ${it.javaClass}")
+            }
+        }
 
         val linkTasksFromBinaries = binaries.mapTo(LinkedHashSet()) { it.linkTask.get() }
         val linkTasksCollection = target.project.tasks.withType(KotlinJsIrLink::class.java).matching {
@@ -110,6 +121,12 @@ internal fun Project.configureJsApiTasks() {
                 it.name.contains(target.name, ignoreCase = true)
         }
         val linkTasks: Provider<Set<KotlinJsIrLink>> = project.provider { linkTasksCollection + linkTasksFromBinaries }
+
+        if (DBG > 0) {
+            linkTasks.get().forEach {
+                logger.warn(" >> linkTask ${it.name}: $it")
+            }
+        }
 
         val targetConfig = TargetConfig(target.project, target.name, dirConfig)
         configureKotlinCompilation(extension, targetConfig, commonApiDump, commonApiCheck, linkTasks)
@@ -146,7 +163,7 @@ private fun Project.configureKotlinCompilation(
     project.configureCheckTasks(buildDir, buildFile, apiBuild, extension, targetConfig, commonApiDump, commonApiCheck)
 }
 
-@Suppress("LongParameterList", "LongMethod")
+@Suppress("LongParameterList")
 private fun Project.configureCheckTasks(
     buildDir: Provider<File>,
     buildFile: Provider<File>,
