@@ -4,17 +4,14 @@
     "LongMethod",
     "LoopWithTooManyJumpStatements",
     "NoConsecutiveBlankLines",
+    "ReturnCount",
 )
 
 package fluxo.bcvjs
 
 import kotlinx.validation.ApiValidationExtension
 import kotlinx.validation.KotlinApiCompareTask
-import org.gradle.api.Action
-import org.gradle.api.DefaultTask
-import org.gradle.api.NamedDomainObjectContainer
-import org.gradle.api.Project
-import org.gradle.api.Task
+import org.gradle.api.*
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.TaskProvider
@@ -23,21 +20,18 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinProjectExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinSingleTargetExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
+import org.jetbrains.kotlin.gradle.plugin.getKotlinPluginVersion
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJsCompilation
 import org.jetbrains.kotlin.gradle.targets.js.KotlinJsTarget
 import org.jetbrains.kotlin.gradle.targets.js.dsl.KotlinJsBinaryMode
 import org.jetbrains.kotlin.gradle.targets.js.dsl.KotlinJsTargetDsl
-import org.jetbrains.kotlin.gradle.targets.js.ir.JsBinary
-import org.jetbrains.kotlin.gradle.targets.js.ir.JsIrBinary
-import org.jetbrains.kotlin.gradle.targets.js.ir.KotlinJsBinaryContainer
-import org.jetbrains.kotlin.gradle.targets.js.ir.KotlinJsIrLink
-import org.jetbrains.kotlin.gradle.targets.js.ir.KotlinJsIrTarget
+import org.jetbrains.kotlin.gradle.targets.js.ir.*
 import java.io.File
 import java.lang.reflect.AccessibleObject
 
 
 private const val DBG = 0
-
+private const val KOTLIN_MIN_VERSION = "1.6.20"
 private const val EXT = ".d.ts"
 private const val API = "api"
 private const val SUFFIX_BUILD = "Build"
@@ -60,6 +54,25 @@ private fun apiCheckEnabled(projectName: String, extension: ApiValidationExtensi
  */
 @Suppress("CyclomaticComplexMethod")
 internal fun Project.configureJsApiTasks() {
+    val kotlinVersion = safe { getKotlinPluginVersion() }
+    val kotlinVersionChecked = kotlinVersion?.let { v ->
+        safe { isVersionGreaterThanOrEqual(v, KOTLIN_MIN_VERSION) }
+    } ?: false
+    if (!kotlinVersionChecked) {
+        val versionText = when {
+            kotlinVersion.isNullOrEmpty() -> ""
+            else -> ", your version is '$kotlinVersion'"
+        }
+
+        @Suppress("MaxLineLength")
+        val message = "You need at least Kotlin $KOTLIN_MIN_VERSION " +
+                "to enable Kotlin/JS API verification$versionText. \n" +
+                "Please, update your Kotlin! More details at " +
+                "https://kotlinlang.org/docs/whatsnew1620.html#improvements-to-export-and-typescript-declaration-generation"
+        logger.error(message)
+        return
+    }
+
     val targets = when (val kotlin = kotlinExtensionCompat) {
         is KotlinMultiplatformExtension -> kotlin.targets.toSet()
         is KotlinSingleTargetExtension -> setOf(kotlin.target)
@@ -117,8 +130,8 @@ internal fun Project.configureJsApiTasks() {
         val linkTasksFromBinaries = binaries.mapTo(LinkedHashSet()) { it.linkTask.get() }
         val linkTasksCollection = target.project.tasks.withType(KotlinJsIrLink::class.java).matching {
             it.mode == KotlinJsBinaryMode.PRODUCTION &&
-                !it.name.contains("Test", ignoreCase = true) &&
-                it.name.contains(target.name, ignoreCase = true)
+                    !it.name.contains("Test", ignoreCase = true) &&
+                    it.name.contains(target.name, ignoreCase = true)
         }
         val linkTasks: Provider<Set<KotlinJsIrLink>> = project.provider { linkTasksCollection + linkTasksFromBinaries }
 
@@ -389,6 +402,21 @@ private inline fun <reified T : Task> Project.task(
 private fun Project.defaultTask(name: String, configuration: (DefaultTask) -> Unit) =
     task<DefaultTask>(name, configuration)
 
+@Suppress("SameParameterValue")
+private fun isVersionGreaterThanOrEqual(version: String, targetVersion: String): Boolean {
+    val parts = version.split(".")
+    val targetParts = targetVersion.split(".")
+    for (i in 0 until parts.size.coerceAtLeast(targetParts.size)) {
+        val part = parts.getOrNull(i)?.toIntOrNull() ?: 0
+        val targetPart = targetParts.getOrNull(i)?.toIntOrNull() ?: 0
+        if (part > targetPart) {
+            return true
+        } else if (part < targetPart) {
+            return false
+        }
+    }
+    return true // equal to the target version
+}
 
 private fun setAccessible(field: AccessibleObject) {
     try {

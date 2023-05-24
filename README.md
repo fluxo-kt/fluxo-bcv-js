@@ -31,9 +31,11 @@ but then published for general use.
 
 ### Compatibility
 
-| Version |     BCV     | Kotlin | Gradle |
-|:-------:|:-----------:|:------:|:------:|
-|  0.0.1  | 0.12 - 0.13 |  1.4+  |  7.4+  |
+Kotlin supports generation of TypeScript declarations [since 1.6.20](https://kotlinlang.org/docs/whatsnew1620.html#improvements-to-export-and-typescript-declaration-generation)
+
+| Version |     BCV     | Kotlin  | Gradle |
+|:-------:|:-----------:|:-------:|:------:|
+|  0.0.1  | 0.12 - 0.13 | 1.6.20+ |  7.4+  |
 
 
 ### How to use
@@ -45,9 +47,15 @@ Plugin can be used from the [JitPack][jitpack] like this:
 ```kotlin
 // in the `build.gradle.kts` of the target module
 plugins {
-  kotlin("multiplatform") version "1.8.21" // <-- 1.4 .. 1.9, use multiplatform or js
+  kotlin("multiplatform") version "1.8.21" // <-- 1.6.20 .. 1.9, use multiplatform or js
   id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.12.1" // <-- 0.12.0 .. 0.13.1
-  id("io.github.fluxo-kt.binary-compatibility-validator-js") // <-- added here
+  id("io.github.fluxo-kt.binary-compatibility-validator-js") // <-- add here
+}
+kotlin {
+  js(IR) {
+    binaries.executable() // required to generate definitions
+    nodejs() // or browser()
+  }
 }
 ```
 ```kotlin

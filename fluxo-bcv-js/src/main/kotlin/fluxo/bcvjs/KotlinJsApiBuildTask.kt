@@ -5,13 +5,7 @@ package fluxo.bcvjs
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.RegularFileProperty
-import org.gradle.api.tasks.IgnoreEmptyDirectories
-import org.gradle.api.tasks.InputFiles
-import org.gradle.api.tasks.OutputFile
-import org.gradle.api.tasks.PathSensitive
-import org.gradle.api.tasks.PathSensitivity
-import org.gradle.api.tasks.SkipWhenEmpty
-import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.*
 import org.gradle.work.DisableCachingByDefault
 import org.gradle.work.NormalizeLineEndings
 
@@ -59,12 +53,12 @@ internal abstract class KotlinJsApiBuildTask : DefaultTask() {
                 "Please, enable TS definitions with `binaries.executable()`$code. \n" +
                 "More instructions at " +
                 "https://kotlinlang.org/docs/whatsnew1820.html#opt-in-for-generation-of-typescript-definition-files"
-            logger.warn(message)
+            logger.error(message)
             return
         }
         if (files.size > 1) {
-            logger.warn(
-                "Ambigous generated definitions, taking only first:" +
+            logger.error(
+                "Ambigous generated TS definitions, taking only first:" +
                     " \n  ${files.joinToString("\n  ")}"
             )
         }
