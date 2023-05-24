@@ -13,8 +13,7 @@ A tiny Gradle plugin that adds JS/TS API support to the
 KotlinX [Binary Compatibility Validator][bcv] (BCV).
 
 Can be used with any Gradle module with **Kotlin/JS** target.
-Either [Kotlin Multiplatform](https://kotlinlang.org/docs/multiplatform-get-started.html)
-or [Kotlin/JS](https://kotlinlang.org/docs/js-project-setup.html).
+Either [Kotlin Multiplatform][KMM] or [Kotlin/JS][KJS].
 
 Integrates well with the default BCV pipeline, providing more features with same Gradle tasks.
 
@@ -77,6 +76,10 @@ pluginManagement {
 }
 ```
 
+Module examples for:
+- [Kotlin Multiplatform](checks/latest/build.gradle.kts)
+- [Kotlin/JS](checks/js-only/build.gradle.kts)
+
 
 ### Versioning
 
@@ -94,6 +97,9 @@ This project is licensed under the Apache License, Version 2.0 — see the
 [bcv]: https://github.com/Kotlin/binary-compatibility-validator
 [bcv-tag]: https://github.com/Kotlin/binary-compatibility-validator/releases/tag/0.12.1
 [badge-bcv]: http://img.shields.io/badge/KotlinX%20BCV-0.12.1-7F52FF?logo=kotlin&logoWidth=10&logoColor=7F52FF&labelColor=2B2B2B
+
+[KMM]: https://kotlinlang.org/docs/multiplatform-get-started.html
+[KJS]: https://kotlinlang.org/docs/js-project-setup.html
 
 [plugin]: https://plugins.gradle.org/plugin/io.github.fluxo-kt.binary-compatibility-validator-js
 [badge-plugin]: https://img.shields.io/gradle-plugin-portal/v/io.github.fluxo-kt.binary-compatibility-validator-js?label=Gradle%20Plugin&logo=gradle
