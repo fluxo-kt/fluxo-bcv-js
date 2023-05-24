@@ -66,9 +66,9 @@ internal fun Project.configureJsApiTasks() {
 
         @Suppress("MaxLineLength")
         val message = "You need at least Kotlin $KOTLIN_MIN_VERSION " +
-                "to enable Kotlin/JS API verification$versionText. \n" +
-                "Please, update your Kotlin! More details at " +
-                "https://kotlinlang.org/docs/whatsnew1620.html#improvements-to-export-and-typescript-declaration-generation"
+            "to enable Kotlin/JS API verification$versionText. \n" +
+            "Please, update your Kotlin! More details at " +
+            "https://kotlinlang.org/docs/whatsnew1620.html#improvements-to-export-and-typescript-declaration-generation"
         logger.error(message)
         return
     }
@@ -90,8 +90,13 @@ internal fun Project.configureJsApiTasks() {
     }
 
     // Common BCV tasks for multiplatform
-    val commonApiDump = tasks.named("$API$SUFFIX_DUMP")
-    val commonApiCheck = tasks.named("$API$SUFFIX_CHECK")
+    // Create own ones (for the raw Kotlin/JS module)
+    val commonApiDump = "$API$SUFFIX_DUMP".let { tasks.findByName(it) ?: tasks.create(it) }
+    val commonApiCheck = "$API$SUFFIX_CHECK".let {
+        tasks.findByName(it)
+            ?: tasks.create(it)
+                .also { t -> tasks.getByName("check").dependsOn(t) }
+    }
 
     // Follow the strategy of BCV plugin.
     // API isn't overrided in any way as an extension is different.
@@ -130,8 +135,8 @@ internal fun Project.configureJsApiTasks() {
         val linkTasksFromBinaries = binaries.mapTo(LinkedHashSet()) { it.linkTask.get() }
         val linkTasksCollection = target.project.tasks.withType(KotlinJsIrLink::class.java).matching {
             it.mode == KotlinJsBinaryMode.PRODUCTION &&
-                    !it.name.contains("Test", ignoreCase = true) &&
-                    it.name.contains(target.name, ignoreCase = true)
+                !it.name.contains("Test", ignoreCase = true) &&
+                it.name.contains(target.name, ignoreCase = true)
         }
         val linkTasks: Provider<Set<KotlinJsIrLink>> = project.provider { linkTasksCollection + linkTasksFromBinaries }
 
@@ -149,8 +154,8 @@ internal fun Project.configureJsApiTasks() {
 private fun Project.configureKotlinCompilation(
     extension: ApiValidationExtension?,
     targetConfig: TargetConfig,
-    commonApiDump: TaskProvider<Task>?,
-    commonApiCheck: TaskProvider<Task>?,
+    commonApiDump: Task,
+    commonApiCheck: Task?,
     linkTasks: Provider<Set<KotlinJsIrLink>>,
 ) {
     val tsDefinitionFiles: Provider<Set<File>> = linkTasks.flatMap { set ->
@@ -183,8 +188,8 @@ private fun Project.configureCheckTasks(
     apiBuild: TaskProvider<out Task>,
     extension: ApiValidationExtension?,
     config: TargetConfig,
-    commonApiDump: TaskProvider<out Task>? = null,
-    commonApiCheck: TaskProvider<out Task>? = null,
+    commonApiDump: Task,
+    commonApiCheck: Task?,
 ) {
     val apiCheckTaskName = config.apiTaskName(SUFFIX_CHECK)
     val apiDumpTaskName = config.apiTaskName(SUFFIX_DUMP)
@@ -262,10 +267,10 @@ private fun Project.configureCheckTasks(
         }
     }
 
-    commonApiDump?.configure { it.dependsOn(apiDump) }
+    commonApiDump.dependsOn(apiDump)
 
-    (commonApiCheck ?: project.tasks.named("check"))
-        .configure { it.dependsOn(apiCheck) }
+    (commonApiCheck ?: tasks.getByName("check"))
+        .dependsOn(apiCheck)
 }
 
 
