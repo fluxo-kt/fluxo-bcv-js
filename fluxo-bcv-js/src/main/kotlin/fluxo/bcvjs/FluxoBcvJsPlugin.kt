@@ -25,21 +25,20 @@ class FluxoBcvJsPlugin : Plugin<Project> {
         target.afterEvaluate {
             val plugins = it.plugins
             if (!plugins.hasPlugin(PLUGIN_ID_KMP) && !plugins.hasPlugin(PLUGIN_ID_KJS)) {
-                it.logger.warn(
-                    "Kotlin Multiplatform plugin is not appplied to the :${it.name} project. " +
-                        "There is no Kotlin/JS API to provide stability for without it. " +
-                        "So Fluxo-BCV-JS does nothing. \n" +
-                        "Please read the setup instructions at " +
-                        "https://kotlinlang.org/docs/multiplatform-get-started.html"
-                )
+                val message = "Neither Kotlin Multiplatform nor Kotlin/JS plugin " +
+                    "is appplied to the :${it.name} project. \n" +
+                    "There is no Kotlin/JS API to provide stability for. Fluxo-BCV-JS does nothing. \n" +
+                    "Please read the setup instructions at " +
+                    "https://kotlinlang.org/docs/multiplatform-get-started.html"
+                it.logger.error(message)
             }
             if (!plugins.hasPlugin(PLUGIN_ID_BCV)) {
-                it.logger.warn(
-                    "KotlinX BinaryCompatibilityValidator plugin is not appplied to the :${it.name} project. " +
-                        "Fluxo-BCV-JS requires it for work. \n" +
-                        "Please read the setup instructions at " +
-                        "https://github.com/Kotlin/binary-compatibility-validator#setup"
-                )
+                val message = "KotlinX BinaryCompatibilityValidator plugin" +
+                    "is not appplied to the :${it.name} project. " +
+                    "Fluxo-BCV-JS requires it for work. \n" +
+                    "Please read the setup instructions at " +
+                    "https://github.com/Kotlin/binary-compatibility-validator#setup"
+                it.logger.error(message)
             }
         }
     }

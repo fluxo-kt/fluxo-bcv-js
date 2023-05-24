@@ -41,7 +41,7 @@ configurations.implementation {
 
 dependencies {
     compileOnly(libs.plugin.kotlin)
-    implementation(libs.plugin.binCompatValidator)
+    compileOnly(libs.plugin.binCompatValidator)
     implementation(libs.diffutils)
 }
 

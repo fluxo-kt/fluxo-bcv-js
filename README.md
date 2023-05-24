@@ -12,7 +12,11 @@
 A tiny Gradle plugin that adds JS/TS API support to the
 KotlinX [Binary Compatibility Validator][bcv] (BCV).
 
-Integrates with the default BCV pipeline, providing more features with same Gradle tasks.
+Can be used with any Gradle module with **Kotlin/JS** target.
+Either [Kotlin Multiplatform](https://kotlinlang.org/docs/multiplatform-get-started.html)
+or [Kotlin/JS](https://kotlinlang.org/docs/js-project-setup.html).
+
+Integrates well with the default BCV pipeline, providing more features with same Gradle tasks.
 
 As [mentioned](https://github.com/Kotlin/binary-compatibility-validator/issues/42#issuecomment-1435031047)
 in the Kotlin/binary-compatibility-validator#42, the Kotlin team is not yet ready to accept
@@ -32,10 +36,11 @@ but then published for general use.
 ### Compatibility
 
 Kotlin supports generation of TypeScript declarations [since 1.6.20](https://kotlinlang.org/docs/whatsnew1620.html#improvements-to-export-and-typescript-declaration-generation)
+Compatibility tested with:
 
-| Version |     BCV     | Kotlin  | Gradle |
-|:-------:|:-----------:|:-------:|:------:|
-|  0.0.1  | 0.12 - 0.13 | 1.6.20+ |  7.4+  |
+| Version |    BCV     | Kotlin  | Gradle |
+|:-------:|:----------:|:-------:|:------:|
+|  0.0.1  | 0.8 - 0.13 | 1.6.20+ |  7.4+  |
 
 
 ### How to use
@@ -47,8 +52,8 @@ Plugin can be used from the [JitPack][jitpack] like this:
 ```kotlin
 // in the `build.gradle.kts` of the target module
 plugins {
-  kotlin("multiplatform") version "1.8.21" // <-- 1.6.20 .. 1.9, use multiplatform or js
-  id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.12.1" // <-- 0.12.0 .. 0.13.1
+  kotlin("multiplatform") version "1.8.21" // <-- multiplatform or js, versions from 1.6.20 to 1.9
+  id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.12.1" // <-- 0.8 .. 0.13
   id("io.github.fluxo-kt.binary-compatibility-validator-js") // <-- add here
 }
 kotlin {

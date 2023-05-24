@@ -4,7 +4,10 @@
     "LongMethod",
     "LoopWithTooManyJumpStatements",
     "NoConsecutiveBlankLines",
+    "NoWildcardImports",
     "ReturnCount",
+    "TooGenericExceptionCaught",
+    "WildcardImport",
 )
 
 package fluxo.bcvjs
@@ -209,6 +212,13 @@ private fun Project.configureCheckTasks(
         t.dependsOn(apiBuild)
     }
 
+    fun registerCustomApiCheckTask() = task<KotlinJsApiCompareTask>(apiCheckTaskName) { t ->
+        configureApiCheckTask(t)
+        val apiBuildFile = buildFile.get()
+        val referenceFile = File(apiCheckDir.get(), apiBuildFile.name)
+        t.compareApiDumps(apiReferenceFile = referenceFile, apiBuildFile = apiBuildFile)
+    }
+
     val apiDump = task<Sync>(apiDumpTaskName) { t ->
         t.isEnabled = apiCheckEnabled(project.name, extension) && apiBuild.map { it.enabled }.getOrElse(true)
         t.group = "other"
@@ -254,16 +264,38 @@ private fun Project.configureCheckTasks(
             t.dependsOn(apiBuild)
         }
 
-        apiCheck = task<KotlinJsApiCompareTask>(apiCheckTaskName) {
-            configureApiCheckTask(it)
-            val apiBuildFile = buildFile.get()
-            val referenceFile = File(apiCheckDir.get(), apiBuildFile.name)
-            it.compareApiDumps(apiReferenceFile = referenceFile, apiBuildFile = apiBuildFile)
-        }
+        apiCheck = registerCustomApiCheckTask()
     } else {
-        apiCheck = task<KotlinApiCompareTask>(apiCheckTaskName) {
-            configureApiCheckTask(it)
-            it.compareApiDumps(apiReferenceDir = apiCheckDir.get(), apiBuildDir = buildDir.get())
+        apiCheck = try {
+            task<KotlinApiCompareTask>(apiCheckTaskName) { t ->
+                configureApiCheckTask(t)
+
+                /** @see KotlinApiCompareTask.compareApiDumps */
+                val apiReferenceDir = apiCheckDir.get()
+                when {
+                    apiReferenceDir.exists() -> {
+                        t.projectApiDir = apiReferenceDir
+                    }
+
+                    else -> try {
+                        t.projectApiDir = null
+                        t.nonExistingProjectApiDir = apiReferenceDir.toString()
+                    } catch (e: Throwable) {
+                        logger.warn(e.toString(), e)
+                        t.projectApiDir = apiReferenceDir
+                    }
+                }
+                t.apiBuildDir = buildDir.get()
+            }
+        } catch (e: Throwable) {
+            // Expected for old BCV
+            @Suppress("InstanceOfCheckForException")
+            if (e !is NoClassDefFoundError) {
+                val message = "Unexpected error: $e \n" +
+                    "Please, submit an issue to https://github.com/fluxo-kt/fluxo-bcv-js/issues"
+                logger.warn(message, e)
+            }
+            registerCustomApiCheckTask()
         }
     }
 
