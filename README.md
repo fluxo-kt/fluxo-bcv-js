@@ -71,7 +71,7 @@ pluginManagement {
   }
   resolutionStrategy.eachPlugin {
     if (requested.id.toString() == "io.github.fluxo-kt.binary-compatibility-validator-js")
-      useModule("com.github.fluxo-kt.fluxo-bcv-js:fluxo-bcv-js:56f7ac7af7") // <-- specify version or commit
+      useModule("com.github.fluxo-kt.fluxo-bcv-js:fluxo-bcv-js:d29a9564b4") // <-- specify version or commit
   }
 }
 ```
