@@ -1,1 +1,2 @@
+com.googlecode.java-diff-utils:diffutils:1.3.0
 org.jetbrains.kotlinx:binary-compatibility-validator:0.12.1

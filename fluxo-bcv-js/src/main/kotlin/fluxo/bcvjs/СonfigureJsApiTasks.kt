@@ -50,6 +50,7 @@ private fun apiCheckEnabled(projectName: String, extension: ApiValidationExtensi
  *
  * @see kotlinx.validation.BinaryCompatibilityValidatorPlugin.configureMultiplatformPlugin
  */
+@Suppress("CyclomaticComplexMethod")
 internal fun Project.configureJsApiTasks() {
     val targets = when (val kotlin = kotlinExtensionCompat) {
         is KotlinMultiplatformExtension -> kotlin.targets.toSet()
@@ -57,13 +58,13 @@ internal fun Project.configureJsApiTasks() {
         else -> emptySet()
     }
     if (targets.none { it.isJsCompat }) {
-        logger.warn("JS/TS API checks are disabled for :$name as no Kotlin/JS target found")
+        logger.warn("Kotlin/JS API checks are disabled for :$name as no Kotlin/JS target found")
         return
     }
 
     val extension = apiValidationExtensionOrNull
     if (!apiCheckEnabled(name, extension)) {
-        logger.info("JS/TS API checks are disabled for :$name")
+        logger.info("Kotlin/JS API checks are disabled for :$name")
         return
     }
 
@@ -93,6 +94,7 @@ internal fun Project.configureJsApiTasks() {
             continue
         }
 
+        // Find the KotlinJsIrLink tasks in a few ways
         val binaries = LinkedHashSet<JsBinary>().also { binaries ->
             target.jsBinariesCompat?.let { binaries.addAll(it) }
             for (compilation in compilations) {
@@ -100,8 +102,6 @@ internal fun Project.configureJsApiTasks() {
             }
         }.filterIsInstance<JsIrBinary>()
             .filter { it.mode == KotlinJsBinaryMode.PRODUCTION && it.generateTsCompat != false }
-
-        val targetConfig = TargetConfig(target.project, target.name, dirConfig)
 
         val linkTasksFromBinaries = binaries.mapTo(LinkedHashSet()) { it.linkTask.get() }
         val linkTasksCollection = target.project.tasks.withType(KotlinJsIrLink::class.java).matching {
@@ -111,6 +111,7 @@ internal fun Project.configureJsApiTasks() {
         }
         val linkTasks: Provider<Set<KotlinJsIrLink>> = project.provider { linkTasksCollection + linkTasksFromBinaries }
 
+        val targetConfig = TargetConfig(target.project, target.name, dirConfig)
         configureKotlinCompilation(extension, targetConfig, commonApiDump, commonApiCheck, linkTasks)
     }
 }
@@ -130,7 +131,8 @@ private fun Project.configureKotlinCompilation(
         }
     }
 
-    val apiBuildDir = targetConfig.apiDir.map { buildDir.resolve(it) }
+    val buildDir = targetConfig.apiDir.map { buildDir.resolve(it) }
+    val buildFile = buildDir.map { it.resolve(project.name + EXT) }
     val buildTaskName = targetConfig.apiTaskName(SUFFIX_BUILD)
     val apiBuild = project.task<KotlinJsApiBuildTask>(buildTaskName) {
         // Don't enable task for empty umbrella modules
@@ -139,99 +141,94 @@ private fun Project.configureKotlinCompilation(
         it.generatedDefinitions.from(tsDefinitionFiles)
         it.dependsOn(linkTasks)
 
-        it.outputFile.set(apiBuildDir.get().resolve(project.name + EXT))
+        it.outputFile.fileProvider(buildFile)
     }
-    project.configureCheckTasks(apiBuildDir, apiBuild, extension, targetConfig, commonApiDump, commonApiCheck)
+    project.configureCheckTasks(buildDir, buildFile, apiBuild, extension, targetConfig, commonApiDump, commonApiCheck)
 }
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "LongMethod")
 private fun Project.configureCheckTasks(
-    apiBuildDir: Provider<File>,
+    buildDir: Provider<File>,
+    buildFile: Provider<File>,
     apiBuild: TaskProvider<out Task>,
     extension: ApiValidationExtension?,
-    targetConfig: TargetConfig,
+    config: TargetConfig,
     commonApiDump: TaskProvider<out Task>? = null,
     commonApiCheck: TaskProvider<out Task>? = null,
 ) {
-    val apiCheckTaskName = targetConfig.apiTaskName(SUFFIX_CHECK)
-    val apiDumpTaskName = targetConfig.apiTaskName(SUFFIX_DUMP)
+    val apiCheckTaskName = config.apiTaskName(SUFFIX_CHECK)
+    val apiDumpTaskName = config.apiTaskName(SUFFIX_DUMP)
 
-    fun DefaultTask.configureApiCheckTask() {
-        isEnabled = apiCheckEnabled(project.name, extension) && apiBuild.map { it.enabled }.getOrElse(true)
-        group = "verification"
-        description = "Checks signatures of public API against the golden value in API folder for :${project.name}"
-        dependsOn(apiBuild)
-    }
-
-    fun DefaultTask.configureApiDumpTask() {
-        isEnabled = apiCheckEnabled(project.name, extension) && apiBuild.map { it.enabled }.getOrElse(true)
-        group = "other"
-        description = "Syncs API from build dir to ${targetConfig.apiDir} dir for :${project.name}"
-        dependsOn(apiBuild)
+    val apiCheckDir = config.apiDir.map {
+        projectDir.resolve(it).also { r ->
+            logger.debug("Configuring api for {} to {}", config.targetName ?: "js", r)
+        }
     }
 
     val apiCheck: TaskProvider<out DefaultTask>
-    val apiDump: TaskProvider<out DefaultTask>
+
+    fun configureApiCheckTask(t: DefaultTask) {
+        t.isEnabled = apiCheckEnabled(t.project.name, extension) && apiBuild.map { it.enabled }.getOrElse(true)
+        t.group = "verification"
+        t.description = "Checks signatures of public API against the golden value in API folder for :${t.project.name}"
+        t.dependsOn(apiBuild)
+    }
+
+    val apiDump = task<Sync>(apiDumpTaskName) { t ->
+        t.isEnabled = apiCheckEnabled(project.name, extension) && apiBuild.map { it.enabled }.getOrElse(true)
+        t.group = "other"
+        t.description = "Syncs API from build dir to ${config.apiDir} dir for :${project.name}"
+        t.dependsOn(apiBuild)
+        t.from(buildDir)
+        t.into(apiCheckDir)
+    }
 
     // Special case
-    // BCV has the "COMMON" dir strategy and uses dir for comparison.
-    // Thus, BCV syncs and checks TS definition automatically.
-    // Only create the tasks for convenience.
-    val dirConfig = targetConfig.dirConfig?.get()
+    // BCV has the 'COMMON' dir strategy and uses 'api' dir for comparison.
+    val dirConfig = config.dirConfig?.get()
     if (dirConfig is DirConfig.COMMON && dirConfig.bcvTargetName != null) {
         val bcvTargetName = dirConfig.bcvTargetName
         logger.info("Special handling for BCV 'DirConfig.COMMON' strategy (bcvTargetName={})", bcvTargetName)
 
-        tasks.named(apiTaskName(bcvTargetName, SUFFIX_BUILD)).configure { it.finalizedBy(apiBuild) }
-        val bcvCheck = tasks.named(apiTaskName(bcvTargetName, SUFFIX_CHECK))
+        val bcvCheckTaskName = apiTaskName(bcvTargetName, SUFFIX_CHECK)
+        val bcvBuild = tasks.named(apiTaskName(bcvTargetName, SUFFIX_BUILD))
         val bcvDump = tasks.named(apiTaskName(bcvTargetName, SUFFIX_DUMP))
+        val bcvCheck = tasks.named(bcvCheckTaskName)
 
-        apiCheck = defaultTask(apiCheckTaskName) {
-            it.configureApiCheckTask()
-            it.dependsOn(bcvCheck)
-        }
-        apiDump = defaultTask(apiDumpTaskName) {
-            it.configureApiDumpTask()
-            it.dependsOn(bcvDump)
-        }
-
-        bcvCheck.configure {
-            it.dependsOn(apiBuild)
-            it.finalizedBy(apiCheck)
-        }
-        bcvDump.configure {
-            it.dependsOn(apiBuild)
-            it.finalizedBy(apiDump)
-        }
-    } else {
-        val apiCheckDir = targetConfig.apiDir.map {
-            projectDir.resolve(it).also { r ->
-                logger.debug("Configuring api for {} to {}", targetConfig.targetName ?: "js", r)
+        // Avoid conflicts with bcvCheck task.
+        // It doesn't like extra files in the build directory.
+        val bcvCheckCleaner = defaultTask(bcvCheckTaskName + "JsCompatCleaner") { t ->
+            t.doLast {
+                val file = buildFile.get()
+                if (file.delete()) {
+                    logger.info("Removed Kotlin/JS API file for compatibility with '$bcvCheckTaskName' task: {}", file)
+                }
             }
         }
-        logger.warn("apiCheckName: {}", apiCheckTaskName)
-        apiCheck = task<KotlinApiCompareTask>(apiCheckTaskName) {
-            it.configureApiCheckTask()
-            it.logger.warn(
-                "{}: apiCheckDir = {}, apiBuildDir = {}",
-                apiCheckTaskName,
-                apiCheckDir.get(),
-                apiBuildDir.get(),
-            )
-            it.compareApiDumps(apiReferenceDir = apiCheckDir.get(), apiBuildDir = apiBuildDir.get())
+        bcvCheck.configure { t ->
+            t.dependsOn(bcvCheckCleaner)
+        }
+        apiBuild.configure { t ->
+            t.mustRunAfter(bcvCheckCleaner)
+            t.mustRunAfter(bcvBuild)
+            t.mustRunAfter(bcvCheck)
         }
 
-        logger.warn("apiCheckName: {}", apiDumpTaskName)
-        apiDump = task<Sync>(apiDumpTaskName) {
-            it.configureApiDumpTask()
-            it.logger.warn(
-                "{}: apiCheckDir = {}, apiBuildDir = {}",
-                apiDumpTaskName,
-                apiCheckDir.get(),
-                apiBuildDir.get()
-            )
-            it.from(apiBuildDir)
-            it.into(apiCheckDir)
+        // BCV's dump task uses this output of 'jsApiBuild' task
+        bcvDump.configure { t ->
+            t.dependsOn(apiBuild)
+        }
+
+        apiCheck = task<KotlinJsApiCompareTask>(apiCheckTaskName) {
+            configureApiCheckTask(it)
+            val apiBuildFile = buildFile.get()
+            val referenceFile = File(apiCheckDir.get(), apiBuildFile.name)
+            it.compareApiDumps(apiReferenceFile = referenceFile, apiBuildFile = apiBuildFile)
+        }
+    } else {
+        apiCheck = task<KotlinApiCompareTask>(apiCheckTaskName) {
+            configureApiCheckTask(it)
+            it.compareApiDumps(apiReferenceDir = apiCheckDir.get(), apiBuildDir = buildDir.get())
         }
     }
 
@@ -251,7 +248,7 @@ private fun Project.configureCheckTasks(
  * @see org.jetbrains.kotlin.gradle.dsl.multiplatformExtension
  * @see org.jetbrains.kotlin.gradle.dsl.KOTLIN_PROJECT_EXTENSION_NAME ("kotlin")
  */
-val Project.kotlinExtensionCompat: KotlinProjectExtension
+private val Project.kotlinExtensionCompat: KotlinProjectExtension
     get() = extensions.getByName("kotlin") as KotlinProjectExtension
 
 

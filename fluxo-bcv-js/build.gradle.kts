@@ -36,13 +36,13 @@ configurations.implementation {
     exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-jdk7")
     exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-jdk8")
     exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-metadata-jvm")
-    exclude(group = "com.googlecode.java-diff-utils")
     exclude(group = "org.ow2.asm")
 }
 
 dependencies {
     compileOnly(libs.plugin.kotlin)
     implementation(libs.plugin.binCompatValidator)
+    implementation(libs.diffutils)
 }
 
 gradlePlugin {

@@ -24,7 +24,7 @@ internal class TargetConfig(
     } ?: project.provider { API_DIR }
 }
 
-fun apiTaskName(targetName: String?, suffix: String) = when (targetName) {
+internal fun apiTaskName(targetName: String?, suffix: String) = when (targetName) {
     null, "" -> "api$suffix"
     else -> "${targetName}Api$suffix"
 }
