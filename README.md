@@ -45,16 +45,34 @@ Compatibility tested with:
 
 ### How to use
 
-[![JitPack][badge-jitpack]][jitpack]
-
-Plugin can be used from the [JitPack][jitpack] like this:
+[![Gradle Plugin Portal][badge-plugin]][plugin]
 
 ```kotlin
 // in the `build.gradle.kts` of the target module
 plugins {
   kotlin("multiplatform") version "1.8.21" // <-- multiplatform or js, versions from 1.6.20 to 1.9
   id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.12.1" // <-- 0.8 .. 0.13
-  id("io.github.fluxo-kt.binary-compatibility-validator-js") // <-- add here
+  id("io.github.fluxo-kt.binary-compatibility-validator-js") version "0.0.1-rc" // <-- add here
+}
+kotlin {
+  js(IR) {
+    binaries.executable() // required to generate TS definitions
+    nodejs() // or browser()
+  }
+}
+```
+
+<details>
+<summary>How to use snapshots from JitPack repository</summary>
+
+[![JitPack][badge-jitpack]][jitpack]
+
+```kotlin
+// in the `build.gradle.kts` of the target module
+plugins {
+  kotlin("multiplatform") version "1.8.21" // <-- multiplatform or js, versions from 1.6.20 to 1.9
+  id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.12.1" // <-- 0.8 .. 0.13
+  id("io.github.fluxo-kt.binary-compatibility-validator-js") // <-- add here, no version needed for jitpack usage
 }
 kotlin {
   js(IR) {
@@ -76,6 +94,7 @@ pluginManagement {
   }
 }
 ```
+</details>
 
 Module examples for:
 - [Kotlin Multiplatform](checks/latest/build.gradle.kts)
