@@ -1,4 +1,4 @@
-name: release
+name: Release
 
 on:
   push:
@@ -17,20 +17,25 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          fetch-depth: '0'
 
-      - name: Print Release Version
+      - name: Prepare release settings
         run: |
-          if echo "$GITHUB_REF_NAME" | grep "beta|alpha|rc|RC" > /dev/null ; then
-            echo "Pre release!"
-            echo "RELEASE_PRE=true" >> $GITHUB_ENV
-            echo "RELEASE_SUFFIX= (pre release)" >> $GITHUB_ENV
-          else
-            echo "Normal release!"
-            echo "RELEASE_PRE=false" >> $GITHUB_ENV
-            echo "RELEASE_SUFFIX=" >> $GITHUB_ENV
+          echo "GITHUB_REF_NAME: $GITHUB_REF_NAME"
+          RELEASE_PRE=false
+          RELEASE_SUFFIX=""
+          # Check release type
+          if [[ $GITHUB_REF_NAME =~ 'alpha' || $GITHUB_REF_NAME =~ 'beta' || $GITHUB_REF_NAME =~ 'rc' ]]; then
+            echo "This is a pre-release!"
+            RELEASE_PRE=true
+            RELEASE_SUFFIX=" (pre release)"
           fi
+          echo "RELEASE_PRE=$RELEASE_PRE" >> $GITHUB_ENV
+          echo "RELEASE_SUFFIX=$RELEASE_SUFFIX" >> $GITHUB_ENV
 
       - name: Release
+        # https://github.com/anton-yurchenko/git-release#readme
         uses: docker://antonyurchenko/git-release:latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -39,3 +44,6 @@ jobs:
           RELEASE_NAME_SUFFIX: "${{ env.RELEASE_SUFFIX }}"
           CHANGELOG_FILE: "CHANGELOG.md"
           ALLOW_EMPTY_CHANGELOG: "false"
+
+# References
+# https://github.com/studiometa/vue-mapbox-gl/blob/8c3ca5a/.github/workflows/release.yml#L26
