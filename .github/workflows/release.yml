@@ -50,7 +50,7 @@ jobs:
           cache-read-only: true
 
       - name: Check and publish plugin
-        if: github.repository == 'fluxo-kt/fluxo'
+        if: github.repository == 'fluxo-kt/fluxo-bcv-js'
         env:
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
           SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
