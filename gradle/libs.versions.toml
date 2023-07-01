@@ -13,7 +13,7 @@ fluxoBcvJs = "0.1.0"
 # Public API management tool
 # https://github.com/Kotlin/binary-compatibility-validator/releases
 # 0.13+ uses Kotlin metadata 0.6.0 (conflicts with AtomicFU!)
-bcv = "0.12.1"
+bcv = "0.13.2"
 bcvMin = "0.8.0"
 bcvLatest = "0.13.1"
 
