@@ -3,7 +3,11 @@
 
 ## Unreleased
 
-- ...
+[//]: # (Changed, Added, Removed, Fixed)
+
+### Changed
+- Updated the [README.md](README.md).
+- Bumped build and CI dependencies.
 
 
 ## [0.1.0] - 2023-05-25

@@ -40,7 +40,7 @@ Compatibility tested with:
 
 | Version |    BCV     | Kotlin  | Gradle |
 |:-------:|:----------:|:-------:|:------:|
-|  0.0.1  | 0.8 - 0.13 | 1.6.20+ |  7.4+  |
+|  0.1.0  | 0.8 - 0.13 | 1.6.20+ |  7.4+  |
 
 
 ### How to use
@@ -50,8 +50,8 @@ Compatibility tested with:
 ```kotlin
 // in the `build.gradle.kts` of the target module
 plugins {
-  kotlin("multiplatform") version "1.8.21" // <-- multiplatform or js, versions from 1.6.20 to 1.9
-  id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.12.1" // <-- 0.8 .. 0.13
+  kotlin("multiplatform") version "1.9.10" // <-- multiplatform or js, versions from 1.6.20 to 1.9
+  id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.13.2" // <-- 0.8 .. 0.13
   id("io.github.fluxo-kt.binary-compatibility-validator-js") version "0.1.0" // <-- add here
 }
 kotlin {
@@ -70,8 +70,8 @@ kotlin {
 ```kotlin
 // in the `build.gradle.kts` of the target module
 plugins {
-  kotlin("multiplatform") version "1.8.21" // <-- multiplatform or js, versions from 1.6.20 to 1.9
-  id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.12.1" // <-- 0.8 .. 0.13
+  kotlin("multiplatform") version "1.9.10" // <-- multiplatform or js, versions from 1.6.20 to 1.9
+  id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.13.2" // <-- 0.8 .. 0.13
   id("io.github.fluxo-kt.binary-compatibility-validator-js") // <-- add here, no version needed for jitpack usage
 }
 kotlin {
@@ -90,7 +90,7 @@ pluginManagement {
   }
   resolutionStrategy.eachPlugin {
     if (requested.id.toString() == "io.github.fluxo-kt.binary-compatibility-validator-js")
-      useModule("com.github.fluxo-kt.fluxo-bcv-js:fluxo-bcv-js:d29a9564b4") // <-- specify version or commit
+      useModule("com.github.fluxo-kt.fluxo-bcv-js:fluxo-bcv-js:e072120070") // <-- specify version or commit
   }
 }
 ```
@@ -115,8 +115,6 @@ This project is licensed under the Apache License, Version 2.0 — see the
 
 
 [bcv]: https://github.com/Kotlin/binary-compatibility-validator
-[bcv-tag]: https://github.com/Kotlin/binary-compatibility-validator/releases/tag/0.12.1
-[badge-bcv]: http://img.shields.io/badge/KotlinX%20BCV-0.12.1-7F52FF?logo=kotlin&logoWidth=10&logoColor=7F52FF&labelColor=2B2B2B
 
 [KMM]: https://kotlinlang.org/docs/multiplatform-get-started.html
 [KJS]: https://kotlinlang.org/docs/js-project-setup.html
