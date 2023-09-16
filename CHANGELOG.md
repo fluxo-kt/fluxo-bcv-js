@@ -4,6 +4,12 @@
 ## Unreleased
 
 [//]: # (Changed, Added, Removed, Fixed)
+- ...
+
+
+## [0.2.0] - 2023-09-16
+
+_Minor update release._
 
 ### Changed
 - Updated the [README.md](README.md).
@@ -30,6 +36,7 @@
 
 ## Notes
 
+[0.2.0]: https://github.com/fluxo-kt/fluxo-bcv-js/releases/tag/v0.2.0
 [0.1.0]: https://github.com/fluxo-kt/fluxo-bcv-js/releases/tag/v0.1.0
 [0.0.1-rc]: https://github.com/fluxo-kt/fluxo-bcv-js/releases/tag/v0.0.1-rc
 
