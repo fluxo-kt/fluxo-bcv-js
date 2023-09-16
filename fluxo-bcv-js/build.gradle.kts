@@ -27,6 +27,7 @@ libs.versions.javaLangTarget.get().let { javaLangTarget ->
             jvmTarget = javaLangTarget
             languageVersion = kotlinLangVersion
             apiVersion = kotlinLangVersion
+            freeCompilerArgs = listOf("-Xskip-metadata-version-check")
         }
     }
 }
@@ -46,6 +47,12 @@ dependencies {
 }
 
 gradlePlugin {
+    val projectUrl = "https://github.com/fluxo-kt/fluxo-bcv-js"
+    val scmUrl = "scm:git:git://github.com/fluxo-kt/fluxo-bcv-js.git"
+    val publicationUrl = "$projectUrl/tree/main"
+    website.set(projectUrl)
+    vcsUrl.set(publicationUrl)
+
     val shortDescr = "JS/TS API support for KotlinX Binary Compatibility Validator"
     plugins.create("fluxo-bcv-js") {
         id = pluginId
@@ -55,22 +62,17 @@ gradlePlugin {
             " that's public in the sense of npm package visibility," +
             " and ensures that the public definitions haven’t been changed in a way" +
             " that makes this change binary incompatible."
-    }
 
-    val projectUrl = "https://github.com/fluxo-kt/fluxo-bcv-js"
-    val scmUrl = "scm:git:git://github.com/fluxo-kt/fluxo-bcv-js.git"
-    val publicationUrl = "$projectUrl/tree/main"
-    pluginBundle {
-        website = projectUrl
-        vcsUrl = publicationUrl
-        tags = listOf(
-            "kotlin",
-            "kotlin-js",
-            "api-management",
-            "binary-compatibility",
-            "javascript",
-            "typescript",
-            "kotlin-multiplatform",
+        tags.set(
+            listOf(
+                "kotlin",
+                "kotlin-js",
+                "api-management",
+                "binary-compatibility",
+                "javascript",
+                "typescript",
+                "kotlin-multiplatform"
+            )
         )
     }
 

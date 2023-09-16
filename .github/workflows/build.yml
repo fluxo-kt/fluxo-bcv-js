@@ -66,8 +66,6 @@ jobs:
       - name: 'Check "latest" setup example'
         working-directory: checks/latest
         run: ./gradlew check --continue --stacktrace --scan
-        env:
-          GITHUB_DEPENDENCY_GRAPH_ENABLED: false
 
       - name: 'Check "js-only" setup example'
         working-directory: checks/js-only

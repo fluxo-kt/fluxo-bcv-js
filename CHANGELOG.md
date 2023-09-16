@@ -6,14 +6,17 @@
 [//]: # (Changed, Added, Removed, Fixed)
 - ...
 
+### Changed
+- Change the minimum tested Gradle version to `7.6`.
+
 
 ## [0.2.0] - 2023-09-16
 
 _Minor update release._
 
 ### Changed
-- Updated the [README.md](README.md).
-- Bumped build and CI dependencies.
+- Update the [README.md](README.md).
+- Bump build and CI dependencies.
 
 
 ## [0.1.0] - 2023-05-25
