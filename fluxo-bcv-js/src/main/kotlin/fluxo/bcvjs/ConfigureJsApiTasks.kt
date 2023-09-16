@@ -78,7 +78,7 @@ internal fun Project.configureJsApiTasks() {
 
     val targets = when (val kotlin = kotlinExtensionCompat) {
         is KotlinMultiplatformExtension -> kotlin.targets.toSet()
-        is KotlinSingleTargetExtension -> setOf(kotlin.target)
+        is KotlinSingleTargetExtension<*> -> setOf(kotlin.target)
         else -> emptySet()
     }
     if (targets.none { it.isJsCompat }) {
@@ -169,7 +169,7 @@ private fun Project.configureKotlinCompilation(
         }
     }
 
-    val buildDir = targetConfig.apiDir.map { buildDir.resolve(it) }
+    val buildDir = targetConfig.apiDir.map { layout.buildDirectory.asFile.get().resolve(it) }
     val buildFile = buildDir.map { it.resolve(project.name + EXT) }
     val buildTaskName = targetConfig.apiTaskName(SUFFIX_BUILD)
     val apiBuild = project.task<KotlinJsApiBuildTask>(buildTaskName) {
