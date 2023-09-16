@@ -29,11 +29,13 @@ env:
   GRADLE_OPTS: "-Dorg.gradle.daemon=false"
 
 jobs:
-  checks:
+  buildAndCheck:
     name: 'Build and check'
     timeout-minutes: 25
     runs-on: 'ubuntu-latest'
     if: ${{ !contains(github.event.head_commit.message, 'ci skip') }}
+    permissions: # The Dependency Submission API requires write permission
+      contents: write
 
     steps:
       - name: Harden Runner
@@ -56,6 +58,7 @@ jobs:
         with:
           gradle-home-cache-cleanup: true
           cache-read-only: ${{ (github.ref != 'refs/heads/main' && github.ref != 'refs/heads/dev') }}
+          dependency-graph: generate-and-submit
 
       - name: 'Build and check plugin itself'
         run: ./gradlew build assemble check --continue --stacktrace --scan
@@ -63,10 +66,14 @@ jobs:
       - name: 'Check "latest" setup example'
         working-directory: checks/latest
         run: ./gradlew check --continue --stacktrace --scan
+        env:
+          GITHUB_DEPENDENCY_GRAPH_ENABLED: false
 
       - name: 'Check "js-only" setup example'
         working-directory: checks/js-only
         run: ./gradlew check --continue --stacktrace --scan
+        env:
+          GITHUB_DEPENDENCY_GRAPH_ENABLED: false
 
       - name: "Add build scan URL as PR comment"
         uses: actions/github-script@v6
