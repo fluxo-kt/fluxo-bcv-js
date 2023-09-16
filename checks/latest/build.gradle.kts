@@ -1,4 +1,3 @@
-@Suppress("DSL_SCOPE_VIOLATION")
 plugins {
     kotlin("multiplatform") version libs.versions.kotlinLatest
     id("org.jetbrains.kotlinx.binary-compatibility-validator") version libs.versions.bcvLatest
@@ -7,11 +6,50 @@ plugins {
 }
 
 kotlin {
-    jvm()
+    jvm {
+        compilations.all {
+            "17".let { jvmTarget ->
+                kotlinOptions.jvmTarget = jvmTarget
+                compileJavaTaskProvider?.configure {
+                    sourceCompatibility = jvmTarget
+                    targetCompatibility = jvmTarget
+                }
+            }
+        }
+
+        val main by compilations.getting {}
+
+        compilations.create("experimentalTest") {
+            kotlinOptions {
+                languageVersion = "2.1"
+                apiVersion = "2.1"
+
+            }
+
+            defaultSourceSet.dependsOn(main.defaultSourceSet)
+
+            tasks.named("check") {
+                dependsOn(compileTaskProvider)
+            }
+        }
+    }
     js(IR) {
         binaries.executable()
         nodejs()
         browser()
+
+        compilations.all {
+            kotlinOptions {
+                languageVersion = "2.1"
+                apiVersion = "2.1"
+            }
+        }
+    }
+
+    targets.all {
+        compilations.all {
+            kotlinOptions.freeCompilerArgs += listOf("-Xopt-in=kotlin.RequiresOptIn")
+        }
     }
 }
 

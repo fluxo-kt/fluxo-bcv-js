@@ -10,6 +10,10 @@ kotlin {
     js(IR) {
         binaries.executable()
         nodejs()
+
+        compilations.all {
+            kotlinOptions.freeCompilerArgs += listOf("-Xopt-in=kotlin.RequiresOptIn")
+        }
     }
 }
 

@@ -1,4 +1,6 @@
-@Suppress("DSL_SCOPE_VIOLATION")
+import org.jetbrains.kotlin.gradle.dsl.KotlinJvmOptions
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinWithJavaCompilation
+
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.gradle.plugin.publish)
@@ -7,27 +9,71 @@ plugins {
 }
 
 val pluginId = "io.github.fluxo-kt.binary-compatibility-validator-js"
+val experimentalTest = true
 
 group = "io.github.fluxo-kt"
 version = libs.versions.fluxoBcvJs.get()
 
-libs.versions.javaLangTarget.get().let { javaLangTarget ->
-    logger.lifecycle("> Conf Java compatibility $javaLangTarget")
-    java {
-        JavaVersion.toVersion(javaLangTarget).let { v ->
-            sourceCompatibility = v
-            targetCompatibility = v
-        }
-    }
+kotlin {
+    target.compilations {
+        val kotlinVersion = libs.versions.kotlinLangVersion.get()
+        val kotlinApiVersion = libs.versions.kotlinLangVersion.get()
+        val main by getting {
+            libs.versions.javaLangTarget.get().let { jvmVersion ->
+                kotlinOptions {
+                    jvmTarget = jvmVersion
+                    languageVersion = kotlinVersion
+                    // Note: apiVersion can't be greater than languageVersion!
+                    apiVersion = kotlinVersion
 
-    val kotlinLangVersion = libs.versions.kotlinLangVersion.get()
-    logger.lifecycle("> Conf Kotlin language and API $kotlinLangVersion")
-    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        kotlinOptions {
-            jvmTarget = javaLangTarget
-            languageVersion = kotlinLangVersion
-            apiVersion = kotlinLangVersion
-            freeCompilerArgs = listOf("-Xskip-metadata-version-check")
+                    freeCompilerArgs += "-Xcontext-receivers"
+                    freeCompilerArgs += "-Xklib-enable-signature-clash-checks"
+                    freeCompilerArgs += "-Xjsr305=strict"
+                    freeCompilerArgs += "-Xjvm-default=all"
+                    freeCompilerArgs += "-Xtype-enhancement-improvements-strict-mode"
+                    freeCompilerArgs += "-Xvalidate-bytecode"
+                    freeCompilerArgs += "-Xvalidate-ir"
+                    // freeCompilerArgs += "-Xskip-metadata-version-check"
+                    freeCompilerArgs += "-opt-in=kotlin.RequiresOptIn"
+                }
+                compileJavaTaskProvider.configure {
+                    sourceCompatibility = jvmVersion
+                    targetCompatibility = jvmVersion
+                }
+                var kv = kotlinVersion
+                if (kotlinApiVersion != kotlinVersion) {
+                    kv += " (API $kotlinApiVersion)"
+                }
+                logger.lifecycle("> Conf compatibility for Kotlin $kv, JVM $jvmVersion")
+            }
+        }
+
+        val configureLatest: (KotlinWithJavaCompilation<KotlinJvmOptions, *>).() -> Unit = {
+            kotlinOptions {
+                jvmTarget = "17"
+                languageVersion = "2.1"
+                apiVersion = "2.1"
+            }
+            compileJavaTaskProvider.configure {
+                sourceCompatibility = "17"
+                targetCompatibility = "17"
+            }
+        }
+        getByName("test", configureLatest)
+
+        // Experimental test compilation with the latest Kotlin settings.
+        // Don't try for sources with old compatibility settings.
+        val isInCompositeBuild = gradle.includedBuilds.size > 1
+        if (!isInCompositeBuild && experimentalTest && kotlinVersion.toFloat() >= 1.4f) {
+            create("experimentalTest") {
+                configureLatest()
+
+                defaultSourceSet.dependsOn(main.defaultSourceSet)
+
+                tasks.named("check") {
+                    dependsOn(compileTaskProvider)
+                }
+            }
         }
     }
 }
