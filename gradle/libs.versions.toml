@@ -30,7 +30,7 @@ kotlinLangVersion = "1.4"
 # https://github.com/Kotlin/binary-compatibility-validator/blob/0.13.2/gradle.properties#L4
 # https://mvnrepository.com/artifact/org.jetbrains.kotlin/kotlin-gradle-plugin
 # https://github.com/JetBrains/kotlin/releases
-kotlin = "1.9.10"
+kotlin = "1.9.20"
 kotlinMin = "1.6.20"
 kotlinLatest = "1.9.20-Beta"
 
