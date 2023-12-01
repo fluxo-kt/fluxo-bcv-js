@@ -39,7 +39,7 @@ jobs:
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@4a1e83c9ef6b0e39b16f17b2734e08cdfbeea46c
+        uses: step-security/harden-runner@c0db65e1f64025718795419be8dbbf8c4050160f
         with:
           disable-sudo: true
           egress-policy: audit
