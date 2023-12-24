@@ -3,30 +3,29 @@ name: Build
 on:
   pull_request:
     paths-ignore:
-      - '**-check.yml'
-      - '**-submission.yml'
       - '**-validation.yml'
       - '**.*ignore'
       - '**.md'
       - '**.txt'
-      - '**benchmark.yml'
+      - '**/pr-**.yml'
       - '**dependabot.yml'
   push:
     paths-ignore:
-      - '**-check.yml'
-      - '**-submission.yml'
       - '**-validation.yml'
       - '**.*ignore'
       - '**.md'
       - '**.txt'
-      - '**benchmark.yml'
+      - '**/pr-**.yml'
       - '**dependabot.yml'
 
 env:
   CI: true
   BUILD_NUMBER: ${{ github.run_number }}
   SCM_TAG: ${{ github.sha }}
-  GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+  #GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+  GRADLE_BUILD_ACTION_CACHE_DEBUG_ENABLED: true
+  DEPENDENCY_GRAPH_INCLUDE_CONFIGURATIONS: "^(?!(classpath)).*"
+  DEPENDENCY_GRAPH_INCLUDE_PROJECTS: "^:(?!(buildSrc|test-)).*"
 
 jobs:
   buildAndCheck:
@@ -34,8 +33,13 @@ jobs:
     timeout-minutes: 25
     runs-on: 'ubuntu-latest'
     if: ${{ !contains(github.event.head_commit.message, 'ci skip') }}
-    permissions: # The Dependency Submission API requires write permission
+    permissions:
       contents: write
+      security-events: write
+      # We appear to need write permission for both pull-requests and
+      # issues in order to post a comment to a pull request.
+      pull-requests: write
+      issues: write
 
     steps:
       - name: Harden Runner
@@ -47,25 +51,35 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: 'Set up JDK 17'
+      - name: 'Set up JDK 21'
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
 
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
         with:
           gradle-home-cache-cleanup: true
-          cache-read-only: ${{ (github.ref != 'refs/heads/main' && github.ref != 'refs/heads/dev') }}
-          dependency-graph: generate-and-submit
+          cache-read-only: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/dev' }}
+          dependency-graph: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && 'generate-and-submit' || 'disabled'}}
 
       - name: 'Build and check plugin itself'
         run: ./gradlew build assemble check --continue --stacktrace --scan
 
+      - name: Upload sarif report (Detekt)
+        if: (success() || failure()) && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+        uses: github/codeql-action/upload-sarif@v2
+        continue-on-error: true
+        with:
+          sarif_file: build/detekt-merged.sarif
+          category: detekt
+
       - name: 'Check "latest" setup example'
         working-directory: checks/latest
         run: ./gradlew check --continue --stacktrace --scan
+        env:
+          GITHUB_DEPENDENCY_GRAPH_ENABLED: false
 
       - name: 'Check "js-only" setup example'
         working-directory: checks/js-only
