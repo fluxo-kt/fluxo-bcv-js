@@ -164,7 +164,7 @@ private fun Project.configureKotlinCompilation(
     val tsDefinitionFiles: Provider<Set<File>> = linkTasks.flatMap { set ->
         project.provider {
             set.flatMapTo(LinkedHashSet()) { link ->
-                link.destinationDirectory.asFileTree.matching { it.include("*$EXT") }.files
+                link.destinationDirectory.asFileTree.matching { include("*$EXT") }.files
             }
         }
     }
@@ -184,7 +184,7 @@ private fun Project.configureKotlinCompilation(
     project.configureCheckTasks(buildDir, buildFile, apiBuild, extension, targetConfig, commonApiDump, commonApiCheck)
 }
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "CyclomaticComplexMethod")
 private fun Project.configureCheckTasks(
     buildDir: Provider<File>,
     buildFile: Provider<File>,
@@ -250,18 +250,18 @@ private fun Project.configureCheckTasks(
                 }
             }
         }
-        bcvCheck.configure { t ->
-            t.dependsOn(bcvCheckCleaner)
+        bcvCheck.configure {
+            dependsOn(bcvCheckCleaner)
         }
-        apiBuild.configure { t ->
-            t.mustRunAfter(bcvCheckCleaner)
-            t.mustRunAfter(bcvBuild)
-            t.mustRunAfter(bcvCheck)
+        apiBuild.configure {
+            mustRunAfter(bcvCheckCleaner)
+            mustRunAfter(bcvBuild)
+            mustRunAfter(bcvCheck)
         }
 
         // BCV's dump task uses this output of 'jsApiBuild' task
-        bcvDump.configure { t ->
-            t.dependsOn(apiBuild)
+        bcvDump.configure {
+            dependsOn(apiBuild)
         }
 
         apiCheck = registerCustomApiCheckTask()

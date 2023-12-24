@@ -1,7 +1,6 @@
 pluginManagement {
     repositories {
         gradlePluginPortal()
-        mavenCentral()
     }
 }
 
@@ -16,12 +15,9 @@ dependencyResolutionManagement {
     }
 }
 
-logger.lifecycle("> Conf Gradle version is ${gradle.gradleVersion}")
-logger.lifecycle("> Conf JRE version is ${System.getProperty("java.version")}")
-logger.lifecycle("> Conf CPUs ${Runtime.getRuntime().availableProcessors()}")
-
 rootProject.name = "fluxo-bcv-js"
 
-// On module update, don't forget to update '.github/workflows/deps-submission.yml'!
-
-include(":fluxo-bcv-js")
+":fluxo-bcv-js".let {
+    include(it)
+    project(it).name = "plugin"
+}

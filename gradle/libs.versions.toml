@@ -34,6 +34,11 @@ kotlin = "1.9.22"
 kotlinMin = "1.6.20"
 kotlinLatest = "1.9.20-Beta"
 
+# Dokka is a documentation engine for Kotlin/Java
+# https://github.com/Kotlin/dokka/releases
+# https://mvnrepository.com/artifact/org.jetbrains.dokka/dokka-gradle-plugin?repo=space-kotlin-dokka-dev
+dokka = "1.9.10"
+
 
 [libraries]
 
@@ -45,8 +50,15 @@ plugin-binCompatValidator = { module = "org.jetbrains.kotlinx:binary-compatibili
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-sam-receiver = { id = "org.jetbrains.kotlin.plugin.sam.with.receiver", version.ref = "kotlin" }
+dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 
 kotlinx-binCompatValidator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "bcv" }
+
+# Convenience Gradle plugin
+# https://github.com/fluxo-kt/fluxo-kmp-conf/releases
+# https://plugins.gradle.org/plugin/io.github.fluxo-kt.fluxo-kmp-conf
+fluxo-conf = { id = "io.github.fluxo-kt.fluxo-kmp-conf", version = "0.5.0" }
 
 # Publish plugins to the Gradle Plugin Portal
 # https://plugins.gradle.org/plugin/com.gradle.plugin-publish
