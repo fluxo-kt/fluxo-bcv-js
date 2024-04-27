@@ -1,5 +1,5 @@
-com.dropbox.dependency-guard:com.dropbox.dependency-guard.gradle.plugin:0.4.3
-com.dropbox.dependency-guard:dependency-guard:0.4.3
+com.dropbox.dependency-guard:com.dropbox.dependency-guard.gradle.plugin:0.5.0
+com.dropbox.dependency-guard:dependency-guard:0.5.0
 com.github.gundy:semver4j:0.16.4
 com.google.code.findbugs:jsr305:3.0.2
 com.google.code.gson:gson:2.8.9
