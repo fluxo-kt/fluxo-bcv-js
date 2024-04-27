@@ -1,6 +1,5 @@
 package fluxo.bcvjs
 
-import kotlinx.validation.API_DIR
 import org.gradle.api.Project
 import org.gradle.api.provider.Provider
 
@@ -28,3 +27,13 @@ internal fun apiTaskName(targetName: String?, suffix: String) = when (targetName
     null, "" -> "api$suffix"
     else -> "${targetName}Api$suffix"
 }
+
+/**
+ *
+ * @fixme This is a copy of [kotlinx.validation.API_DIR] before 0.14.0
+ *   After 0.14.0 it can be customized and requires special support.
+ *
+ * @see kotlinx.validation.API_DIR
+ */
+@Deprecated("Should be replaced with dynamic value from kotlinx.validation")
+internal const val API_DIR = "api"

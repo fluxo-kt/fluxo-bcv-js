@@ -6,7 +6,7 @@
 [![Build](../../actions/workflows/build.yml/badge.svg)](../../actions/workflows/build.yml)
 [![Common Changelog](https://common-changelog.org/badge.svg)](CHANGELOG.md)
 
-[![KotlinX BCV Compatibility](http://img.shields.io/badge/KotlinX%20BCV-0.8%20--%200.13-7F52FF?logo=kotlin&logoWidth=10&logoColor=7F52FF&labelColor=2B2B2B)][bcv]
+[![KotlinX BCV Compatibility](http://img.shields.io/badge/KotlinX%20BCV-0.8%20--%200.14-7F52FF?logo=kotlin&logoWidth=10&logoColor=7F52FF&labelColor=2B2B2B)][bcv]
 [![Kotlin Compatibility](http://img.shields.io/badge/Kotlin-1.6.20+-7F52FF?logo=kotlin&logoWidth=10&logoColor=7F52FF&labelColor=2B2B2B)](https://github.com/JetBrains/Kotlin)
 [![Gradle Compatibility](http://img.shields.io/badge/Gradle-7.6+-f68244?logo=gradle&labelColor=2B2B2B)](https://gradle.org/releases/)
 
@@ -40,7 +40,7 @@ Compatibility tested with:
 
 | Version |    BCV     | Kotlin  | Gradle |
 |:-------:|:----------:|:-------:|:------:|
-|  0.3.0  | 0.8 - 0.13 | 1.6.20+ |  7.6+  |
+|  0.3.0  | 0.8 - 0.14 | 1.6.20+ |  7.6+  |
 |  0.2.0  | 0.8 - 0.13 | 1.6.20+ |  7.4+  |
 
 
@@ -52,7 +52,7 @@ Compatibility tested with:
 // in the `build.gradle.kts` of the target module
 plugins {
   kotlin("multiplatform") version "1.9.23" // <-- multiplatform or js, versions from 1.6.20 to 1.9
-  id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.13.2" // <-- 0.8 .. 0.13
+  id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.14.0" // <-- 0.8 .. 0.13
   id("io.github.fluxo-kt.binary-compatibility-validator-js") version "0.2.0" // <-- add here
 }
 kotlin {

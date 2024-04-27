@@ -1,6 +1,7 @@
 package fluxo.bcvjs
 
-import difflib.DiffUtils
+import com.github.difflib.DiffUtils
+import com.github.difflib.UnifiedDiffUtils
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
@@ -11,11 +12,11 @@ import org.gradle.api.tasks.TaskAction
 import java.io.File
 
 /**
- * Custom version of [kotlinx.validation.KotlinApiCompareTask].
+ * A custom version of [kotlinx.validation.KotlinApiCompareTask].
  *
  * @see kotlinx.validation.KotlinApiCompareTask
  */
-internal open class KotlinJsApiCompareTask : DefaultTask() {
+internal abstract class KotlinJsApiCompareTask : DefaultTask() {
 
     @Optional
     @InputFile
@@ -90,7 +91,7 @@ internal open class KotlinJsApiCompareTask : DefaultTask() {
         @Suppress("MagicNumber")
         val contextSize = 3
         val patch = DiffUtils.diff(checkLines, builtLines)
-        val diff = DiffUtils.generateUnifiedDiff(
+        val diff = UnifiedDiffUtils.generateUnifiedDiff(
             checkFile.toString(),
             builtFile.toString(),
             checkLines,

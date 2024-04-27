@@ -6,14 +6,15 @@
 [//]: # (Changed, Added, Removed, Fixed, Updated)
 - ...
 
-### Changed
-- Change the minimum tested Gradle version to `7.6`.
-
 ### Updated
+- **bump `binary-compatibility-validator` to _0.14.0_**.
 - bump Gradle to _8.7_.
 - bump `fluxo-kmp-conf` to _0.8.0_.
 - bump Kotlin to _1.9.23_.
 - bump `dependency-guard` to _0.5.0_.
+
+### Changed
+- Change the minimum tested Gradle version to `7.6`.
 
 
 ## [0.2.0] - 2023-09-16
