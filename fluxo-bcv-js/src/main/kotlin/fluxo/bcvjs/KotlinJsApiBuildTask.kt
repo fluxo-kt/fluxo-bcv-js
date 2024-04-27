@@ -36,8 +36,10 @@ internal abstract class KotlinJsApiBuildTask : DefaultTask() {
 
     init {
         // No 'group' to hide it from ./gradlew tasks.
-        description = "Collects built Kotlin TS definitions as API for 'js' compilations of :${project.name}. " +
-            "Complementary task and shouldn't be called manually"
+        description =
+            "Collects built Kotlin TS definitions as API for 'js'" +
+                " compilations of :${project.name}. " +
+                "Complementary task and shouldn't be called manually"
     }
 
     @TaskAction
@@ -58,8 +60,9 @@ internal abstract class KotlinJsApiBuildTask : DefaultTask() {
         }
         if (files.size > 1) {
             logger.error(
-                "Ambigous generated TS definitions, taking only first:" +
-                    " \n  ${files.joinToString("\n  ")}"
+                "Ambigous generated TS definitions" +
+                    ", taking only first:" +
+                    " \n  ${files.joinToString("\n  ")}",
             )
         }
 

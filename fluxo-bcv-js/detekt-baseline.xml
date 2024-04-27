@@ -2,6 +2,15 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
+    <ID>MaxLineLength:ConfigureJsApiTasks.kt$"Checks signatures of public API against the golden value in API folder for :${t.project.name}"</ID>
+    <ID>MaxLineLength:ConfigureJsApiTasks.kt$"Removed Kotlin/JS API file for compatibility with '$bcvCheckTaskName' task: {}"</ID>
+    <ID>MaxLineLength:ConfigureJsApiTasks.kt$logger.lifecycle(" >> compilation ${compilation.name}: $compilation // ${compilation.javaClass}")</ID>
+    <ID>MaxLineLength:ConfigureJsApiTasks.kt$return extension == null || projectName !in extension.ignoredProjects &amp;&amp; !extension.validationDisabled</ID>
+    <ID>MaxLineLength:FluxoBcvJsPlugin.kt$FluxoBcvJsPlugin$"There is no Kotlin/JS API to provide stability for. Fluxo-BCV-JS does nothing. \n"</ID>
+    <ID>MaxLineLength:KotlinJsApiBuildTask.kt$KotlinJsApiBuildTask$"Collects built Kotlin TS definitions as API for 'js' compilations of :${project.name}. "</ID>
+    <ID>MaxLineLength:KotlinJsApiBuildTask.kt$KotlinJsApiBuildTask$"https://kotlinlang.org/docs/whatsnew1820.html#opt-in-for-generation-of-typescript-definition-files"</ID>
+    <ID>MaxLineLength:KotlinJsApiCompareTask.kt$KotlinJsApiCompareTask$"File ${apiBuildFile.name} is missing from ${projectApiFile.relativeDirPath()}, please run "</ID>
+    <ID>MaxLineLength:KotlinJsApiCompareTask.kt$KotlinJsApiCompareTask$"Please ensure that ':apiDump' was executed in order to get API dump to compare the build against"</ID>
     <ID>WildcardImport:KotlinJsApiBuildTask.kt$import org.gradle.api.tasks.*</ID>
   </CurrentIssues>
 </SmellBaseline>

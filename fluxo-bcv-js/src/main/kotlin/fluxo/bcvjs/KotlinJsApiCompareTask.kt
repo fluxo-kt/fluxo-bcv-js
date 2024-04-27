@@ -2,6 +2,7 @@ package fluxo.bcvjs
 
 import com.github.difflib.DiffUtils
 import com.github.difflib.UnifiedDiffUtils
+import java.io.File
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
@@ -9,14 +10,13 @@ import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
-import java.io.File
 
 /**
  * A custom version of [kotlinx.validation.KotlinApiCompareTask].
  *
  * @see kotlinx.validation.KotlinApiCompareTask
  */
-internal abstract class KotlinJsApiCompareTask : DefaultTask() {
+internal open class KotlinJsApiCompareTask : DefaultTask() {
 
     @Optional
     @InputFile
@@ -49,14 +49,14 @@ internal abstract class KotlinJsApiCompareTask : DefaultTask() {
     fun verify() {
         val projectApiFile = projectApiFile ?: error(
             "Expected Kotlin/JS API declaration '$nonExistingProjectApiFile' does not exist.\n" +
-                "Please ensure that ':apiDump' was executed in order to get API dump to compare the build against"
+                "Please ensure that ':apiDump' was executed in order to get API dump to compare the build against",
         )
 
         val subject = projectName
         if (!apiBuildFile.exists()) {
             error(
                 "File ${apiBuildFile.name} is missing from ${projectApiFile.relativeDirPath()}, please run " +
-                    ":$subject:apiDump task to generate one"
+                    ":$subject:apiDump task to generate one",
             )
         }
 
@@ -68,7 +68,7 @@ internal abstract class KotlinJsApiCompareTask : DefaultTask() {
             error(
                 "API check failed for project $subject.\n" +
                     "$diff\n\n " +
-                    "You can run :$subject:apiDump task to overwrite API declarations"
+                    "You can run :$subject:apiDump task to overwrite API declarations",
             )
         }
     }

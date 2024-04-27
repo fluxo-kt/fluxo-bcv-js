@@ -1,0 +1,42 @@
+# https://detekt.github.io/detekt/configurations.html
+# https://github.com/detekt/detekt/blob/main/detekt-core/src/main/resources/default-detekt-config.yml
+# https://github.com/detekt/detekt/blob/main/detekt-formatting/src/main/resources/config/config.yml
+
+config:
+  validation: true
+  warningsAsErrors: false
+  checkExhaustiveness: false
+
+output-reports:
+  active: true
+  exclude:
+    - 'TxtOutputReport'
+    - 'XmlOutputReport'
+    - 'HtmlOutputReport'
+    - 'MdOutputReport'
+
+console-reports:
+  active: true
+  exclude: [ ]
+
+exceptions:
+  TooGenericExceptionCaught:
+    active: false
+
+complexity:
+  LongParameterList:
+    ignoreDefaultParameters: true
+  TooManyFunctions:
+    ignoreDeprecated: true
+    ignoreOverridden: true
+
+style:
+  LoopWithTooManyJumpStatements:
+    maxJumpCount: 2
+  MaxLineLength:
+    maxLineLength: 100
+
+naming:
+  NoNameShadowing:
+    # False positives with SAM receiver usage
+    active: false

@@ -12,9 +12,15 @@
 
 package fluxo.bcvjs
 
+import java.io.File
+import java.lang.reflect.AccessibleObject
 import kotlinx.validation.ApiValidationExtension
 import kotlinx.validation.KotlinApiCompareTask
-import org.gradle.api.*
+import org.gradle.api.Action
+import org.gradle.api.DefaultTask
+import org.gradle.api.NamedDomainObjectContainer
+import org.gradle.api.Project
+import org.gradle.api.Task
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.TaskProvider
@@ -28,9 +34,11 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJsCompilation
 import org.jetbrains.kotlin.gradle.targets.js.KotlinJsTarget
 import org.jetbrains.kotlin.gradle.targets.js.dsl.KotlinJsBinaryMode
 import org.jetbrains.kotlin.gradle.targets.js.dsl.KotlinJsTargetDsl
-import org.jetbrains.kotlin.gradle.targets.js.ir.*
-import java.io.File
-import java.lang.reflect.AccessibleObject
+import org.jetbrains.kotlin.gradle.targets.js.ir.JsBinary
+import org.jetbrains.kotlin.gradle.targets.js.ir.JsIrBinary
+import org.jetbrains.kotlin.gradle.targets.js.ir.KotlinJsBinaryContainer
+import org.jetbrains.kotlin.gradle.targets.js.ir.KotlinJsIrLink
+import org.jetbrains.kotlin.gradle.targets.js.ir.KotlinJsIrTarget
 
 
 private const val DBG = 0
@@ -93,7 +101,7 @@ internal fun Project.configureJsApiTasks() {
     }
 
     // Common BCV tasks for multiplatform
-    // Create own ones (for the raw Kotlin/JS module)
+    // Create the own ones (for the raw Kotlin/JS module)
     val commonApiDump = "$API$SUFFIX_DUMP".let { tasks.findByName(it) ?: tasks.create(it) }
     val commonApiCheck = "$API$SUFFIX_CHECK".let {
         tasks.findByName(it)
@@ -136,12 +144,14 @@ internal fun Project.configureJsApiTasks() {
         }
 
         val linkTasksFromBinaries = binaries.mapTo(LinkedHashSet()) { it.linkTask.get() }
-        val linkTasksCollection = target.project.tasks.withType(KotlinJsIrLink::class.java).matching {
-            it.mode == KotlinJsBinaryMode.PRODUCTION &&
-                !it.name.contains("Test", ignoreCase = true) &&
-                it.name.contains(target.name, ignoreCase = true)
-        }
-        val linkTasks: Provider<Set<KotlinJsIrLink>> = project.provider { linkTasksCollection + linkTasksFromBinaries }
+        val linkTasksCollection =
+            target.project.tasks.withType(KotlinJsIrLink::class.java).matching {
+                it.mode == KotlinJsBinaryMode.PRODUCTION &&
+                    !it.name.contains("Test", ignoreCase = true) &&
+                    it.name.contains(target.name, ignoreCase = true)
+            }
+        val linkTasks: Provider<Set<KotlinJsIrLink>> =
+            project.provider { linkTasksCollection + linkTasksFromBinaries }
 
         if (DBG > 0) {
             linkTasks.get().forEach {
@@ -150,7 +160,13 @@ internal fun Project.configureJsApiTasks() {
         }
 
         val targetConfig = TargetConfig(target.project, target.name, dirConfig)
-        configureKotlinCompilation(extension, targetConfig, commonApiDump, commonApiCheck, linkTasks)
+        configureKotlinCompilation(
+            extension,
+            targetConfig,
+            commonApiDump,
+            commonApiCheck,
+            linkTasks,
+        )
     }
 }
 
@@ -181,7 +197,15 @@ private fun Project.configureKotlinCompilation(
 
         it.outputFile.fileProvider(buildFile)
     }
-    project.configureCheckTasks(buildDir, buildFile, apiBuild, extension, targetConfig, commonApiDump, commonApiCheck)
+    project.configureCheckTasks(
+        buildDir,
+        buildFile,
+        apiBuild,
+        extension,
+        targetConfig,
+        commonApiDump,
+        commonApiCheck,
+    )
 }
 
 @Suppress("LongParameterList", "CyclomaticComplexMethod")
@@ -206,9 +230,11 @@ private fun Project.configureCheckTasks(
     val apiCheck: TaskProvider<out DefaultTask>
 
     fun configureApiCheckTask(t: DefaultTask) {
-        t.isEnabled = apiCheckEnabled(t.project.name, extension) && apiBuild.map { it.enabled }.getOrElse(true)
+        t.isEnabled = apiCheckEnabled(t.project.name, extension) && apiBuild.map { it.enabled }
+            .getOrElse(true)
         t.group = "verification"
-        t.description = "Checks signatures of public API against the golden value in API folder for :${t.project.name}"
+        t.description =
+            "Checks signatures of public API against the golden value in API folder for :${t.project.name}"
         t.dependsOn(apiBuild)
     }
 
@@ -220,7 +246,8 @@ private fun Project.configureCheckTasks(
     }
 
     val apiDump = task<Sync>(apiDumpTaskName) { t ->
-        t.isEnabled = apiCheckEnabled(project.name, extension) && apiBuild.map { it.enabled }.getOrElse(true)
+        t.isEnabled = apiCheckEnabled(project.name, extension) && apiBuild.map { it.enabled }
+            .getOrElse(true)
         t.group = "other"
         t.description = "Syncs API from build dir to ${config.apiDir} dir for :${project.name}"
         t.dependsOn(apiBuild)
@@ -233,7 +260,10 @@ private fun Project.configureCheckTasks(
     val dirConfig = config.dirConfig?.get()
     if (dirConfig is DirConfig.COMMON && dirConfig.bcvTargetName != null) {
         val bcvTargetName = dirConfig.bcvTargetName
-        logger.info("Special handling for BCV 'DirConfig.COMMON' strategy (bcvTargetName={})", bcvTargetName)
+        logger.info(
+            "Special handling for BCV 'DirConfig.COMMON' strategy (bcvTargetName={})",
+            bcvTargetName,
+        )
 
         val bcvCheckTaskName = apiTaskName(bcvTargetName, SUFFIX_CHECK)
         val bcvBuild = tasks.named(apiTaskName(bcvTargetName, SUFFIX_BUILD))
@@ -246,7 +276,10 @@ private fun Project.configureCheckTasks(
             t.doLast {
                 val file = buildFile.get()
                 if (file.delete()) {
-                    logger.info("Removed Kotlin/JS API file for compatibility with '$bcvCheckTaskName' task: {}", file)
+                    logger.info(
+                        "Removed Kotlin/JS API file for compatibility with '$bcvCheckTaskName' task: {}",
+                        file,
+                    )
                 }
             }
         }
@@ -393,19 +426,20 @@ private val Project.apiValidationExtensionOrNull: ApiValidationExtension?
 
 /** @see KotlinJsCompilation.binaries */
 @Suppress("IdentifierGrammar")
-private val KotlinJsCompilationBinariesCaller: (KotlinJsCompilation.() -> KotlinJsBinaryContainer) = run {
-    val clazz = KotlinJsCompilation::class.java
-    safe<Unit> {
-        val method = clazz.methods.firstOrNull { it.name.startsWith("getBinaries") }
-            ?: clazz.methods.firstOrNull { "getBinaries" in it.name }
-        if (method != null) {
-            return@run { method.invoke(this) as KotlinJsBinaryContainer }
+private val KotlinJsCompilationBinariesCaller: (KotlinJsCompilation.() -> KotlinJsBinaryContainer) =
+    run {
+        val clazz = KotlinJsCompilation::class.java
+        safe<Unit> {
+            val method = clazz.methods.firstOrNull { it.name.startsWith("getBinaries") }
+                ?: clazz.methods.firstOrNull { "getBinaries" in it.name }
+            if (method != null) {
+                return@run { method.invoke(this) as KotlinJsBinaryContainer }
+            }
         }
+        val field = JsIrBinary::class.java.getDeclaredField("binaries")
+        setAccessible(field)
+        return@run { field.get(this) as KotlinJsBinaryContainer }
     }
-    val field = JsIrBinary::class.java.getDeclaredField("binaries")
-    setAccessible(field)
-    return@run { field.get(this) as KotlinJsBinaryContainer }
-}
 
 /** @see KotlinJsCompilation.binaries */
 private val KotlinJsCompilation.binariesCompat: KotlinJsBinaryContainer?
