@@ -10,7 +10,8 @@
 - Change the minimum tested Gradle version to `7.6`.
 
 ### Updated
-- bump Gradle to 8.7
+- bump Gradle to _8.7_.
+- bump `fluxo-kmp-conf` to _0.8.0_.
 
 
 ## [0.2.0] - 2023-09-16
