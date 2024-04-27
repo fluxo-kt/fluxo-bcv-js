@@ -3,11 +3,14 @@
 
 ## Unreleased
 
-[//]: # (Changed, Added, Removed, Fixed)
+[//]: # (Changed, Added, Removed, Fixed, Updated)
 - ...
 
 ### Changed
 - Change the minimum tested Gradle version to `7.6`.
+
+### Updated
+- bump Gradle to 8.7
 
 
 ## [0.2.0] - 2023-09-16
