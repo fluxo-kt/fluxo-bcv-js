@@ -12,6 +12,7 @@
 ### Updated
 - bump Gradle to _8.7_.
 - bump `fluxo-kmp-conf` to _0.8.0_.
+- bump Kotlin to _1.9.23_.
 
 
 ## [0.2.0] - 2023-09-16

@@ -27,7 +27,7 @@ fkcSetupGradlePlugin(
         "kotlin-multiplatform",
     ),
     kotlin = {
-        compilerOptions.freeCompilerArgs.append("-Xskip-metadata-version-check")
+        compilerOptions.freeCompilerArgs.add("-Xskip-metadata-version-check")
     },
 ) {
     githubProject = "fluxo-kt/fluxo-bcv-js"

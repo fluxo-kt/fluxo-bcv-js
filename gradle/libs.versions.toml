@@ -31,14 +31,14 @@ kotlinApiVersion = "1.4"
 # https://github.com/Kotlin/binary-compatibility-validator/blob/0.13.2/gradle.properties#L4
 # https://mvnrepository.com/artifact/org.jetbrains.kotlin/kotlin-gradle-plugin
 # https://github.com/JetBrains/kotlin/releases
-kotlin = "1.9.22"
-kotlinMin = "1.6.20"
-kotlinLatest = "1.9.20-Beta"
+kotlin = "1.9.23"
+kotlinMin = "1.6.21"
+kotlinLatest = "1.9.23"
 
 # Dokka is a documentation engine for Kotlin/Java
 # https://github.com/Kotlin/dokka/releases
 # https://mvnrepository.com/artifact/org.jetbrains.dokka/dokka-gradle-plugin?repo=space-kotlin-dokka-dev
-dokka = "1.9.10"
+dokka = "1.9.20"
 
 
 [libraries]
