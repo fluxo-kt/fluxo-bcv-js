@@ -4,27 +4,30 @@ on:
   pull_request:
     types: [ opened, reopened, synchronize ]
 
-jobs:
-  check-fast-forward:
-    runs-on: ubuntu-latest
+permissions:
+  contents: read
+  # We appear to need write permission for both pull-requests and
+  # issues to post a comment to a pull request.
+  pull-requests: write
+  issues: write
 
-    permissions:
-      contents: read
-      # We appear to need write permission for both pull-requests and
-      # issues in order to post a comment to a pull request.
-      pull-requests: write
-      issues: write
+jobs:
+  pr-check:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@eb238b55efaa70779f274895e782ed17c84f2895 # v2.6.1
+        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
         with:
           disable-sudo: true
           egress-policy: block
           allowed-endpoints: >
             github.com:443
 
-      - name: Checking if fast forwarding is possible
+      - name: Check if fast forwarding is possible
         uses: sequoia-pgp/fast-forward@v1
         with:
           merge: false

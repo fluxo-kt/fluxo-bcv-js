@@ -1,4 +1,4 @@
-name: "Validate Gradle Wrapper"
+name: Validate Gradle Wrapper
 
 on:
   pull_request:
@@ -26,14 +26,15 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@eb238b55efaa70779f274895e782ed17c84f2895 # v2.6.1
+        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
         with:
           disable-sudo: true
           egress-policy: block
           allowed-endpoints: >
-            downloads.gradle-dn.com:443
             github.com:443
-            services.gradle.org:443
+            downloads.gradle-dn.com:443
             downloads.gradle.org:443
+            services.gradle.org:443
+
       - uses: actions/checkout@v4
-      - uses: gradle/wrapper-validation-action@v1
+      - uses: gradle/wrapper-validation-action@v2

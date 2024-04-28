@@ -3,24 +3,30 @@ name: PR Fast-Forward Merge
 on:
   issue_comment:
     types: [ created ]
-    #types: [ created, edited ]
+
+permissions:
+  contents: write
+  # We appear to need write permission for both pull-requests and
+  # issues to post a comment to a pull request.
+  pull-requests: write
+  issues: write
 
 jobs:
-  fast-forward:
-    # Only run if the comment contains the '/fast-forward' command or equals a '/ff' command.
-    if: github.event.issue.pull_request && (contains(github.event.comment.body, '/fast-forward') || github.event.comment.body == '/ff')
+  pr-fast-forward:
+    # Only run if the PR comment contains the '/fast-forward' command or equals a '/ff' command.
+    # Only run if a user with write permissions made the comment.
+    if: |
+      github.event.issue.pull_request &&
+      (github.event.comment.body == '/ff' || contains(github.event.comment.body, '/fast-forward')) &&
+      (github.event.comment.author_association == 'MEMBER' || github.event.comment.author_association == 'OWNER')
     runs-on: ubuntu-latest
-
-    permissions:
-      contents: write
-      # We appear to need write permission for both pull-requests and
-      # issues in order to post a comment to a pull request.
-      pull-requests: write
-      issues: write
+    concurrency:
+      group: "${{ github.workflow }}-${{ github.ref }}"
+      cancel-in-progress: false
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@eb238b55efaa70779f274895e782ed17c84f2895 # v2.6.1
+        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
         with:
           disable-sudo: true
           egress-policy: block
@@ -28,9 +34,14 @@ jobs:
             api.github.com:443
             github.com:443
 
-      # TODO: Add thumbs-up reaction to the comment before the fast-forward to quickly indicate the command was received.
+      - name: React to the comment right away
+        uses: dkershner6/reaction-action@v2
+        continue-on-error: true
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          reaction: "rocket"
 
-      - name: Fast-forwarding and pushing
+      - name: Fast-forward and push
         uses: sequoia-pgp/fast-forward@v1
         with:
           merge: true
