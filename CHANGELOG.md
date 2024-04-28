@@ -4,10 +4,12 @@
 ## Unreleased
 
 [//]: # (Changed, Added, Removed, Fixed, Updated)
-- ...
+
+
+## [0.3.0] - 2024-04-28
 
 ### Updated
-- **bump `binary-compatibility-validator` to _0.14.0_**.
+- **bump [BCV][bcv] to _0.14.0_**.
 - bump Gradle to _8.7_.
 - bump `fluxo-kmp-conf` to _0.8.0_.
 - bump Kotlin to _1.9.23_.
@@ -46,6 +48,7 @@ _Minor update release._
 
 ## Notes
 
+[0.3.0]: https://github.com/fluxo-kt/fluxo-bcv-js/releases/tag/v0.3.0
 [0.2.0]: https://github.com/fluxo-kt/fluxo-bcv-js/releases/tag/v0.2.0
 [0.1.0]: https://github.com/fluxo-kt/fluxo-bcv-js/releases/tag/v0.1.0
 [0.0.1-rc]: https://github.com/fluxo-kt/fluxo-bcv-js/releases/tag/v0.0.1-rc

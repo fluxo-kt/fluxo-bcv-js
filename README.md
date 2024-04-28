@@ -53,7 +53,7 @@ Compatibility tested with:
 plugins {
   kotlin("multiplatform") version "1.9.23" // <-- multiplatform or js, versions from 1.6.20 to 1.9
   id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.14.0" // <-- 0.8 .. 0.13
-  id("io.github.fluxo-kt.binary-compatibility-validator-js") version "0.2.0" // <-- add here
+  id("io.github.fluxo-kt.binary-compatibility-validator-js") version "0.3.0" // <-- add here
 }
 kotlin {
   js(IR) {
