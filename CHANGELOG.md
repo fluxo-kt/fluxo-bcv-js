@@ -5,6 +5,9 @@
 
 [//]: # (Changed, Added, Removed, Fixed, Updated)
 
+### Added
+- shrink/optimize the plugin JAR file.
+
 
 ## [0.3.0] - 2024-04-28
 

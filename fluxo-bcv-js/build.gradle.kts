@@ -36,6 +36,8 @@ fkcSetupGradlePlugin(
     allWarningsAsErrors = false
     experimentalLatestCompilation = true
 
+    shrinkWithProGuard()
+
     publicationConfig {
         version = pluginVersion
         developerId = "amal"
