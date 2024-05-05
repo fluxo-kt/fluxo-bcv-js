@@ -6,7 +6,7 @@ export namespace example {
         constructor(value: number);
         get value(): number;
         component1(): number;
-        copy(value: number): example.ExampleDataClass;
+        copy(value?: number): example.ExampleDataClass;
         toString(): string;
         hashCode(): number;
         equals(other: Nullable<any>): boolean;

@@ -1,12 +1,16 @@
-package fluxo.bcvjs
+@file:Suppress("KotlinConstantConditions")
+
+package fluxo.bcvts
 
 import com.github.difflib.DiffUtils
 import com.github.difflib.UnifiedDiffUtils
 import java.io.File
 import org.gradle.api.DefaultTask
+import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Optional
+import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
@@ -16,60 +20,75 @@ import org.gradle.api.tasks.TaskAction
  *
  * @see kotlinx.validation.KotlinApiCompareTask
  */
-internal open class KotlinJsApiCompareTask : DefaultTask() {
+@CacheableTask
+internal open class KotlinTsApiCompareTask : DefaultTask() {
 
+    /*
+     * Nullability and optionality is a workaround for
+     * https://github.com/gradle/gradle/issues/2016
+     *
+     * Unfortunately, there is no way to skip validation apart from setting 'null'
+     */
     @Optional
     @InputFile
     @PathSensitive(PathSensitivity.RELATIVE)
     var projectApiFile: File? = null
 
-    @Input
-    @Optional
-    var nonExistingProjectApiFile: String? = null
-
-    fun compareApiDumps(apiReferenceFile: File, apiBuildFile: File) {
-        if (apiReferenceFile.exists()) {
-            projectApiFile = apiReferenceFile
-        } else {
-            projectApiFile = null
-            nonExistingProjectApiFile = apiReferenceFile.toString()
-        }
-        this.apiBuildFile = apiBuildFile
-    }
-
     @InputFile
     @PathSensitive(PathSensitivity.RELATIVE)
     lateinit var apiBuildFile: File
 
-    private val projectName = project.name
+    // Used for a diagnostic error message when projectApiDir doesn't exist.
+    @Input
+    @Optional
+    var nonExistingProjectApiFile: String? = null
+
+    fun compareApiDumps(referenceFile: File, buildFile: File) {
+        if (referenceFile.exists()) {
+            projectApiFile = referenceFile
+        } else {
+            nonExistingProjectApiFile = referenceFile.toString()
+        }
+        apiBuildFile = buildFile
+    }
+
+    @OutputFile
+    @Optional
+    @Suppress("unused")
+    val dummyOutputFile: File? = null
+
+    private val projectPath = project.path
 
     private val rootDir = project.rootProject.rootDir
 
     @TaskAction
     fun verify() {
-        val projectApiFile = projectApiFile ?: error(
-            "Expected Kotlin/JS API declaration '$nonExistingProjectApiFile' does not exist.\n" +
-                "Please ensure that ':apiDump' was executed in order to get API dump to compare the build against",
+        val expectedFile = projectApiFile ?: error(
+            "Expected $KTS_API declaration '$nonExistingProjectApiFile' does not exist.\n" +
+                "Please ensure that ':apiDump' was executed " +
+                "in order to get API dump to compare the build against",
         )
 
-        val subject = projectName
-        if (!apiBuildFile.exists()) {
+        val path = projectPath
+        val actualFile = apiBuildFile
+        if (!actualFile.exists()) {
             error(
-                "File ${apiBuildFile.name} is missing from ${projectApiFile.relativeDirPath()}, please run " +
-                    ":$subject:apiDump task to generate one",
+                "File ${actualFile.name} is missing from " +
+                    "${expectedFile.relativeDirPath()}, " +
+                    "please run $path:apiDump task to generate one",
             )
         }
 
         // Normalize case-sensitivity
-        val expectedFile = projectApiFile
-        val actualFile = apiBuildFile
         val diff = compareFiles(expectedFile, actualFile)
         if (!diff.isNullOrBlank()) {
             error(
-                "API check failed for project $subject.\n" +
+                "API check failed for project $path.\n" +
                     "$diff\n\n " +
-                    "You can run :$subject:apiDump task to overwrite API declarations",
+                    "You can run $path:apiDump task to overwrite API declarations",
             )
+        } else if (DBG > 0) {
+            logger.lifecycle(" >> {} API check passed for project {}", actualFile.name, path)
         }
     }
 

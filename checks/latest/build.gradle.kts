@@ -1,4 +1,3 @@
-@Suppress("DSL_SCOPE_VIOLATION")
 plugins {
     kotlin("multiplatform") version libs.versions.kotlinLatest
     id("org.jetbrains.kotlinx.binary-compatibility-validator") version libs.versions.bcvLatest
@@ -6,12 +5,23 @@ plugins {
     alias(libs.plugins.deps.guard)
 }
 
+@OptIn(org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalWasmDsl::class)
 kotlin {
     jvm()
-    js(IR) {
-        binaries.executable()
+    linuxX64()
+    js {
         nodejs()
         browser()
+        binaries.executable()
+    }
+    wasmJs {
+        nodejs()
+        browser()
+        binaries.executable()
+    }
+    wasmWasi {
+        nodejs()
+        binaries.executable()
     }
 }
 
@@ -24,4 +34,11 @@ if (hasProperty("buildScan")) {
 
 dependencyGuard {
     configuration("classpath")
+}
+
+apiValidation {
+    @OptIn(kotlinx.validation.ExperimentalBCVApi::class)
+    klib {
+        enabled = true
+    }
 }

@@ -1,11 +1,7 @@
-public final class example/ExampleDataClass {
-	public fun <init> (I)V
-	public final fun component1 ()I
-	public final fun copy (I)Lexample/ExampleDataClass;
-	public static synthetic fun copy$default (Lexample/ExampleDataClass;IILjava/lang/Object;)Lexample/ExampleDataClass;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getValue ()I
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
+public final class example/ExampleKt {
+	public static final fun addOne (I)I
+	public static final fun d2f (D)F
+	public static final fun dummy ()V
+	public static final fun s2b (Ljava/lang/String;)Z
 }
 

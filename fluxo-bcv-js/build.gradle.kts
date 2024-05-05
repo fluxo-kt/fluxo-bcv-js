@@ -6,25 +6,27 @@ val pluginId = "io.github.fluxo-kt.binary-compatibility-validator-js"
 val pluginVersion = libs.versions.fluxoBcvJs.get()
 
 group = "io.github.fluxo-kt"
-description = "JS/TS API support for KotlinX Binary Compatibility Validator." +
-    "\nAllows dumping TypeScript definitions of a JS part of a Kotlin multiplatform library" +
+description = "TypeScript API support for KotlinX Binary Compatibility Validator" +
+    " (JS, WASM targets)." +
+    "\nAllows dumping TypeScript definitions of a JS or WASM part" +
+    " of a Kotlin multiplatform library" +
     " that's public in the sense of npm package visibility," +
     " and ensures that the public definitions haven’t been changed in a way" +
     " that makes this change binary incompatible."
 
 fkcSetupGradlePlugin(
     pluginId = pluginId,
-    pluginName = "fluxo-bcv-js",
-    pluginClass = "fluxo.bcvjs.FluxoBcvJsPlugin",
-    displayName = "Fluxo BCV JS",
+    pluginName = "fluxo-bcv-ts",
+    pluginClass = "fluxo.bcvts.FluxoBcvTsPlugin",
+    displayName = "Fluxo BCV TS",
     tags = listOf(
         "kotlin",
+        "kotlin-multiplatform",
         "kotlin-js",
         "api-management",
         "binary-compatibility",
         "javascript",
         "typescript",
-        "kotlin-multiplatform",
     ),
     kotlin = {
         compilerOptions.freeCompilerArgs.add("-Xskip-metadata-version-check")
