@@ -1,0 +1,23 @@
+// Klib ABI Dump
+// Targets: [js, linuxX64, wasmJs, wasmWasi]
+// Rendering settings:
+// - Signature version: 2
+// - Show manifest properties: true
+// - Show declarations: true
+
+// Library unique name: <check-latest>
+final fun example/addOne(kotlin/Int): kotlin/Int // example/addOne|addOne(kotlin.Int){}[0]
+final fun example/d2f(kotlin/Double): kotlin/Float // example/d2f|d2f(kotlin.Double){}[0]
+final fun example/dummy() // example/dummy|dummy(){}[0]
+final fun example/s2b(kotlin/String): kotlin/Boolean // example/s2b|s2b(kotlin.String){}[0]
+// Targets: [js]
+final class example/ExampleDataClass { // example/ExampleDataClass|null[0]
+    constructor <init>(kotlin/Int) // example/ExampleDataClass.<init>|<init>(kotlin.Int){}[0]
+    final fun component1(): kotlin/Int // example/ExampleDataClass.component1|component1(){}[0]
+    final fun copy(kotlin/Int = ...): example/ExampleDataClass // example/ExampleDataClass.copy|copy(kotlin.Int){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // example/ExampleDataClass.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // example/ExampleDataClass.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // example/ExampleDataClass.toString|toString(){}[0]
+    final val value // example/ExampleDataClass.value|{}value[0]
+        final fun <get-value>(): kotlin/Int // example/ExampleDataClass.value.<get-value>|<get-value>(){}[0]
+}

@@ -5,6 +5,20 @@
 
 [//]: # (Changed, Added, Removed, Fixed, Updated)
 
+### Updated
+- **bump Kotlin to _2.0.0_**.
+- **bump latest supported [BCV][bcv] to _0.15.0-Beta.2_**.
+
+### Changed
+- change JS in the plugin name and class package to TS. Plugin ID is unchanged!
+
+### Added
+- add support for the configurable api dump directory appeared in [BCV][bcv] _0.14.0_.
+
+### Changed
+- Rename "JS" references to "TS" to avoid collisions with [BCV][bcv] _0.15.0_.
+  Changed task names, log messages, and documentation.
+
 
 ## [0.3.0] - 2024-04-28
 
@@ -33,7 +47,7 @@ _Minor update release._
 🌱 _First stable release._
 
 ### Added
-- Add Kotlin/JS API support to the KotlinX [Binary Compatibility Validator][bcv] based on the generated TS definitions.
+- Add Kotlin/TypeScript API support to the KotlinX [Binary Compatibility Validator][bcv] based on the generated TS definitions.
   Fixes [Kotlin/binary-compatibility-validator#42](https://github.com/Kotlin/binary-compatibility-validator/issues/42)
 - Add support for Kotlin/JS non-KMP projects.
 - Add compatibility with [BCV][bcv] 0.8+

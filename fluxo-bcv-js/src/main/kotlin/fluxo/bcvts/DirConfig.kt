@@ -1,4 +1,4 @@
-package fluxo.bcvjs
+package fluxo.bcvts
 
 /**
  * A customized copy of the [kotlinx.validation.DirConfig].

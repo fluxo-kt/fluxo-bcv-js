@@ -1,11 +1,15 @@
 @file:Suppress("KDocUnresolvedReference")
 
-package fluxo.bcvjs
+package fluxo.bcvts
 
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.RegularFileProperty
-import org.gradle.api.tasks.*
+import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.OutputFile
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
+import org.gradle.api.tasks.TaskAction
 import org.gradle.work.DisableCachingByDefault
 import org.gradle.work.NormalizeLineEndings
 
@@ -24,7 +28,7 @@ import org.gradle.work.NormalizeLineEndings
  * @see org.gradle.api.tasks.Copy
  */
 @DisableCachingByDefault(because = "Not worth caching")
-internal abstract class KotlinJsApiBuildTask : DefaultTask() {
+internal abstract class KotlinTsApiBuildTask : DefaultTask() {
 
     @get:InputFiles
     @get:NormalizeLineEndings
@@ -50,8 +54,9 @@ internal abstract class KotlinJsApiBuildTask : DefaultTask() {
                 !hasGenerateTypeScriptDefinitions -> ""
                 else -> "and `generateTypeScriptDefinitions()`"
             }
+            @Suppress("MaxLineLength")
             val message = "No generated Kotlin TS definitions found for :${project.name}! " +
-                "Kotlin/JS API verification is not possible. \n" +
+                "$KTS_API verification is not possible. \n" +
                 "Please, enable TS definitions with `binaries.executable()`$code. \n" +
                 "More instructions at " +
                 "https://kotlinlang.org/docs/whatsnew1820.html#opt-in-for-generation-of-typescript-definition-files"

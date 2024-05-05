@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="detektBaseline" type="GradleRunConfiguration" factoryName="Gradle" folderName="baseline">
+  <configuration default="false" name="detektBaselineMerge" type="GradleRunConfiguration" factoryName="Gradle" folderName="baseline">
     <ExternalSystemSettings>
       <option name="executionName" />
       <option name="externalProjectPath" value="$PROJECT_DIR$" />
@@ -10,7 +10,7 @@
       </option>
       <option name="taskNames">
         <list>
-          <option value="detektBaseline" />
+          <option value="detektBaselineMerge" />
         </list>
       </option>
       <option name="vmOptions" />

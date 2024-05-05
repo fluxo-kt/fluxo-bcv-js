@@ -15,25 +15,26 @@ fluxoBcvJs = "1.0.0-SNAPSHOT"
 # 0.13+ uses Kotlin metadata 0.6.0 (may conflict with AtomicFU!)
 bcv = "0.14.0"
 bcvMin = "0.8.0"
-bcvLatest = "0.14.0"
+bcvLatest = "0.15.0-Beta.2"
 
 # Diffutils version, aligned with BCV
 # https://github.com/Kotlin/binary-compatibility-validator/blob/0.14.0/gradle/libs.versions.toml#L5
+# https://github.com/Kotlin/binary-compatibility-validator/blob/0.15.0-Beta.2/gradle/libs.versions.toml#L5
 diffutils = "4.12"
 
 # Java/Kotlin compatibility, aligned with BCV
 # https://github.com/Kotlin/binary-compatibility-validator/blob/0.13.2/build.gradle.kts#L101
 javaLangTarget = "1.8"
-kotlinLangVersion = "1.4"
-kotlinApiVersion = "1.4"
+kotlinLangVersion = "1.6"
+kotlinApiVersion = "1.6"
 
 # Kotlin version, aligned with BCV
 # https://github.com/Kotlin/binary-compatibility-validator/blob/0.13.2/gradle.properties#L4
 # https://mvnrepository.com/artifact/org.jetbrains.kotlin/kotlin-gradle-plugin
 # https://github.com/JetBrains/kotlin/releases
-kotlin = "1.9.23"
+kotlin = "2.0.0"
 kotlinMin = "1.6.21"
-kotlinLatest = "1.9.23"
+kotlinLatest = "2.0.0"
 
 # Dokka is a documentation engine for Kotlin/Java
 # https://github.com/Kotlin/dokka/releases
@@ -54,12 +55,16 @@ kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-sam-receiver = { id = "org.jetbrains.kotlin.plugin.sam.with.receiver", version.ref = "kotlin" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 
+# https://mvnrepository.com/artifact/com.android.lint/com.android.lint.gradle.plugin?repo=google
+# https://maven.google.com/web/index.html#com.android.lint:com.android.lint.gradle.plugin
+android-lint = { id = "com.android.lint", version = "8.6.0-alpha05" }
+
 kotlinx-binCompatValidator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "bcv" }
 
 # Convenience Gradle plugin
 # https://github.com/fluxo-kt/fluxo-kmp-conf/releases
 # https://plugins.gradle.org/plugin/io.github.fluxo-kt.fluxo-kmp-conf
-fluxo-conf = { id = "io.github.fluxo-kt.fluxo-kmp-conf", version = "0.8.0" }
+fluxo-conf = { id = "io.github.fluxo-kt.fluxo-kmp-conf", version = "0.10.2" }
 
 # Publish plugins to the Gradle Plugin Portal
 # https://plugins.gradle.org/plugin/com.gradle.plugin-publish
@@ -68,3 +73,8 @@ gradle-plugin-publish = { id = "com.gradle.plugin-publish", version = "1.2.1" }
 # Plugin that guards against unintentional dependency changes
 # https://github.com/dropbox/dependency-guard/releases
 deps-guard = { id = "com.dropbox.dependency-guard", version = "0.5.0" }
+
+# Gradle Doctor: helps diagnose and fix common build problems.
+# https://runningcode.github.io/gradle-doctor/
+# https://plugins.gradle.org/plugin/com.osacky.doctor
+gradle-doctor = { id = "com.osacky.doctor", version = "0.10.0" }
