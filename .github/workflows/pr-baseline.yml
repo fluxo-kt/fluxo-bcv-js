@@ -20,18 +20,15 @@ jobs:
     concurrency:
       group: '${{ github.workflow }}-${{ github.ref }}'
       cancel-in-progress: true
+    env:
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
         with:
           disable-sudo: true
           egress-policy: audit
-
-      # steps.v.outputs.run_url
-      - id: v
-        run: |
-          echo "run_url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> $GITHUB_OUTPUT
 
       # Verify that the PR is from Dependabot
       - uses: dependabot/fetch-metadata@v2
@@ -44,11 +41,12 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const { RUN_URL } = process.env
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '🔄 Baseline update [started](${{ steps.v.outputs.run_url }})...'
+              body: `🔄 Baseline update [started](${RUN_URL})...`
             })
 
       - uses: actions/checkout@v4
@@ -58,15 +56,20 @@ jobs:
           # Checkout pull request HEAD commit instead of merge commit.
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - uses: actions/setup-java@v4
+      - name: Set up JDK
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 21
+          java-version: 22
 
-      - uses: gradle/actions/setup-gradle@v3
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          cache-disabled: true
+          cache-read-only: true
 
-      - name: Baseline
-        run: ./baseline
+      - name: Update baseline
+        run: ./updateBaseline
 
       - name: Setup GIT
         run: |
@@ -92,6 +95,8 @@ jobs:
           git add -v .
 
       - name: Commit amend and push
+        env:
+          GITHUB_HEAD_REF: ${{ github.head_ref }}
         run: |
           if [ -n "$(git diff --name-only --cached)" ]; then
             # Show what's available.
@@ -104,7 +109,7 @@ jobs:
             git log -n 3 --pretty=format:"%h - %an, %ar : %s"
 
             # Push changes back to branch
-            git push --force -v origin HEAD:refs/heads/${{ github.head_ref }}
+            git push --force -v origin "HEAD:refs/heads/${GITHUB_HEAD_REF}"
           else
             echo "No changes needed."
           fi
@@ -115,16 +120,18 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const { RUN_URL } = process.env
             github.rest.issues.createComment({
               issue_number: context.issue.number, owner: context.repo.owner, repo: context.repo.repo,
-              body: '✅ Baseline [updated](${{ steps.v.outputs.run_url }}).'
+              body: `✅ Baseline [updated](${RUN_URL}).`
             })
       - uses: actions/github-script@v7
         if: failure()
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const { RUN_URL } = process.env
             github.rest.issues.createComment({
               issue_number: context.issue.number, owner: context.repo.owner, repo: context.repo.repo,
-              body: '❌ Baseline update [failed](${{ steps.v.outputs.run_url }})!'
+              body: `❌ Baseline update [failed](${RUN_URL})!`
             })
