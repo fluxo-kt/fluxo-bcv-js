@@ -5,6 +5,9 @@
 
 [//]: # (Changed, Added, Removed, Fixed, Updated)
 
+
+## [1.0.0] - 2024-06-10
+
 ### Updated
 - **bump Kotlin to _2.0.0_**.
 - **bump minimal supported Kotlin version to _1.7.22_**!
@@ -63,6 +66,7 @@ _Minor update release._
 
 ## Notes
 
+[1.0.0]: https://github.com/fluxo-kt/fluxo-bcv-js/releases/tag/v1.0.0
 [0.3.0]: https://github.com/fluxo-kt/fluxo-bcv-js/releases/tag/v0.3.0
 [0.2.0]: https://github.com/fluxo-kt/fluxo-bcv-js/releases/tag/v0.2.0
 [0.1.0]: https://github.com/fluxo-kt/fluxo-bcv-js/releases/tag/v0.1.0

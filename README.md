@@ -58,7 +58,7 @@ Compatibility tested with:
 plugins {
   kotlin("multiplatform") version "2.0.0" // <-- versions from 1.7 to 2.0
   id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.14.0" // <-- 0.8 .. 0.15
-  id("io.github.fluxo-kt.binary-compatibility-validator-js") version "0.3.0" // <-- add here
+  id("io.github.fluxo-kt.binary-compatibility-validator-js") version "1.0.0" // <-- add here
 }
 kotlin {
   js(IR) {
@@ -96,7 +96,7 @@ pluginManagement {
   }
   resolutionStrategy.eachPlugin {
     if (requested.id.toString() == "io.github.fluxo-kt.binary-compatibility-validator-js")
-      useModule("com.github.fluxo-kt.fluxo-bcv-js:fluxo-bcv-js:8fc3b62961") // <-- specify a version, or a commit.
+      useModule("com.github.fluxo-kt.fluxo-bcv-js:fluxo-bcv-js:dee48ac65c") // <-- specify a version, or a commit.
   }
 }
 ```
