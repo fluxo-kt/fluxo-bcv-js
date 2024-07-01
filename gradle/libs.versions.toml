@@ -64,7 +64,7 @@ kotlinx-binCompatValidator = { id = "org.jetbrains.kotlinx.binary-compatibility-
 # Convenience Gradle plugin
 # https://github.com/fluxo-kt/fluxo-kmp-conf/releases
 # https://plugins.gradle.org/plugin/io.github.fluxo-kt.fluxo-kmp-conf
-fluxo-conf = { id = "io.github.fluxo-kt.fluxo-kmp-conf", version = "0.10.2" }
+fluxo-conf = { id = "io.github.fluxo-kt.fluxo-kmp-conf", version = "0.12.0" }
 
 # Publish plugins to the Gradle Plugin Portal
 # https://plugins.gradle.org/plugin/com.gradle.plugin-publish
