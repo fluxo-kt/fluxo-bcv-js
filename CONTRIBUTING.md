@@ -6,7 +6,7 @@ as readable as possible.
 Please also make sure your code is ready by running:<br>
 `./gradlew check`.
 
-- In case of updated dependencies, don't forget to call `./baseline`
+- In case of updated dependencies, don't forget to call `./updateBaseline`
 
 - Get working code on a personal branch with all tests before you submit a PR.
 
