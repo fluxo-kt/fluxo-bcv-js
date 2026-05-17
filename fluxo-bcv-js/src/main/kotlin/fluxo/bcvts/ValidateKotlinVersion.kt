@@ -1,16 +1,17 @@
 package fluxo.bcvts
 
 import org.gradle.api.Project
+import org.gradle.util.GradleVersion
 import org.jetbrains.kotlin.gradle.plugin.getKotlinPluginVersion
 
-private const val KOTLIN_MIN_VERSION = "1.6.20"
+// `KOTLIN_MIN_VERSION` is generated from `libs.versions.toml::kotlinMin`
+// by the `genKotlinMinVersion` task (see fluxo-bcv-js/build.gradle.kts).
+// Do NOT redeclare here; that would shadow the generated source-of-truth.
 
 internal fun Project.validateKotlinVersion(): Boolean {
     val kotlinVersionStr = safe { getKotlinPluginVersion() }
         ?: safe { KotlinVersion.CURRENT.toString() }
-    val kotlinVersionIsOk = kotlinVersionStr?.let { v ->
-        safe { isVersionGreaterThanOrEqual(v, KOTLIN_MIN_VERSION) }
-    } ?: false
+    val kotlinVersionIsOk = kotlinVersionStr?.let { v -> safe { isKotlinVersionSupported(v) } } ?: false
     if (kotlinVersionIsOk) {
         return true
     }
@@ -29,18 +30,12 @@ internal fun Project.validateKotlinVersion(): Boolean {
     return false
 }
 
-@Suppress("SameParameterValue", "ReturnCount")
-private fun isVersionGreaterThanOrEqual(version: String, targetVersion: String): Boolean {
-    val parts = version.split('.')
-    val targetParts = targetVersion.split('.')
-    for (i in 0 until parts.size.coerceAtLeast(targetParts.size)) {
-        val part = parts.getOrNull(i)?.toIntOrNull() ?: 0
-        val targetPart = targetParts.getOrNull(i)?.toIntOrNull() ?: 0
-        if (part > targetPart) {
-            return true
-        } else if (part < targetPart) {
-            return false
-        }
-    }
-    return true // equal to the target version
-}
+// Compare *base* versions (qualifier-stripped) so a user on a pre-release
+// of the floor — e.g. `1.7.22-Beta1`, `2.0.0-RC2`, `2.3.21-SNAPSHOT`,
+// `1.7.22-IJ123-456` — is correctly recognised as feature-equivalent to
+// the stable. Plain `GradleVersion.compareTo` orders `X-Beta1 < X`,
+// which would reject pre-release adopters even though the TS-generation
+// feature surface is identical.
+private fun isKotlinVersionSupported(version: String): Boolean =
+    GradleVersion.version(version).baseVersion >=
+        GradleVersion.version(KOTLIN_MIN_VERSION).baseVersion

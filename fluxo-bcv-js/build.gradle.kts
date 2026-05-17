@@ -65,3 +65,23 @@ dependencies {
     compileOnly(libs.plugin.binCompatValidator)
     implementation(libs.diffutils)
 }
+
+// Single source of truth for the supported-Kotlin floor: read
+// `kotlinMin` from the version catalog and emit a generated
+// `internal const val KOTLIN_MIN_VERSION` so source code and the
+// matrix can never drift apart.
+val generatedKotlinSrc = layout.buildDirectory.dir("generated/sources/kotlinMin/kotlin")
+val genKotlinMinVersion by tasks.registering {
+    val kotlinMin: Provider<String> = libs.versions.kotlinMin
+    val out = generatedKotlinSrc.map { it.file("fluxo/bcvts/KotlinMinVersion.kt") }
+    inputs.property("kotlinMin", kotlinMin)
+    outputs.file(out)
+    doLast {
+        out.get().asFile.also { it.parentFile.mkdirs() }.writeText(
+            "package fluxo.bcvts\n\n" +
+                "internal const val KOTLIN_MIN_VERSION: String = \"${kotlinMin.get()}\"\n",
+        )
+    }
+}
+kotlin.sourceSets["main"].kotlin.srcDir(generatedKotlinSrc)
+tasks.named("compileKotlin") { dependsOn(genKotlinMinVersion) }
