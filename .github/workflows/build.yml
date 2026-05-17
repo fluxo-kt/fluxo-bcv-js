@@ -79,6 +79,27 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Verify wrapper-pin alignment
+        # Each composite check pins Gradle deliberately for matrix coverage:
+        # root/checks/latest pick the build-side ceiling; checks/js-only
+        # holds the floor. Future commits that bump or add a check module
+        # MUST update this gate in lockstep so drift is detected at PR time
+        # — not after a baseline run silently regenerates against the wrong
+        # version.
+        shell: bash
+        run: |
+          expect() {  # $1=path  $2=expected-version-regex
+            local pin
+            pin=$(grep '^distributionUrl' "$1/gradle/wrapper/gradle-wrapper.properties")
+            echo "$pin" | grep -qE "gradle-$2-" || {
+              echo "::error file=$1/gradle/wrapper/gradle-wrapper.properties::wrapper drifted (expected $2): $pin"
+              exit 1
+            }
+          }
+          expect .                  '8\.8'
+          expect checks/latest      '8\.8'
+          expect checks/js-only     '8\.6'
+
       - name: 'Set up JDK ${{ matrix.java }}'
         uses: actions/setup-java@v4
         with:
