@@ -33,7 +33,15 @@ import org.jetbrains.kotlin.gradle.targets.js.ir.JsIrBinary
 import org.jetbrains.kotlin.gradle.targets.js.ir.KotlinJsIrLink
 
 
+// `.d.ts` is the canonical TypeScript declaration extension; `.d.mts`
+// is its ECMAScript Module sibling — same declaration grammar, different
+// module-resolution semantics. Kotlin/Wasm-JS emits `.d.mts` (since
+// some 2.x point release between 2.0 and 2.3) while Kotlin/JS still
+// emits `.d.ts`. Recognise both so wasmJs validation keeps working
+// across the matrix. Our output dump uses `.d.ts` exclusively — it's
+// the artifact consumers grep/diff, not Kotlin's emission.
 private const val EXT = ".d.ts"
+private val SRC_EXTS = arrayOf(EXT, ".d.mts")
 private const val API = "api"
 private const val SUFFIX_BUILD = "Build"
 private const val SUFFIX_DUMP = "Dump"
@@ -237,7 +245,7 @@ private fun configureKotlinCompilation(
         generatedDefinitions.setFrom(
             linkTasks.map {
                 it.destinationDirectory.asFileTree.matching {
-                    this.include("*$EXT")
+                    SRC_EXTS.forEach { ext -> this.include("*$ext") }
                 }
             },
         )
