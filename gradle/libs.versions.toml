@@ -78,7 +78,7 @@ dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 
 # https://mvnrepository.com/artifact/com.android.lint/com.android.lint.gradle.plugin?repo=google
 # https://maven.google.com/web/index.html#com.android.lint:com.android.lint.gradle.plugin
-android-lint = { id = "com.android.lint", version = "8.6.0-alpha05" }
+android-lint = { id = "com.android.lint", version = "9.2.1" }
 
 kotlinx-binCompatValidator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "bcv" }
 
