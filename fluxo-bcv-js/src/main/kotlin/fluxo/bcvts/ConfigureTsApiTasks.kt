@@ -33,7 +33,6 @@ import org.jetbrains.kotlin.gradle.targets.js.ir.JsIrBinary
 import org.jetbrains.kotlin.gradle.targets.js.ir.KotlinJsIrLink
 
 
-internal const val DBG = 0
 private const val EXT = ".d.ts"
 private const val API = "api"
 private const val SUFFIX_BUILD = "Build"
@@ -153,8 +152,8 @@ private fun Project.configureTarget(
     val binaries = LinkedHashSet<JsBinary>().also { binaries ->
         target.tsBinariesCompat?.let { binaries.addAll(it) }
         for (compilation in compilations) {
-            if (DBG > 0) {
-                logger.lifecycle(
+            if (logger.isDebugEnabled) {
+                logger.debug(
                     " >> compilation {}: {} // {}",
                     compilation.name,
                     compilation,
@@ -166,9 +165,9 @@ private fun Project.configureTarget(
     }.filterIsInstance<JsIrBinary>()
         .filter { it.mode == KotlinJsBinaryMode.PRODUCTION && it.generateTsCompat != false }
 
-    if (DBG > 0) {
+    if (logger.isDebugEnabled) {
         binaries.forEach {
-            logger.warn(" >> binary ${it.name}: $it // ${it.javaClass}")
+            logger.debug(" >> binary {}: {} // {}", it.name, it, it.javaClass)
         }
     }
 
@@ -184,9 +183,9 @@ private fun Project.configureTarget(
         }
     val linkTasks: Set<KotlinJsIrLink> = linkTasksCollection + linkTasksFromBinaries
 
-    if (DBG > 0) {
+    if (logger.isDebugEnabled) {
         linkTasks.forEach {
-            logger.warn(" >> linkTask ${it.name}: $it")
+            logger.debug(" >> linkTask {}: {}", it.name, it)
         }
     }
     if (linkTasks.size > 1) {
@@ -307,8 +306,8 @@ private fun Project.configureCheckTasks(
             val source = buildFile.get().asFile
             val target = referenceFile.get().asFile
             source.copyTo(target, overwrite = true)
-            if (DBG > 0) {
-                logger.lifecycle(" >> Copied API file: {}", target)
+            if (logger.isDebugEnabled) {
+                logger.debug(" >> Copied API file: {}", target)
             }
         }
     }
@@ -335,11 +334,12 @@ private fun Project.configureCheckTasks(
             doLast {
                 val file = buildFile.get().asFile
                 if (file.delete()) {
-                    val msg = " >> Removed {} file for compatibility with '{}' task: {}"
-                    when {
-                        DBG <= 0 -> logger.info(msg, KTS_API, bcvCheckTaskName, file)
-                        else -> logger.lifecycle(msg, KTS_API, bcvCheckTaskName, file)
-                    }
+                    // Single level — users opt into verbose lifecycle output
+                    // via `--info`/`--debug`; the DBG build-toggle is gone.
+                    logger.info(
+                        " >> Removed {} file for compatibility with '{}' task: {}",
+                        KTS_API, bcvCheckTaskName, file,
+                    )
                 }
             }
         }

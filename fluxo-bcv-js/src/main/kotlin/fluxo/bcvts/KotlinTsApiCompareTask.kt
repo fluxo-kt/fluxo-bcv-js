@@ -87,8 +87,8 @@ internal open class KotlinTsApiCompareTask : DefaultTask() {
                     "$diff\n\n " +
                     "You can run $path:apiDump task to overwrite API declarations",
             )
-        } else if (DBG > 0) {
-            logger.lifecycle(" >> {} API check passed for project {}", actualFile.name, path)
+        } else if (logger.isDebugEnabled) {
+            logger.debug(" >> {} API check passed for project {}", actualFile.name, path)
         }
     }
 

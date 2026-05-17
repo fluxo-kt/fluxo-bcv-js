@@ -114,14 +114,15 @@ internal var hasGenerateTypeScriptDefinitions: Boolean = false
 internal val generateTypeScriptDefinitionsCaller: (KotlinJsTargetDsl.() -> Unit) = run {
     val clazz = KotlinJsTargetDsl::class.java
     safe<Unit> {
-        /** @see KotlinJsTargetDsl.generateTypeScriptDefinitions */
-        val method = clazz.methods.firstOrNull { "generateTypeScriptDefinitions" in it.name }
-        if (method != null) {
-            hasGenerateTypeScriptDefinitions = true
-            return@run {
-                method.invoke(this)
-            }
-        }
+        // `getMethod` is inheritance-aware (walks supertypes/superinterfaces)
+        // and signature-strict via the implicit no-arg varargs binding —
+        // exact name match, exactly zero parameters. `getDeclaredMethod`
+        // would miss the method when KGP refactors it to a parent
+        // interface; `methods.firstOrNull { startsWith(...) }` would
+        // false-match `*$default` synthetics or future overloads.
+        val method = clazz.getMethod("generateTypeScriptDefinitions")
+        hasGenerateTypeScriptDefinitions = true
+        return@run { method.invoke(this) }
     }
     return@run {}
 }
@@ -146,16 +147,26 @@ internal val Project.apiValidationExtensionOrNull: ApiValidationExtension?
 internal val KJsCompBinariesCaller: (KotlinJsCompilation.() -> KotlinJsBinaryContainer) =
     run {
         val clazz = KotlinJsCompilation::class.java
+        // `getMethod` is the right seam here: KotlinJsCompilation is an
+        // interface in every supported KGP, and the `binaries` getter is
+        // commonly inherited from a parent interface (e.g.
+        // `KotlinJsCompilation : KotlinCompilation<...>` chain).
+        // `getDeclaredMethod` would miss inherited declarations; the
+        // legacy `methods.firstOrNull { startsWith(...) }` would also
+        // false-match `getBinariesFor*`-style additions. `getMethod`
+        // walks the hierarchy and binds signature-strictly to the
+        // no-arg overload via the implicit empty varargs.
         safe<Unit> {
-            val method = clazz.methods.firstOrNull { it.name.startsWith("getBinaries") }
-                ?: clazz.methods.firstOrNull { "getBinaries" in it.name }
-            if (method != null) {
-                return@run { method.invoke(this) as KotlinJsBinaryContainer }
-            }
+            val method = clazz.getMethod("getBinaries")
+            return@run { method.invoke(this) as KotlinJsBinaryContainer }
         }
-        val field = JsIrBinary::class.java.getDeclaredField("binaries")
-        setAccessible(field)
-        return@run { field.get(this) as KotlinJsBinaryContainer }
+        // No fallback path resolves: the previous JsIrBinary
+        // back-reference field was both absent in modern KGP and
+        // receiver-typed wrong (would have thrown at invocation, not
+        // returned a container). Surface as an invocation-time error so
+        // `binariesCompat`'s upper `safe { }` returns null cleanly,
+        // never throws at class init.
+        return@run { error("KotlinJsCompilation.binaries shim unresolved") }
     }
 
 /** @see KotlinJsCompilation.binaries */
@@ -165,12 +176,20 @@ internal val KotlinJsCompilation.binariesCompat: KotlinJsBinaryContainer?
 
 /** @see JsIrBinary.generateTs */
 internal val JsIrBinaryGenerateTsCaller: (JsIrBinary.() -> Boolean?) = run {
+    val clazz = JsIrBinary::class.java
     safe<Unit> {
-        val method = JsIrBinary::class.java.getDeclaredMethod("getGenerateTs")
+        // Inheritance-aware: `JsIrBinary` is an interface whose
+        // `generateTs` accessor may live on a parent supertype in some
+        // KGP versions. `getMethod` walks the hierarchy and binds
+        // signature-strictly to the no-arg overload.
+        val method = clazz.getMethod("getGenerateTs")
         return@run { method.invoke(this) as? Boolean }
     }
     safe<Unit> {
-        val field = JsIrBinary::class.java.getDeclaredField("generateTs")
+        // Direct-field path: an early KGP exposed `generateTs` as a
+        // plain field rather than a property. Use getDeclaredField
+        // (fields, unlike methods, are NOT inherited via reflection).
+        val field = clazz.getDeclaredField("generateTs")
         setAccessible(field)
         return@run { field.get(this) as? Boolean }
     }
@@ -182,33 +201,80 @@ internal val JsIrBinary.generateTsCompat: Boolean?
     get() = safe { JsIrBinaryGenerateTsCaller(this) }
 
 
-internal val KotlinJsIrLink.modeCompat: KotlinJsBinaryMode
-    get() {
-        return try {
-            @Suppress("DEPRECATION")
-            mode
-        } catch (_: Throwable) {
-            // modeProperty is internal, unfortunately.
-            @Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
-            modeProperty.get()
+// Both direct call paths are compile-time poison under Kotlin 2.3+:
+// `KotlinJsIrLink.mode` is ERROR-level deprecated (KT-81010, Kotlin
+// 2.3.0 compatibility guide), and `modeProperty` is KGP-internal so
+// any `@Suppress("INVISIBLE_MEMBER")` is a brittle compile-time bond
+// to a private API.
+// Fully reflective access survives both the ERROR-level deprecation
+// and a future physical symbol removal in Kotlin 2.4+. On failure
+// `safe { }` returns null and the binary is silently skipped.
+private val KotlinJsIrLinkModeCompatCaller: KotlinJsIrLink.() -> KotlinJsBinaryMode? = run {
+    val clazz = KotlinJsIrLink::class.java
+    // KGP ≤ 2.2.x: public `mode` property → public getter `getMode()`.
+    // `getMethod` is inheritance-aware; KGP may move the getter to a
+    // parent abstract class across versions.
+    safe<Unit> {
+        val m = clazz.getMethod("getMode")
+        if (KotlinJsBinaryMode::class.java.isAssignableFrom(m.returnType)) {
+            return@run { m.invoke(this) as? KotlinJsBinaryMode }
         }
     }
+    // KGP 2.2+: internal `modeProperty: Property<KotlinJsBinaryMode>`.
+    // Kotlin `internal` members get JVM name-mangling `$<module>` (e.g.
+    // `getModeProperty$kotlin_gradle_plugin_common`). `getMethod`/
+    // `getDeclaredMethod` against the unmangled name cannot find these;
+    // a focused iteration that accepts exact-or-mangle is required.
+    // The `name == "getModeProperty" || startsWith("getModeProperty$")`
+    // shape avoids the substring smell that would false-match
+    // `getModePropertyOther`.
+    safe<Unit> {
+        val m = clazz.methods.firstOrNull {
+            it.parameterCount == 0 &&
+                (it.name == "getModeProperty" || it.name.startsWith("getModeProperty\$"))
+        } ?: return@safe
+        return@run {
+            @Suppress("UNCHECKED_CAST")
+            (m.invoke(this) as? org.gradle.api.provider.Property<KotlinJsBinaryMode>)
+                ?.orNull
+        }
+    }
+    return@run { null }
+}
+
+internal val KotlinJsIrLink.modeCompat: KotlinJsBinaryMode?
+    get() = safe { KotlinJsIrLinkModeCompatCaller(this) }
 
 
 internal fun setAccessible(field: AccessibleObject) {
     try {
         @Suppress("Since15")
         field.trySetAccessible()
-    } catch (_: Throwable) {
+    } catch (_: LinkageError) {
+        // `trySetAccessible` (JDK 9+) absent on JDK 8: NoSuchMethodError.
         safe { field.isAccessible = true }
     }
 }
 
 
+// Reflective compat seams: swallow API-drift exceptions, propagate JVM
+// errors. The narrow catch set is the contract; `Throwable` would absorb
+// `OutOfMemoryError`, `StackOverflowError`, `VirtualMachineError`,
+// `ThreadDeath`, `AssertionError` — none of which the compat layer can
+// (or should) recover from.
+//
+// `inline` is preserved for the non-local-return flow in
+// `KotlinTarget.jsCompilationsCompat`; introducing a `@PublishedApi`
+// internal logger or helper would leak into the plugin's BCV baseline
+// (BCV 0.14 `nonPublicMarkers` applies at class scope, not method scope).
 internal inline fun <R> safe(body: () -> R): R? {
     return try {
         body()
-    } catch (_: Throwable) {
+    } catch (_: LinkageError) {
+        null
+    } catch (_: ReflectiveOperationException) {
+        null
+    } catch (_: RuntimeException) {
         null
     }
 }

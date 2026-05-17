@@ -96,8 +96,8 @@ internal abstract class KotlinTsApiBuildTask : DefaultTask() {
         outputFile.bufferedWriter().use {
             lines.joinTo(it, "\n")
         }
-        if (DBG > 0) {
-            logger.lifecycle(" >> Saved API file: {}", outputFile)
+        if (logger.isDebugEnabled) {
+            logger.debug(" >> Saved API file: {}", outputFile)
         }
     }
 }
