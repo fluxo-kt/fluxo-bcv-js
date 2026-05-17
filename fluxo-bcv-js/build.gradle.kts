@@ -56,7 +56,14 @@ configurations.implementation {
     exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib")
     exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-jdk7")
     exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-jdk8")
+    // Kotlin 2.0 renamed the metadata-jvm artifact: old coordinate
+    // `org.jetbrains.kotlinx:kotlinx-metadata-jvm` was moved into the
+    // main `org.jetbrains.kotlin` group. BCV ≤ 0.15 still pulls the
+    // legacy coordinate; BCV 0.16+ (#255) pulls the renamed one. Both
+    // excludes are required to cover the supported compat matrix
+    // (bcvMin = 0.8.0 floor up to bcvLatest).
     exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-metadata-jvm")
+    exclude(group = "org.jetbrains.kotlin", module = "kotlin-metadata-jvm")
     exclude(group = "org.ow2.asm")
 }
 
