@@ -11,7 +11,9 @@ import org.jetbrains.kotlin.gradle.plugin.getKotlinPluginVersion
 internal fun Project.validateKotlinVersion(): Boolean {
     val kotlinVersionStr = safe { getKotlinPluginVersion() }
         ?: safe { KotlinVersion.CURRENT.toString() }
-    val kotlinVersionIsOk = kotlinVersionStr?.let { v -> safe { isKotlinVersionSupported(v) } } ?: false
+    val kotlinVersionIsOk = kotlinVersionStr?.let { v ->
+        safe { isKotlinVersionSupported(v) }
+    } ?: false
     if (kotlinVersionIsOk) {
         return true
     }

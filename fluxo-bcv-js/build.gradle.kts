@@ -70,18 +70,25 @@ dependencies {
 // `kotlinMin` from the version catalog and emit a generated
 // `internal const val KOTLIN_MIN_VERSION` so source code and the
 // matrix can never drift apart.
-val generatedKotlinSrc = layout.buildDirectory.dir("generated/sources/kotlinMin/kotlin")
 val genKotlinMinVersion by tasks.registering {
+    // Capture script-level Providers into local vals BEFORE doLast so
+    // configuration-cache serialisation doesn't try to walk back to
+    // the Build_gradle script object (per AGENTS.md gotcha).
     val kotlinMin: Provider<String> = libs.versions.kotlinMin
-    val out = generatedKotlinSrc.map { it.file("fluxo/bcvts/KotlinMinVersion.kt") }
+    val outDir: Provider<Directory> =
+        project.layout.buildDirectory.dir("generated/sources/kotlinMin/kotlin")
     inputs.property("kotlinMin", kotlinMin)
-    outputs.file(out)
+    outputs.dir(outDir)
     doLast {
-        out.get().asFile.also { it.parentFile.mkdirs() }.writeText(
+        val out = outDir.get().file("fluxo/bcvts/KotlinMinVersion.kt").asFile
+        out.parentFile.mkdirs()
+        out.writeText(
             "package fluxo.bcvts\n\n" +
                 "internal const val KOTLIN_MIN_VERSION: String = \"${kotlinMin.get()}\"\n",
         )
     }
 }
-kotlin.sourceSets["main"].kotlin.srcDir(generatedKotlinSrc)
-tasks.named("compileKotlin") { dependsOn(genKotlinMinVersion) }
+// Pass the TaskProvider so Gradle infers the producer relation for
+// every Kotlin compile task consuming `main` sources — including
+// `compileExperimentalLatestKotlin` from fluxo-kmp-conf's overlay.
+kotlin.sourceSets["main"].kotlin.srcDir(genKotlinMinVersion)
