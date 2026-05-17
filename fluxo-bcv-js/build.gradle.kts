@@ -52,6 +52,19 @@ fkcSetupGradlePlugin(
     }
 }
 
+// Workaround for fluxo-kmp-conf 0.14.x:
+// `fkcSetupGradlePlugin` invokes `gradlePlugin.plugins.maybeCreate(name)`
+// and then runs `if (id.isNullOrBlank()) { id = pluginId }`. Under
+// Gradle 8.x/9.x the `maybeCreate` already pre-fills `id` with the
+// plugin's NAME, so the guard reads `id="fluxo-bcv-ts"` (non-blank) and
+// silently skips overwriting with the real `pluginId`. The resulting
+// `META-INF/gradle-plugins/<id>.properties` ships under the wrong name
+// and composite-build plugin resolution fails (see `checks/latest`).
+// Forcing the id post-hoc restores the public contract without forking
+// fluxo-kmp-conf. Upstream issue: TODO file at fluxo-kt/fluxo-kmp-conf.
+extensions.getByType(org.gradle.plugin.devel.GradlePluginDevelopmentExtension::class.java)
+    .plugins.getByName("fluxo-bcv-ts").id = pluginId
+
 configurations.implementation {
     exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib")
     exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-jdk7")

@@ -34,10 +34,18 @@ internal fun Project.validateKotlinVersion(): Boolean {
 
 // Compare *base* versions (qualifier-stripped) so a user on a pre-release
 // of the floor — e.g. `1.7.22-Beta1`, `2.0.0-RC2`, `2.3.21-SNAPSHOT`,
-// `1.7.22-IJ123-456` — is correctly recognised as feature-equivalent to
-// the stable. Plain `GradleVersion.compareTo` orders `X-Beta1 < X`,
-// which would reject pre-release adopters even though the TS-generation
-// feature surface is identical.
+// `2.4.0-RC`, `1.7.22-IJ123-456` — is correctly recognised as feature-
+// equivalent to the stable. Plain `GradleVersion.compareTo` orders
+// `X-Beta1 < X`, which would reject pre-release adopters even though
+// the TS-generation feature surface is identical.
+//
+// Strip the qualifier BEFORE calling `GradleVersion.version(...)`:
+// Gradle 9.x's parser is stricter than 8.x's and *rejects* qualifier
+// shapes it doesn't recognise (e.g. `2.4.0-RC` — uppercase without a
+// numeric suffix throws `IllegalArgumentException`). We never reach
+// `.baseVersion`'s qualifier-stripping because construction throws
+// first. Pre-stripping mirrors fluxo-kmp-conf's
+// `RegisterShrinkerTask` (`version.substringBefore('-')`).
 private fun isKotlinVersionSupported(version: String): Boolean =
-    GradleVersion.version(version).baseVersion >=
-        GradleVersion.version(KOTLIN_MIN_VERSION).baseVersion
+    GradleVersion.version(version.substringBefore('-')) >=
+        GradleVersion.version(KOTLIN_MIN_VERSION.substringBefore('-'))

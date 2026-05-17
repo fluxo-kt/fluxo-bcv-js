@@ -15,26 +15,41 @@ fluxoBcvJs = "1.0.1-SNAPSHOT"
 # 0.13+ uses Kotlin metadata 0.6.0 (may conflict with AtomicFU!)
 bcv = "0.14.0"
 bcvMin = "0.8.0"
-bcvLatest = "0.15.0-Beta.2"
+bcvLatest = "0.18.1"
 
 # Diffutils version, aligned with BCV
 # https://github.com/Kotlin/binary-compatibility-validator/blob/0.14.0/gradle/libs.versions.toml#L5
 # https://github.com/Kotlin/binary-compatibility-validator/blob/0.15.0-Beta.2/gradle/libs.versions.toml#L5
 diffutils = "4.12"
 
-# Java/Kotlin compatibility, aligned with BCV
+# Java/Kotlin compatibility, aligned with BCV.
+# `kotlinLangVersion` is the lowest source-language version the
+# Kotlin 2.3+ compiler still accepts. Consumer runtime compat for
+# `kotlinMin = 1.7.22` is preserved via JVM bytecode target 1.8 plus
+# `-Xskip-metadata-version-check` (build.gradle.kts), NOT via source
+# language version. Kotlin 2.3 dropped `languageVersion = 1.7/1.8`.
 # https://github.com/Kotlin/binary-compatibility-validator/blob/0.13.2/build.gradle.kts#L101
 javaLangTarget = "1.8"
-kotlinLangVersion = "1.7"
-kotlinApiVersion = "1.7"
+kotlinLangVersion = "2.0"
+kotlinApiVersion = "2.0"
 
 # Kotlin version, aligned with BCV
 # https://github.com/Kotlin/binary-compatibility-validator/blob/0.13.2/gradle.properties#L4
 # https://mvnrepository.com/artifact/org.jetbrains.kotlin/kotlin-gradle-plugin
 # https://github.com/JetBrains/kotlin/releases
-kotlin = "2.0.0"
+# Build-side `kotlin` MUST stay on a stable release — RC compilers can
+# emit bytecode/metadata quirks that leak into the published plugin
+# JAR. `kotlinLatest` drives the `checks/latest` smoke test only; an
+# RC pin there is acceptable because the smoke test isn't published.
+kotlin = "2.3.21"
 kotlinMin = "1.7.22"
-kotlinLatest = "2.0.0"
+# `kotlinLatest` drives `checks/latest` only — not the published JAR —
+# so an RC pin is acceptable here. The plugin's discovery glob accepts
+# `.d.ts` AND `.d.mts` (commit 7b91ad4), so Kotlin 2.4's ESM-form
+# wasmJs declarations are picked up natively. Trip-wire: if a 2.4-RC
+# upstream regression (not in our shim) breaks `checks/latest`, pin
+# back to "2.3.21" with the failing GH issue cited in a comment.
+kotlinLatest = "2.4.0-RC"
 
 # Dokka is a documentation engine for Kotlin/Java
 # https://github.com/Kotlin/dokka/releases
@@ -64,7 +79,7 @@ kotlinx-binCompatValidator = { id = "org.jetbrains.kotlinx.binary-compatibility-
 # Convenience Gradle plugin
 # https://github.com/fluxo-kt/fluxo-kmp-conf/releases
 # https://plugins.gradle.org/plugin/io.github.fluxo-kt.fluxo-kmp-conf
-fluxo-conf = { id = "io.github.fluxo-kt.fluxo-kmp-conf", version = "0.10.2" }
+fluxo-conf = { id = "io.github.fluxo-kt.fluxo-kmp-conf", version = "0.14.1" }
 
 # Publish plugins to the Gradle Plugin Portal
 # https://plugins.gradle.org/plugin/com.gradle.plugin-publish

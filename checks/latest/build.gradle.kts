@@ -5,7 +5,12 @@ plugins {
     alias(libs.plugins.deps.guard)
 }
 
-@OptIn(org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalWasmDsl::class)
+// `ExperimentalWasmDsl` moved package between Kotlin versions:
+// pre-2.4: `org.jetbrains.kotlin.gradle.targets.js.dsl`
+// 2.4+:    `org.jetbrains.kotlin.gradle`
+// The new location subsumes the old via type alias in some 2.x lines,
+// but Kotlin 2.4-RC requires the canonical 2.4 path.
+@OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
 kotlin {
     jvm()
     linuxX64()
