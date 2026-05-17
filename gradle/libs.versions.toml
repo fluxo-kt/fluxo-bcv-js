@@ -54,7 +54,7 @@ kotlinLatest = "2.4.0-RC"
 # Dokka is a documentation engine for Kotlin/Java
 # https://github.com/Kotlin/dokka/releases
 # https://mvnrepository.com/artifact/org.jetbrains.dokka/dokka-gradle-plugin?repo=space-kotlin-dokka-dev
-dokka = "1.9.20"
+dokka = "2.2.0"
 
 
 [libraries]
