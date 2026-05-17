@@ -11,7 +11,6 @@ package fluxo.bcvts
 
 import kotlin.contracts.contract
 import kotlinx.validation.ApiValidationExtension
-import kotlinx.validation.KotlinApiCompareTask
 import org.gradle.api.DefaultTask
 import org.gradle.api.DomainObjectCollection
 import org.gradle.api.Project
@@ -367,37 +366,26 @@ private fun Project.configureCheckTasks(
 
         apiCheck = registerCustomApiCheckTask()
     } else {
-        apiCheck = try {
-            task<KotlinApiCompareTask>(apiCheckTaskName) {
-                configureApiCheckTask()
-
-                /** @see KotlinApiCompareTask.compareApiDumps */
-                val apiReferenceDir = apiCheckDir.get().asFile
-                when {
-                    apiReferenceDir.exists() -> {
-                        projectApiDir = apiReferenceDir
-                    }
-
-                    else -> try {
-                        projectApiDir = null
-                        nonExistingProjectApiDir = apiReferenceDir.toString()
-                    } catch (e: Throwable) {
-                        logger.warn(e.toString(), e)
-                        projectApiDir = apiReferenceDir
-                    }
-                }
-                apiBuildDir = buildDir.get().asFile
-            }
-        } catch (e: Throwable) {
-            // Expected for old BCV
-            @Suppress("InstanceOfCheckForException")
-            if (e !is NoClassDefFoundError) {
-                val message = "Unexpected error: $e \n" +
-                    "Please, submit an issue to https://github.com/fluxo-kt/fluxo-bcv-js/issues"
-                logger.warn(message, e)
-            }
-            registerCustomApiCheckTask()
-        }
+        // Always use the plugin's own `KotlinTsApiCompareTask` (a JVM-side
+        // `java-diff-utils`-based comparator). Wrapping BCV's
+        // `KotlinApiCompareTask` was attempted historically, but that path is
+        // unsound across the supported BCV matrix:
+        // - On BCV 0.8-0.14 the public surface is plain (non-lazy) field
+        //   setters (`projectApiDir`, `nonExistingProjectApiDir`,
+        //   `apiBuildDir`); on BCV 0.15+ it switched to `RegularFileProperty`
+        //   (`projectApiFile.set(...)`, `generatedApiFile.set(...)`) and the
+        //   old fields were removed.
+        // - Property setters fire LAZILY at task realization, past the
+        //   surrounding `try`/`catch (Throwable)` scope, so a
+        //   `NoSuchMethodError` against the old shape would propagate as a
+        //   build failure rather than re-routing.
+        // - `KotlinTsApiCompareTask` already works against every supported
+        //   BCV version; the only thing the wrapping ever bought us was
+        //   BCV-style log formatting, which is cosmetic.
+        // See AGENTS.md "Don't fight BCV; integrate" — custom tasks are
+        // explicitly blessed where reflection into `KotlinApiCompareTask`
+        // would be too brittle.
+        apiCheck = registerCustomApiCheckTask()
     }
 
     state.commonApiDump.configure {

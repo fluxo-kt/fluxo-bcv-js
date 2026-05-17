@@ -8,4 +8,4 @@ org.jetbrains.kotlin:kotlin-gradle-plugins-bom:2.3.21
 org.jetbrains.kotlin:kotlin-native-utils:2.3.21
 org.jetbrains.kotlin:kotlin-tooling-core:2.3.21
 org.jetbrains.kotlin:kotlin-util-io:2.3.21
-org.jetbrains.kotlinx:binary-compatibility-validator:0.14.0
+org.jetbrains.kotlinx:binary-compatibility-validator:0.18.1
