@@ -225,6 +225,34 @@ matrix ceiling is the physical upstream ceiling, not an arbitrary pin.
   (e.g. next to `group =`) is silently overwritten by
   `fkcSetupGradlePlugin`'s internal configuration. Upstream fix is
   TODO at fluxo-kmp-conf.
+- **fluxo-kmp-conf 0.14.x silently no-ops publication setup when
+  Vanniktech isn't applied.** `setupPublication` defaults
+  `useVanniktechPublish = true`. With no Vanniktech maven-publish
+  plugin in our `plugins {}` block, fluxo-kmp-conf takes the Vanniktech
+  branch, calls `loadPluginStaticallyError` (just `logger.e(…)`, **does
+  NOT throw**), and the entire publication-setup path silently exits
+  — `gradlePlugin.{website,vcsUrl}`, POM metadata, artifactId, all
+  unwired. That's why our `build.gradle.kts` carries direct extension-
+  level workarounds for ALL of these (`pom { … }` block,
+  `pluginExt.website.set(…)`, `artifactId = "fluxo-bcv-ts"`,
+  `version = pluginVersion`). Reproducer: comment out
+  `pluginExt.website.set(projectUrl)`, run
+  `./gradlew :plugin:verifyPluginPortalMetadata` — that gate now
+  catches it locally (sibling-aligned defense-in-depth task; runs as
+  a `:check` dep so PR/push CI gates it). Without the verify task,
+  the next regression class would only surface inside
+  `release.yml`'s `publishPlugins` execution, AFTER a signed tag is
+  pushed (how 1.1.0 release attempt #1 failed). The upstream fix is
+  TODO at fluxo-kmp-conf — `setupPublication` should fail loud
+  (throw) when its configured publish backend isn't loadable.
+- **POM metadata audits MUST cover the `gradlePlugin` extension too,
+  not just POM XML.** plugin-publish 2.x validates
+  `gradlePlugin.{website,vcsUrl}` independently of any POM `<url>` /
+  `<scm>`. These are two distinct metadata channels: POM XML feeds
+  Maven repositories; `gradlePlugin` feeds the Plugin Portal listing
+  page. An audit that only inspects published `.pom` files will miss
+  the plugin-publish 2.x gate (which fires at task-execution time, so
+  also invisible to `:publishToMavenLocal`).
 - **Reflection failures are silently swallowed by `safe { }`.** If
   something silently no-ops on a new Kotlin/BCV, suspect the compat shim
   first.

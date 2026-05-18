@@ -121,6 +121,33 @@
   `notCompatibleWithConfigurationCache(...)` because the upstream
   v2.0.x task captures a `DefaultProject` reference. Local dev can
   force-test signing via `RELEASE=true ./gradlew ...`.
+- **`gradlePlugin.{website,vcsUrl}` not propagated by fluxo-kmp-conf
+  0.14.x** — `setupPublication` (`SetupPublication.kt:89`) defaults
+  `useVanniktechPublish = true` and short-circuits via
+  `loadPluginStaticallyError` (just `logger.e(…)`, no throw) when
+  the Vanniktech maven-publish plugin isn't applied. The legacy
+  `setupPublicationGradlePlugin` path (which would have wired
+  `website`/`vcsUrl`) never runs, leaving the
+  `GradlePluginDevelopmentExtension` properties unset.
+  `com.gradle.plugin-publish` 2.x validates both at task-execution
+  time, hard-failing `publishPlugins` with
+  `IllegalArgumentException: Website URL not set` — a CI-only surface
+  invisible to `:publishToMavenLocal`. Surfaced inside the first
+  v1.1.0 release.yml run after the signed tag was pushed. Fix: direct
+  `pluginExt.website.set(…)` / `pluginExt.vcsUrl.set(…)` adjacent to
+  the existing id workaround, matching the same pattern that backs
+  the manual POM and artifactId workarounds.
+
+### Added (build defense-in-depth)
+- New `verifyPluginPortalMetadata` Gradle task — sibling-aligned with
+  `fluxo-kmp-conf`'s `VerifyPluginPortalMetadataTask`. Asserts at
+  config time that `gradlePlugin.{website,vcsUrl}` + plugin
+  declaration (id / displayName / description / implementationClass
+  / tags) + `project.version` are all populated. Wired as a
+  dependency of `:check` (PR/push gate), `:publishPlugins`, and every
+  `sigstoreSign*` task — eliminates the class of CI-only release-time
+  metadata regressions for all the fluxo-kmp-conf 0.14.x gaps we
+  manually patch above.
 - Version-parser bug in `isVersionGreaterThanOrEqual` — pre-release
   suffixes like `1.7.22-Beta1` were incorrectly rejected against
   the floor when the suffix sat on the differentiating numeric

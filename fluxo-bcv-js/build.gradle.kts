@@ -58,6 +58,18 @@ fkcSetupGradlePlugin(
         developerId = "amal"
         developerName = "Artyom Shendrik"
         developerEmail = "artyom.shendrik@gmail.com"
+        // NB: `projectUrl`/`publicationUrl` are deliberately NOT set
+        // here. fluxo-kmp-conf 0.14.x propagates those into
+        // `gradlePlugin.{website,vcsUrl}` ONLY when the Vanniktech
+        // maven-publish plugin is applied (`SetupVanniktechPublication
+        // .kt:136-146`). We don't apply Vanniktech (no Maven Central
+        // path today), so `setupPublication` exits via
+        // `loadPluginStaticallyError` (`LoadAndApplyPluginIfNotApplied
+        // .kt:269`) which just LOGS a warning — no exception. Setting
+        // them here would be dead code under the live config. Direct
+        // extension-level wiring lives below alongside the POM/
+        // artifactId workarounds; verifyPluginPortalMetadata gates
+        // both classes.
     }
 
     apiValidation {
@@ -149,31 +161,132 @@ publishing.publications.withType<MavenPublication>().configureEach {
     }
 }
 
-// Workaround for fluxo-kmp-conf 0.14.x:
-// `fkcSetupGradlePlugin` invokes `gradlePlugin.plugins.maybeCreate(name)`
-// and then runs `if (id.isNullOrBlank()) { id = pluginId }`. Under
-// Gradle 8.x/9.x the `maybeCreate` already pre-fills `id` with the
-// plugin's NAME, so the guard reads `id="fluxo-bcv-ts"` (non-blank) and
-// silently skips overwriting with the real `pluginId`. The resulting
-// `META-INF/gradle-plugins/<id>.properties` ships under the wrong name
-// and composite-build plugin resolution fails (see `checks/latest`).
-// Forcing the id post-hoc restores the public contract without forking
-// fluxo-kmp-conf. Upstream issue: TODO file at fluxo-kt/fluxo-kmp-conf.
-extensions.getByType(org.gradle.plugin.devel.GradlePluginDevelopmentExtension::class.java)
-    .plugins.getByName("fluxo-bcv-ts").id = pluginId
+// Workarounds for fluxo-kmp-conf 0.14.x publication-setup gaps. The
+// same root cause underlies BOTH:
+// fluxo-kmp-conf's `setupPublication` (`SetupPublication.kt:89`)
+// reads `useVanniktechPublish` (default `true`) and routes to either
+// the Vanniktech path or the legacy `setupPublicationGradlePlugin`.
+// In OUR build, Vanniktech is not applied AND `useVanniktechPublish`
+// is left at default — so the wrong path is attempted, returns via
+// `loadPluginStaticallyError` (`LoadAndApplyPluginIfNotApplied.kt:269`,
+// just `logger.e(…)`, no exception), and ALL publication setup is
+// silently skipped: artifactId, POM metadata, website, vcsUrl, etc.
+// We restore each manually here. Upstream fix is TODO at
+// fluxo-kt/fluxo-kmp-conf (`setupPublication` should fail loud).
+val pluginExt = extensions
+    .getByType(org.gradle.plugin.devel.GradlePluginDevelopmentExtension::class.java)
+// 1. Plugin id — `fkcSetupGradlePlugin` invokes
+//    `gradlePlugin.plugins.maybeCreate(name)` then guards
+//    `if (id.isNullOrBlank()) { id = pluginId }`. Under Gradle 8/9
+//    `maybeCreate` pre-fills `id` with the plugin's NAME, so the
+//    guard reads `id="fluxo-bcv-ts"` (non-blank) and skips overwriting
+//    with the real `pluginId`. The resulting
+//    `META-INF/gradle-plugins/<id>.properties` would ship under the
+//    wrong name and composite-build resolution would fail.
+pluginExt.plugins.getByName("fluxo-bcv-ts").id = pluginId
+// 2. `com.gradle.plugin-publish` 2.x dropped the legacy `pluginBundle`
+//    extension and requires `website` + `vcsUrl` as `Property<String>`
+//    on `GradlePluginDevelopmentExtension` itself. Missing either
+//    fails `publishPlugins` at task-execution time with
+//    `IllegalArgumentException: Website URL not set` — a CI-only
+//    surface (`:publishToMavenLocal` doesn't trip the validator),
+//    which is why the 1.1.0 release attempt #1 surfaced this only
+//    after the signed tag was already pushed. The
+//    `verifyPluginPortalMetadata` task wired below catches the class
+//    of regression at config-time so `:check` gates it from PRs.
+pluginExt.website.set(projectUrl)
+pluginExt.vcsUrl.set("$projectUrl/tree/v${project.version}")
 
-// Wire Sigstore bundle production into the Gradle Plugin Portal
-// publication chain. `publishPlugins` (the `com.gradle.plugin-publish`
-// task) is NOT a standard `PublishToMavenRepository` subclass, so the
-// Sigstore plugin's default `withType<...>` hook misses it. Force the
-// dependency explicitly so the upload includes the `.sigstore.bundle`
-// siblings for BOTH the plugin JAR and its marker POM. `tasks.matching
-// { }` is lazy and CC-safe; `configureEach` ensures the wiring fires
-// regardless of registration order between sigstore-sign and
-// gradle-plugin-publish.
+// Pre-flight Plugin Portal metadata gate. Sibling-aligned with
+// fluxo-kmp-conf's `VerifyPluginPortalMetadataTask` (its
+// `build.gradle.kts:617-640`). Eliminates the class of regression
+// where a fluxo-kmp-conf API gap or upstream surface change leaves
+// a publish-time required field blank — historically (1.1.0 release
+// attempt #1) `gradlePlugin.{website,vcsUrl}` were left null by
+// fluxo-kmp-conf 0.14.x, surfacing only inside `release.yml`'s
+// `publishPlugins` execution AFTER the signed tag had been pushed.
+// All fields here correspond either to plugin-publish 2.x's runtime
+// validation OR to manual workarounds wired above (project.version,
+// artifactId, POM metadata). Failing this task is a hard build-gate
+// for both `:check` (PR/push) and `:publishPlugins` (release).
+// Reuses `pluginExt` declared above (single extension lookup).
+val pluginDecl = pluginExt.plugins.named("fluxo-bcv-ts")
+val verifyPluginPortalMetadata = tasks.register("verifyPluginPortalMetadata") {
+    group = "verification"
+    description = "Pre-flight Plugin Portal metadata gate."
+
+    // Lazy Provider captures — Gradle CC serializes them via
+    // `inputs.property`. No eager reads of extensions/project at
+    // config-time, no `project` capture inside `doLast`.
+    // Scope matches sibling's `VerifyPluginPortalMetadataTask`:
+    // `gradlePlugin` + `PluginDeclaration` only. POM/artifactId checks
+    // skipped because `MavenPublication` ('pluginMaven') is registered
+    // by `java-gradle-plugin` AFTER script eval, so an eager `named()`
+    // throws here. Our publish block uses `withType.configureEach`
+    // which IS lazy and applies the artifactId / POM contract whenever
+    // the publication appears — a defense-in-depth gate for THAT
+    // surface is a follow-up if and when it regresses.
+    val website = pluginExt.website.orElse("")
+    val vcsUrl = pluginExt.vcsUrl.orElse("")
+    val actualId = pluginDecl.map { it.id.orEmpty() }
+    val displayName = pluginDecl.map { it.displayName.orEmpty() }
+    val description = pluginDecl.map { it.description.orEmpty() }
+    val implClass = pluginDecl.map { it.implementationClass.orEmpty() }
+    val tags = pluginDecl.flatMap { it.tags }
+    val versionProv = project.provider { project.version.toString() }
+    val expectedId = pluginId
+
+    inputs.property("website", website)
+    inputs.property("vcsUrl", vcsUrl)
+    inputs.property("actualId", actualId)
+    inputs.property("displayName", displayName)
+    inputs.property("description", description)
+    inputs.property("implClass", implClass)
+    inputs.property("tags", tags)
+    inputs.property("version", versionProv)
+    inputs.property("expectedId", expectedId)
+    // Verification is never up-to-date — semantics demand re-check.
+    outputs.upToDateWhen { false }
+
+    doLast {
+        val errors = mutableListOf<String>()
+        fun req(field: String, value: String) {
+            if (value.isBlank() || value == "unspecified") {
+                errors += "$field is blank/unspecified"
+            }
+        }
+        req("gradlePlugin.website", website.get())
+        req("gradlePlugin.vcsUrl", vcsUrl.get())
+        val actual = actualId.get()
+        if (actual != expectedId) errors += "plugin.id='$actual', expected='$expectedId'"
+        req("plugin.displayName", displayName.get())
+        req("plugin.description", description.get())
+        req("plugin.implementationClass", implClass.get())
+        if (tags.get().isEmpty()) errors += "plugin.tags is empty"
+        req("project.version", versionProv.get())
+        if (errors.isNotEmpty()) {
+            throw GradleException(
+                "Plugin Portal metadata validation failed:\n" +
+                    errors.joinToString("\n") { "  - $it" } +
+                    "\nFix in fluxo-bcv-js/build.gradle.kts or upstream " +
+                    "fluxo-kmp-conf integration; see AGENTS.md > " +
+                    "\"Surprises & gotchas\" for fluxo-kmp-conf 0.14.x gaps.",
+            )
+        }
+    }
+}
+
+// Wire as a dependency of every publish-side task so regressions fail
+// fast (before network) AND of `:check` so PR/push CI gates it. Without
+// the `:check` wiring, the class-of-error stays release-time-only.
 tasks.matching { it.name == "publishPlugins" }.configureEach {
+    dependsOn(verifyPluginPortalMetadata)
     dependsOn(tasks.matching { it.name.startsWith("sigstoreSign") })
 }
+tasks.matching { it.name.startsWith("sigstoreSign") }.configureEach {
+    dependsOn(verifyPluginPortalMetadata)
+}
+tasks.named("check") { dependsOn(verifyPluginPortalMetadata) }
 
 // Gate Sigstore signing on the `RELEASE` env var so it fires ONLY in
 // `release.yml` (which already sets `RELEASE: true`). The Sigstore
