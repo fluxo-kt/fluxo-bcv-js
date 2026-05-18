@@ -37,15 +37,24 @@ class — `fluxo.bcvts.FluxoBcvTsPlugin`. Plugin ID:
   `fluxo-bcv-js/`, and the artifact is `plugin.api` / `plugin-*.jar`.
 - `fluxo-bcv-js/src/main/kotlin/fluxo/bcvts/` — all sources, single package.
 - `fluxo-bcv-js/api/plugin.api` — JVM API baseline of the plugin itself.
-- `checks/latest/` — composite-build smoke test, newest Kotlin+BCV, KMP
-  (`jvm + linuxX64 + js + wasmJs + wasmWasi`). `includeBuild("../../")`.
-- `checks/js-only/` — composite-build smoke test, oldest pinned Kotlin+BCV
-  (`bcvMin`, `kotlinMin`), legacy `kotlin("js")` plugin (no KMP).
+- `checks/latest/` — composite-build smoke, newest Kotlin+BCV, KMP
+  (`jvm + linuxX64 + js + wasmJs + wasmWasi`), Gradle 9.5.1.
+- `checks/middle/` — matrix interior (Kotlin 2.2.21 + BCV 0.16.3,
+  Gradle 8.14.5). Catches drift between floor and ceiling.
+- `checks/kgp-only/` — embedded-only path: KGP `abiValidation { }`,
+  NO external BCV. Validates dual-mode trigger + `DirConfig.TARGET_DIR`.
+- `checks/dual/` — both validators active; CI sweeps
+  `-PpreferEmbedded={auto,true,false}` and asserts the lifecycle
+  observable contract.
+- `checks/js-only/` — floor smoke (`bcvMin`, `kotlinMin`,
+  legacy `kotlin("js")` plugin, Gradle 8.6).
+- All composite modules `includeBuild("../../")` against the root build.
 - `gradle/libs.versions.toml` — version matrix. `bcv`/`bcvMin`/`bcvLatest`
   and `kotlin`/`kotlinMin`/`kotlinLatest` drive both the plugin and the
   check modules.
 - `updateBaseline` (sh, executable) — single canonical baseline refresh.
-  **Recurses** into `checks/latest` and `checks/js-only`.
+  **Recurses** into all `checks/*` modules; for `checks/kgp-only` it
+  also refreshes KGP's KLIB ABI via `updateKotlinAbi`.
 - `detekt.yml`, `.editorconfig` — style. `ktlint_official`, 100-col Kotlin,
   4-space indent, trailing comma allowed.
 
@@ -110,7 +119,14 @@ target is `javaLangTarget=1.8` (aligned with BCV).
 Single source of truth: `gradle/libs.versions.toml`. Plugin tested against
 the matrix in `README.md`. **Don't widen `kotlinMin`/`bcvMin` casually** —
 the reflective compat layer's value is precisely that range. If you bump,
-verify both `checks/latest` and `checks/js-only` still build.
+verify **all four** smoke modules still build: `checks/js-only` (floor),
+`checks/middle` (interior), `checks/latest` (ceiling), `checks/kgp-only`
+(embedded-only), and `checks/dual` (coexistence).
+
+1.1.0 added the dual-mode contract: the plugin activates on EITHER the
+external BCV plugin (1.0.x behaviour) OR KGP-embedded `abiValidation { }`
+(Kotlin 2.2+). External BCV is **frozen** upstream at 0.18.1 — the
+matrix ceiling is the physical upstream ceiling, not an arbitrary pin.
 
 ## CI / branches / release
 - Workflows under `.github/workflows/`.
@@ -138,11 +154,34 @@ verify both `checks/latest` and `checks/js-only` still build.
   `kotlin { jvmToolchain(...) }` won't be where you expect.
 - **`afterEvaluate` is required** — KMP target collection isn't ready
   earlier. Code has a `FIXME` to make this lazy; respect it.
-- **`DBG` left at 1** flips lifecycle logging to verbose. Always reset to
-  0 before commit unless explicitly debugging.
+- **`DBG` constant is gone** (1.1.0). Diagnostics route through Gradle's
+  logger — `./gradlew apiCheck --debug` surfaces compat-shim drift.
 - **`DirConfig.COMMON` cleaner ordering** is load-bearing — preserve
   `mustRunAfter(bcvCheckCleaner/bcvBuild/bcvCheck)` or BCV's `apiCheck`
-  fails with "extra files in buildDir".
+  fails with "extra files in buildDir". In embedded-only mode (no
+  external BCV plugin applied) the dirConfig provider short-circuits
+  to `DirConfig.TARGET_DIR`, so the cleaner branch is unreachable —
+  this is intentional, do NOT remove the gate at `ConfigureTsApiTasks.kt`.
+- **Dual-mode trigger** (1.1.0+): the pipeline fires on **either**
+  external `org.jetbrains.kotlinx.binary-compatibility-validator` OR
+  KGP-embedded `kotlin { abiValidation { } }`. Detection of the
+  embedded path is **task-based** (`tasks.names` contains
+  `checkKotlinAbi`/`updateKotlinAbi`) — extension-shape probes break
+  on the Kotlin 2.4-RC `.enabled`-property removal. If a future KGP
+  renames `checkKotlinAbi`, update `CompatibilityUtils.kt`'s
+  `CHECK_KOTLIN_ABI_TASK`/`UPDATE_KOTLIN_ABI_TASK` constants.
+- **`safe { }` is narrow** (1.1.0): catches `LinkageError`,
+  `ReflectiveOperationException`, `RuntimeException`. VM-fatal errors
+  (`OutOfMemoryError`, `StackOverflowError`, `AssertionError`) now
+  propagate. Don't widen back to `Throwable`.
+- **Lifecycle observable** is part of the integration-test contract:
+  `[fluxo-bcv-ts] trigger=external|embedded preferEmbedded=auto|true|false`
+  is emitted exactly once per build invocation and asserted by
+  `checks/dual`. Keep the format stable; `checks/dual`'s CI step
+  greps for it.
+- **`FluxoBcvTsExtension` is `@Incubating`** (1.1.0). Stability
+  commitment moment is targeted for 1.2.0 (remove `@Incubating`).
+  Until then any 1.x minor may break the extension shape.
 - **Reflection failures are silently swallowed by `safe { }`.** If
   something silently no-ops on a new Kotlin/BCV, suspect the compat shim
   first.
