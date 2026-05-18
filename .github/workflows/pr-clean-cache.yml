@@ -4,13 +4,19 @@ on:
   pull_request:
     types: [ closed ]
 
+# Strictly scoped — this job only deletes its own cache keys via
+# `gh actions-cache delete`. No writes to PRs, issues, or contents.
+permissions:
+  actions: write
+  contents: read
+
 jobs:
   pr-clean-cache:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        uses: step-security/harden-runner@ab7a9404c0f3da075243ca237b5fac12c98deaa5 # v2.19.3
         with:
           disable-sudo: true
           egress-policy: block
