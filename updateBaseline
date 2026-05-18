@@ -33,7 +33,12 @@ echo ""
 echo "=======> checks/js-only"
 cd ../js-only || exit 104
 pwd
-./gradlew ${COMMON_TASKS} || EXIT_CODE=105
+# js-only uses the legacy `kotlin("js")` plugin (not KMP) but still
+# materialises `kotlin-js-store/yarn.lock`. Without this refresh the
+# lock silently rots on every Kotlin bump, surfacing later as a
+# `Lock file was changed. Run the kotlinUpgradeYarnLock task` failure
+# on the next CI run after a baseline regen.
+./gradlew ${COMMON_TASKS} kotlinUpgradeYarnLock || EXIT_CODE=105
 
 
 # Go back to root
