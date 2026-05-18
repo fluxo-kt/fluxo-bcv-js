@@ -4,18 +4,21 @@ import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 
+// Top-level so other files in the package (notably
+// `ConfigureTsApiTasks.kt`) can branch on `plugins.hasPlugin(PLUGIN_ID_BCV)`
+// without duplicating literals.
+internal const val PLUGIN_ID_KMP = "org.jetbrains.kotlin.multiplatform"
+internal const val PLUGIN_ID_KJS = "org.jetbrains.kotlin.js"
+internal const val PLUGIN_ID_BCV = "org.jetbrains.kotlinx.binary-compatibility-validator"
+
+// Stable, machine-parseable observable for path selection.
+// `checks/dual` greps for these lines to assert that exactly one
+// trigger fires per build invocation; the format is part of the
+// integration-test contract.
+internal const val LIFECYCLE_TAG = "[fluxo-bcv-ts]"
+
 public class FluxoBcvTsPlugin : Plugin<Project> {
     private companion object {
-        private const val PLUGIN_ID_KMP = "org.jetbrains.kotlin.multiplatform"
-        private const val PLUGIN_ID_KJS = "org.jetbrains.kotlin.js"
-        private const val PLUGIN_ID_BCV = "org.jetbrains.kotlinx.binary-compatibility-validator"
-
-        // Stable, machine-parseable observable for path selection.
-        // `checks/dual` greps for these lines to assert that exactly
-        // one trigger fires per build invocation; the format is part
-        // of the integration-test contract.
-        private const val LIFECYCLE_TAG = "[fluxo-bcv-ts]"
-
         // Single-fire latch key. `plugins.withId(...)` may fire once for
         // each of KMP/KJS (mutually exclusive in practice, but the
         // contract here is "exactly one trigger registration"), so we

@@ -107,9 +107,34 @@ internal fun Project.configureTsApiTasks() {
         }
     }
 
+    // Opt-in: wire `:apiCheck` to also run when KGP's `:checkKotlinAbi`
+    // runs, so `./gradlew checkKotlinAbi` performs `.d.ts` validation in
+    // addition to KLIB ABI. Off by default — `:check` already triggers
+    // `:apiCheck` via the umbrella, so piggy-backing onto the focused
+    // KGP task would surprise users running it directly.
+    //
+    // `tasks.matching { }` is lazy and tolerates absence of the KGP
+    // task; `tasks.named("checkKotlinAbi")` would throw when embedded
+    // ABI validation is not enabled, defeating fail-closed semantics.
+    val ext = extensions.findByType(FluxoBcvTsExtension::class.java)
+    if (ext?.wireToKgpAbi?.orNull == true) {
+        tasks.matching { it.name == "checkKotlinAbi" }.configureEach {
+            dependsOn(apiCheck)
+        }
+    }
+
     // Follow the strategy of a BCV plugin.
     // API isn't overrided in any way as an extension is different.
+    // The `COMMON` strategy wires `bcvCheckCleaner` tasks against BCV's
+    // `${target}ApiCheck`; that task only exists when the external BCV
+    // plugin is applied. In embedded-only mode (KGP `abiValidation`
+    // without external BCV), fall through to `TARGET_DIR` so the
+    // cleaner branch is never reached — independent of `preferEmbedded`
+    // and of how many BCV-platform targets the project declares.
     val dirConfig = provider {
+        if (!plugins.hasPlugin(PLUGIN_ID_BCV)) {
+            return@provider DirConfig.TARGET_DIR
+        }
         val bcvTargets = targets.filter {
             it.platformType in BCV_PLATFORMS
         }
