@@ -4,7 +4,6 @@
     "KotlinConstantConditions",
     "LongMethod",
     "LongParameterList",
-    "TooGenericExceptionCaught",
 )
 
 package fluxo.bcvts
