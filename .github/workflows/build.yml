@@ -207,9 +207,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # `--no-configuration-cache` is load-bearing: the lifecycle log
+          # fires in `afterEvaluate` (config-time). With CC enabled and a
+          # warm cache, the second invocation would skip configuration and
+          # the assertion would silently pass on the CACHED log, not the
+          # current trigger decision. checks/dual deliberately has no
+          # `gradle.properties` so CC is OFF by default today, but this
+          # flag makes the assertion robust against any future opt-in.
           assert_observable() {  # $1=invocation args  $2=expected trigger  $3=expected preferEmbedded label
             local out
-            out=$(./gradlew apiCheck $1 --rerun-tasks 2>&1)
+            out=$(./gradlew apiCheck $1 --rerun-tasks --no-configuration-cache 2>&1)
             echo "$out" | grep -q "trigger=$2 preferEmbedded=$3" \
               || { echo "::error::missing/wrong lifecycle observable for $1 (expected trigger=$2 preferEmbedded=$3)"; echo "$out"; exit 1; }
           }
