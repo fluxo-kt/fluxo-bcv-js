@@ -98,6 +98,7 @@ jobs:
           expect checks/latest      '9\.5\.1'
           expect checks/kgp-only    '9\.5\.1'
           expect checks/dual        '9\.5\.1'
+          expect checks/middle      '8\.14\.5'
           expect checks/js-only     '8\.6'
 
       - name: 'Set up JDK ${{ matrix.java }}'
@@ -157,6 +158,20 @@ jobs:
         if: always()
         timeout-minutes: 10
         working-directory: checks/js-only
+        run: ./gradlew check --continue --stacktrace --scan
+        env:
+          GITHUB_DEPENDENCY_GRAPH_ENABLED: false
+
+      - name: Run check-middle
+        if: always()
+        timeout-minutes: 10
+        working-directory: checks/middle
+        # Matrix-interior smoke: Kotlin 2.2.21 + BCV 0.16.3 + Gradle
+        # 8.14.5. Catches drift between the floor (`checks/js-only`)
+        # and the ceiling (`checks/latest`) — in particular the BCV
+        # 0.14→0.16 worker-isolation boundary and the Kotlin 2.0→2.4
+        # metadata rename. Without this cell, regressions only
+        # surface on the ceiling and bisects span multiple commits.
         run: ./gradlew check --continue --stacktrace --scan
         env:
           GITHUB_DEPENDENCY_GRAPH_ENABLED: false

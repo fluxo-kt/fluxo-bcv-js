@@ -30,6 +30,26 @@ pwd
 ./gradlew ${COMMON_TASKS} kotlinUpgradeYarnLock || EXIT_CODE=103
 
 echo ""
+echo "=======> checks/middle"
+cd ../middle || exit 107
+pwd
+./gradlew ${COMMON_TASKS} kotlinUpgradeYarnLock || EXIT_CODE=108
+
+echo ""
+echo "=======> checks/kgp-only"
+cd ../kgp-only || exit 109
+pwd
+# Embedded-only path. Also refresh KGP's KLIB ABI baseline via
+# updateKotlinAbi — distinct from this plugin's apiDump.
+./gradlew ${COMMON_TASKS} kotlinUpgradeYarnLock updateKotlinAbi || EXIT_CODE=110
+
+echo ""
+echo "=======> checks/dual"
+cd ../dual || exit 111
+pwd
+./gradlew ${COMMON_TASKS} kotlinUpgradeYarnLock || EXIT_CODE=112
+
+echo ""
 echo "=======> checks/js-only"
 cd ../js-only || exit 104
 pwd

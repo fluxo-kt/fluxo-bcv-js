@@ -1,0 +1,7 @@
+public final class example/ExampleKt {
+	public static final fun addOne (I)I
+	public static final fun d2f (D)F
+	public static final fun dummy ()V
+	public static final fun s2b (Ljava/lang/String;)Z
+}
+
