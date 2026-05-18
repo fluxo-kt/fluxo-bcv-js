@@ -203,32 +203,38 @@ jobs:
           # Asset-name collision: the main `pluginMaven` and the auto-
           # generated `fluxo-bcv-tsPluginMarkerMaven` publications each
           # produce a `pom-default.xml.sigstore.json`. `gh release upload`
-          # uses each file's basename as the GitHub asset name, and
-          # ReleaseAsset.name has a uniqueness constraint per release —
-          # the second upload returns HTTP 422 ("ReleaseAsset.name
-          # already exists"). `--clobber` only resolves *same-name*
-          # conflicts on re-run; it cannot disambiguate distinct-content
-          # same-basename files in a single upload command.
-          # Fix: derive a publication-scoped asset name via gh's
-          # `file#displayName` syntax. Source path stays as-is on disk,
-          # asset name becomes `<publication>-<basename>` where
-          # `<publication>` strips Sigstore's `sigstoreSign…Publication`
-          # task-dir envelope. Names are consistently prefixed (not
-          # selectively, on collision only) so future Sigstore output
-          # additions cannot regress this gate. Consumer cosign command
-          # is unaffected — `cosign verify-blob --bundle <file>` reads
-          # the bundle by filesystem path, not asset name; the asset
-          # name is the discoverability handle on the Release page.
-          upload_specs=()
+          # derives each asset's GitHub `ReleaseAsset.name` from the
+          # file's basename, and that name is uniquely-constrained per
+          # release — the second upload returns HTTP 422
+          # ("ReleaseAsset.name already exists"). `--clobber` only
+          # resolves same-name conflicts across re-runs; it cannot
+          # disambiguate distinct-content same-basename files in one
+          # upload. `gh`'s `file#displayName` syntax is no help either:
+          # it sets the asset LABEL, not the NAME (verified at HTTP
+          # boundary — failed upload URL was
+          # `?label=PluginMaven-…&name=pom-default.xml.sigstore.json`).
+          # Fix: rename the files on disk before upload, prefixing each
+          # with its publication name (derived from the parent
+          # `sigstoreSign…Publication` task dir). The runner's build
+          # tree is ephemeral, so the in-place rename is safe and
+          # observation-equivalent to a copy. Prefixing is unconditional
+          # (not collision-driven) so future Sigstore output additions
+          # cannot regress this gate. Consumer cosign command is
+          # unaffected — `cosign verify-blob --bundle <file>` reads the
+          # bundle by filesystem path; the asset name is just the
+          # discoverability handle on the Release page.
+          upload_files=()
           for src in "${bundles[@]}"; do
             dir=$(basename "$(dirname "$src")")
             prefix="${dir#sigstoreSign}"
             prefix="${prefix%Publication}"
             base=$(basename "$src")
-            upload_specs+=("${src}#${prefix}-${base}")
+            newpath="$(dirname "$src")/${prefix}-${base}"
+            mv "$src" "$newpath"
+            upload_files+=("$newpath")
           done
-          echo "Uploading ${#upload_specs[@]} Sigstore bundle(s) to release $GITHUB_REF_NAME:"
-          printf '  %s\n' "${upload_specs[@]}"
+          echo "Uploading ${#upload_files[@]} Sigstore bundle(s) to release $GITHUB_REF_NAME:"
+          printf '  %s\n' "${upload_files[@]}"
           # `--clobber` overwrites on re-run (e.g. tag-retry); strictly
           # safer than letting upload fail.
-          gh release upload "$GITHUB_REF_NAME" --clobber "${upload_specs[@]}"
+          gh release upload "$GITHUB_REF_NAME" --clobber "${upload_files[@]}"

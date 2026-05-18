@@ -277,11 +277,14 @@ matrix ceiling is the physical upstream ceiling, not an arbitrary pin.
   files from distinct publications collide with HTTP 422
   ("ReleaseAsset.name already exists"). `--clobber` only resolves
   same-name conflicts across re-runs, NOT distinct-content same-basename
-  uploads in one command. `release.yml`'s attach step uses `gh`'s
-  `file#displayName` syntax to prefix every bundle with its publication
-  name (derived from the parent `sigstoreSign…Publication` task dir).
-  Prefixing is unconditional, not collision-driven, so adding future
-  Sigstore outputs cannot regress the gate.
+  uploads in one command. **Trap: `gh`'s `file#displayName` syntax does
+  NOT solve this** — it sets the asset LABEL, not the NAME (the failed
+  upload URL exposes the truth: `?label=…&name=<basename>`). The fix in
+  `release.yml`'s attach step renames files on disk via `mv` to prefix
+  every bundle with its publication name (derived from the parent
+  `sigstoreSign…Publication` task dir), so the basename gh reads is the
+  unique form. Prefixing is unconditional, not collision-driven, so
+  adding future Sigstore outputs cannot regress the gate.
 - **Reflection failures are silently swallowed by `safe { }`.** If
   something silently no-ops on a new Kotlin/BCV, suspect the compat shim
   first.
