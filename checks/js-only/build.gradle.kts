@@ -13,10 +13,12 @@ kotlin {
     }
 }
 
-if (hasProperty("buildScan")) {
+// Develocity 4.x DSL — see checks/latest/build.gradle.kts.
+develocity {
     buildScan {
-        termsOfServiceUrl = "https://gradle.com/terms-of-service"
-        termsOfServiceAgree = "yes"
+        termsOfUseUrl.set("https://gradle.com/help/legal-terms-of-use")
+        termsOfUseAgree.set("yes")
+        publishing.onlyIf { false }
     }
 }
 

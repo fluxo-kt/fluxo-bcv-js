@@ -30,10 +30,20 @@ kotlin {
     }
 }
 
-if (hasProperty("buildScan")) {
+// Develocity 4.x: `buildScan` lives under `develocity { }`,
+// `termsOfService*` renamed `termsOfUse*` (lazy `Property<String>`
+// — must use `.set(...)`, not direct assignment). Terms are accepted
+// unconditionally so the plugin doesn't complain on every build.
+// `publishing.onlyIf { false }` restores the Gradle Enterprise 3.x
+// opt-in behaviour: scans publish only when explicitly requested via
+// `--scan` or the `buildScanPublishPrevious` task. Without this gate,
+// Develocity 4.x auto-publishes on EVERY build — leaking task graphs,
+// timings, and dependency info to public scan URLs.
+develocity {
     buildScan {
-        termsOfServiceUrl = "https://gradle.com/terms-of-service"
-        termsOfServiceAgree = "yes"
+        termsOfUseUrl.set("https://gradle.com/help/legal-terms-of-use")
+        termsOfUseAgree.set("yes")
+        publishing.onlyIf { false }
     }
 }
 
