@@ -42,7 +42,14 @@ fkcSetupGradlePlugin(
     useJdkRelease = false
     setupCoroutines = false
     allWarningsAsErrors = false
-    experimentalLatestCompilation = true
+    // Test-only flag (Pass-8 source-trace of fluxo-kmp-conf
+    // `KotlinConfigSetup.kt:91-93`): gates the
+    // `LATEST_KOTLIN_LANG_VERSION` overlay for `compileTestKotlin`,
+    // NOT main compilation of the published JAR. Plugin has no tests
+    // today, so the flag is a no-op now; disabled to defang the trap
+    // that adding tests later would inherit RC-flavoured language
+    // version by default.
+    experimentalLatestCompilation = false
 
     publicationConfig {
         version = pluginVersion
