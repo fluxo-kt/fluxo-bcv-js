@@ -97,6 +97,12 @@ jobs:
       - name: Commit amend and push
         env:
           GITHUB_HEAD_REF: ${{ github.head_ref }}
+          # SHA captured at workflow trigger — pinned to the exact PR
+          # head we built against, NOT the live remote tip. Used in
+          # `--force-with-lease` below to guarantee no race-clobber of
+          # a newer commit a contributor (or Dependabot) pushed between
+          # checkout and push.
+          GITHUB_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           if [ -n "$(git diff --name-only --cached)" ]; then
             # Show what's available.
@@ -108,8 +114,14 @@ jobs:
             # Show what we are about to push.
             git log -n 3 --pretty=format:"%h - %an, %ar : %s"
 
-            # Push changes back to branch
-            git push --force -v origin "HEAD:refs/heads/${GITHUB_HEAD_REF}"
+            # Push changes back to branch. `--force-with-lease=ref:sha`
+            # (NOT plain `--force`) rejects the push if the remote
+            # branch tip has moved past the SHA we observed — protects
+            # against clobbering a concurrent contributor push, which
+            # plain `--force` would silently overwrite.
+            git push \
+              --force-with-lease="refs/heads/${GITHUB_HEAD_REF}:${GITHUB_HEAD_SHA}" \
+              -v origin "HEAD:refs/heads/${GITHUB_HEAD_REF}"
           else
             echo "No changes needed."
           fi
