@@ -31,6 +31,16 @@ on:
       - '**/release.yml'
       - '**dependabot.yml'
 
+# Cancel superseded runs on the same ref. Without this, rapid
+# force-pushes during PR iteration spawn parallel matrix runs
+# (3 OS × build + 5 composite-check steps each) that keep
+# burning runner minutes even though the user only cares about
+# the latest push. `group` keys on PR number when on a PR
+# (cancels prior runs for the SAME PR) or on the ref otherwise.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
   # required for all workflows (CodeQL)
