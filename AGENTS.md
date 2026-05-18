@@ -269,6 +269,19 @@ matrix ceiling is the physical upstream ceiling, not an arbitrary pin.
   step failed → can't safely re-push the same tag" is eliminated:
   delete tag, re-tag, re-push — workflow auto-detects existing
   Portal publication and skips just that step.
+- **Sigstore bundles need asset-name disambiguation when uploaded to
+  GitHub Releases.** The `pluginMaven` and `fluxo-bcv-tsPluginMarkerMaven`
+  publications each produce a `pom-default.xml.sigstore.json`. `gh
+  release upload` derives asset name from each file's basename, and
+  GitHub's `ReleaseAsset.name` is unique per release — same-basename
+  files from distinct publications collide with HTTP 422
+  ("ReleaseAsset.name already exists"). `--clobber` only resolves
+  same-name conflicts across re-runs, NOT distinct-content same-basename
+  uploads in one command. `release.yml`'s attach step uses `gh`'s
+  `file#displayName` syntax to prefix every bundle with its publication
+  name (derived from the parent `sigstoreSign…Publication` task dir).
+  Prefixing is unconditional, not collision-driven, so adding future
+  Sigstore outputs cannot regress the gate.
 - **Reflection failures are silently swallowed by `safe { }`.** If
   something silently no-ops on a new Kotlin/BCV, suspect the compat shim
   first.

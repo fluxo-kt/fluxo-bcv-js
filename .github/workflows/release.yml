@@ -200,8 +200,35 @@ jobs:
             echo "::error::No Sigstore bundle files produced — wiring regressed (check :plugin:tasks --group sigstore signing)"
             exit 1
           fi
-          echo "Uploading ${#bundles[@]} Sigstore bundle(s) to release $GITHUB_REF_NAME:"
-          printf '  %s\n' "${bundles[@]}"
+          # Asset-name collision: the main `pluginMaven` and the auto-
+          # generated `fluxo-bcv-tsPluginMarkerMaven` publications each
+          # produce a `pom-default.xml.sigstore.json`. `gh release upload`
+          # uses each file's basename as the GitHub asset name, and
+          # ReleaseAsset.name has a uniqueness constraint per release —
+          # the second upload returns HTTP 422 ("ReleaseAsset.name
+          # already exists"). `--clobber` only resolves *same-name*
+          # conflicts on re-run; it cannot disambiguate distinct-content
+          # same-basename files in a single upload command.
+          # Fix: derive a publication-scoped asset name via gh's
+          # `file#displayName` syntax. Source path stays as-is on disk,
+          # asset name becomes `<publication>-<basename>` where
+          # `<publication>` strips Sigstore's `sigstoreSign…Publication`
+          # task-dir envelope. Names are consistently prefixed (not
+          # selectively, on collision only) so future Sigstore output
+          # additions cannot regress this gate. Consumer cosign command
+          # is unaffected — `cosign verify-blob --bundle <file>` reads
+          # the bundle by filesystem path, not asset name; the asset
+          # name is the discoverability handle on the Release page.
+          upload_specs=()
+          for src in "${bundles[@]}"; do
+            dir=$(basename "$(dirname "$src")")
+            prefix="${dir#sigstoreSign}"
+            prefix="${prefix%Publication}"
+            base=$(basename "$src")
+            upload_specs+=("${src}#${prefix}-${base}")
+          done
+          echo "Uploading ${#upload_specs[@]} Sigstore bundle(s) to release $GITHUB_REF_NAME:"
+          printf '  %s\n' "${upload_specs[@]}"
           # `--clobber` overwrites on re-run (e.g. tag-retry); strictly
           # safer than letting upload fail.
-          gh release upload "$GITHUB_REF_NAME" --clobber "${bundles[@]}"
+          gh release upload "$GITHUB_REF_NAME" --clobber "${upload_specs[@]}"
