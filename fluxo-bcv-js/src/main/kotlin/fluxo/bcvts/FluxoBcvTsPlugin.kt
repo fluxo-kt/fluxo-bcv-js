@@ -22,9 +22,22 @@ public class FluxoBcvTsPlugin : Plugin<Project> {
         // gate via project extras to keep the lifecycle observable
         // single-shot for `checks/dual`.
         private const val TRIGGER_FLAG = "fluxo.bcvts.triggerRegistered"
+
+        // DSL key for the public extension. Consumers write
+        // `fluxoBcvTs { preferEmbedded.set(true) }`. Standard Gradle
+        // camelCase convention.
+        public const val EXTENSION_NAME: String = "fluxoBcvTs"
     }
 
     override fun apply(target: Project) {
+        // Register the public extension synchronously, BEFORE any
+        // `withId` listener fires. Consumers can then configure
+        // `fluxoBcvTs { … }` in their build script and the trigger
+        // logic (which runs lazily in `afterEvaluate`) reads it back.
+        // Managed type: Gradle's ManagedFactory injects `Property`
+        // instances, so no explicit `objects.property()` boilerplate.
+        target.extensions.create(EXTENSION_NAME, FluxoBcvTsExtension::class.java)
+
         // The plugin still needs Kotlin (KMP or legacy KJS) for target
         // discovery. The validator source — external BCV plugin or
         // KGP-embedded abiValidation — is resolved *inside*
@@ -85,18 +98,46 @@ public class FluxoBcvTsPlugin : Plugin<Project> {
             val external = plugins.hasPlugin(PLUGIN_ID_BCV)
             val embedded = kgpAbiValidationEnabledCompat
             if (!external && !embedded) return@afterEvaluate
-            // AUTO selection: when both validator sources are active,
-            // prefer external for backward-compat with 1.0.x users. The
-            // explicit `preferEmbedded` knob from `FluxoBcvTsExtension`
-            // lands in the next commit; until then the AUTO branch is
-            // the only path.
-            val trigger = if (external) "external" else "embedded"
-            logger.lifecycle("$LIFECYCLE_TAG trigger=$trigger preferEmbedded=auto")
-            if (external && embedded) {
+
+            val ext = extensions.getByType(FluxoBcvTsExtension::class.java)
+            val preference: Boolean? = ext.preferEmbedded.orNull
+            // Decision table:
+            //   preference=true,  embedded → embedded
+            //   preference=false, external → external
+            //   preference=null   (AUTO) or preference unreachable
+            //     → external if available, else embedded.
+            // Any unreachable preference falls back silently to the
+            // available source; AUTO + both-active prefers external for
+            // 1.0.x backward-compat and emits a one-shot recommendation.
+            val trigger = when {
+                preference == true && embedded -> "embedded"
+                preference == false && external -> "external"
+                external -> "external"
+                else -> "embedded"
+            }
+            val preferenceLabel = preference?.toString() ?: "auto"
+            logger.lifecycle("$LIFECYCLE_TAG trigger=$trigger preferEmbedded=$preferenceLabel")
+
+            if (preference == null && external && embedded) {
                 logger.lifecycle(
                     "$LIFECYCLE_TAG both external BCV and KGP-embedded abiValidation " +
-                        "are active; using external. The `preferEmbedded` knob lands in " +
-                        "the 1.1.0 extension for forward-compat selection.",
+                        "are active; using external (AUTO). Consider " +
+                        "`fluxoBcvTs { preferEmbedded.set(true) }` to migrate once " +
+                        "external BCV is removed (it is frozen upstream).",
+                )
+            }
+            if (preference == true && !embedded) {
+                logger.lifecycle(
+                    "$LIFECYCLE_TAG preferEmbedded=true but KGP-embedded abiValidation " +
+                        "is not enabled — falling back to external BCV. " +
+                        "Set `kotlin { abiValidation { enabled.set(true) } }` " +
+                        "(requires @OptIn(ExperimentalAbiValidation::class)).",
+                )
+            }
+            if (preference == false && !external) {
+                logger.lifecycle(
+                    "$LIFECYCLE_TAG preferEmbedded=false but external BCV plugin is " +
+                        "not applied — falling back to KGP-embedded abiValidation.",
                 )
             }
             configureTsApiTasks()
