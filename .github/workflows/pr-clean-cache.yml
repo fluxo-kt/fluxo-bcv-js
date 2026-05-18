@@ -30,7 +30,14 @@ jobs:
           REPO: ${{ github.repository }}
           BRANCH: refs/pull/${{ github.event.pull_request.number }}/merge
         run: |
-          gh extension install actions/gh-actions-cache
+          # Binary gh extensions are pinned by release tag; commit
+          # pins are for script extensions cloned from source.
+          # Without `--pin`, every workflow invocation pulls the
+          # extension's latest release — a silent supply-chain
+          # surface. v1.0.4 (2024-04-09) is the latest tagged
+          # release and matches sibling fluxo-kmp-conf's pin.
+          gh extension install actions/gh-actions-cache \
+            --pin v1.0.4
 
           echo "Fetching list of cache key"
           cacheKeysForPR=$(gh actions-cache list -R "$REPO" -B "$BRANCH" -L 100 | cut -f 1 )
