@@ -217,7 +217,10 @@ jobs:
           assert_observable() {  # $1=invocation args  $2=expected trigger  $3=expected preferEmbedded label
             local out
             out=$(./gradlew apiCheck $1 --rerun-tasks --no-configuration-cache 2>&1)
-            echo "$out" | grep -q "trigger=$2 preferEmbedded=$3" \
+            # Anchor `^\[fluxo-bcv-ts\] … $` so the assertion can't drift
+            # to any other future `trigger=…` substring elsewhere in the
+            # build output (e.g. KGP/BCV adopting similar log prefixes).
+            echo "$out" | grep -qE "^\[fluxo-bcv-ts\] trigger=$2 preferEmbedded=$3$" \
               || { echo "::error::missing/wrong lifecycle observable for $1 (expected trigger=$2 preferEmbedded=$3)"; echo "$out"; exit 1; }
           }
           assert_observable "" external auto
