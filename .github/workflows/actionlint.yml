@@ -45,8 +45,16 @@ jobs:
       # default (which can be unexpectedly broad, especially after a
       # GitHub-side default change). Make the requirement explicit so a
       # future workflow that forgets the block fails PR review, not in
-      # production after an incident. Match either top-level
-      # `permissions:` (start of line) or a job-level one (indented).
+      # production after an incident.
+      #
+      # Uses `yq` (preinstalled on ubuntu-latest) to STRUCTURALLY parse
+      # the YAML — a regex grep on `^[[:space:]]*permissions:` would
+      # false-positive on a `run: |` heredoc that contains the literal
+      # text `permissions:` at column 0 of the embedded script. The yq
+      # approach reads the actual YAML tree: a workflow qualifies if
+      # EITHER `.permissions` exists at the top level OR every entry in
+      # `.jobs[]` has its own `.permissions` (job-level overrides are
+      # equally valid per GitHub's least-privilege model).
       - name: Every workflow declares permissions
         shell: bash
         run: |
@@ -54,8 +62,10 @@ jobs:
           missing=0
           for f in .github/workflows/*.yml .github/workflows/*.yaml; do
             [ -e "$f" ] || continue
-            if ! grep -qE '^[[:space:]]*permissions:' "$f"; then
-              echo "::error file=$f::workflow has no \`permissions:\` block; declare it explicitly (least-privilege)"
+            has_top=$(yq 'has("permissions")' "$f")
+            all_jobs=$(yq '[.jobs[] | has("permissions")] | all' "$f")
+            if [ "$has_top" != "true" ] && [ "$all_jobs" != "true" ]; then
+              echo "::error file=$f::workflow has no \`permissions:\` block at top level OR on every job; declare it explicitly (least-privilege)"
               missing=1
             fi
           done
