@@ -109,9 +109,9 @@ class — `fluxo.bcvts.FluxoBcvTsPlugin`. Plugin ID:
 `mavenLocal()` and the snapshot version.
 
 ## JDKs
-CI matrix runs **JDK 17 (Temurin)** on macOS/Ubuntu/Windows for `build.yml`.
-`release.yml` and `pr-baseline.yml` use **JDK 22**. JitPack uses **JDK 21**.
-Local dev: 17+ should work; 22 matches release/baseline.
+CI matrix runs **JDK 21 (Temurin)** on macOS/Ubuntu/Windows for `build.yml`.
+`release.yml` and `pr-baseline.yml` also use **JDK 21**. JitPack uses
+**openjdk21**. Local dev: 17+ should work; 21 matches all CI surfaces.
 `fkcSetupGradlePlugin` is configured `useJdkRelease = false`; bytecode
 target is `javaLangTarget=1.8` (aligned with BCV).
 

@@ -11,6 +11,10 @@ build/
 
 # JVM/Android
 local.properties
+# Heap dumps from `-XX:+HeapDumpOnOutOfMemoryError` (set in the Gradle
+# daemon JVM opts) land in the daemon's CWD — typically a check-cell
+# project root, NOT under `build/`. Ignore globally.
+*.hprof
 
 # OS
 .DS_Store
