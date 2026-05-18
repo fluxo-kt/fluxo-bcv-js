@@ -4,9 +4,13 @@ name: Scorecard supply-chain security
 # SARIF to GitHub Code Scanning so the report is visible in the
 # Security tab.
 #
-# Branch-Protection check requires admin-scope GH API access — without
-# a `read_org`-scoped PAT in `secrets.SCORECARD_PAT`, that one check
-# returns "?". Accepted (vs setting up a PAT). All other checks
+# Branch-Protection check requires admin-scope GH API access — the
+# action's `repo_token` input is wired with `SCORECARD_PAT ||
+# GITHUB_TOKEN` fallback (see step below), so adding the
+# `SCORECARD_PAT` repo secret (a fine-grained PAT with `read_org`
+# scope on this org's `fluxo-bcv-js` repo) activates the check at the
+# next run with NO workflow edit. Until then, GITHUB_TOKEN is used and
+# the Branch-Protection check returns "?"; all other checks
 # (Dangerous-Workflow, Token-Permissions, Pinned-Dependencies,
 # Code-Review, Maintained, SAST, etc.) are PAT-free and provide the
 # bulk of the score.
@@ -51,6 +55,16 @@ jobs:
           results_file: results.sarif
           results_format: sarif
           publish_results: true
+          # `read_org`-scoped PAT unlocks the Branch-Protection check;
+          # without it scorecard falls back to GITHUB_TOKEN (which
+          # cannot read branch-protection rules) and the check returns
+          # "?". The OR-fallback expression means adding the
+          # SCORECARD_PAT repo secret at ANY future point activates the
+          # check automatically — no workflow edit, no re-deploy. Until
+          # then, the rest of the score (Dangerous-Workflow,
+          # Token-Permissions, Pinned-Dependencies, Code-Review,
+          # Maintained, SAST, …) is unaffected.
+          repo_token: ${{ secrets.SCORECARD_PAT || secrets.GITHUB_TOKEN }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
