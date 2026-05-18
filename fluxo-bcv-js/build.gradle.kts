@@ -3,8 +3,10 @@ plugins {
     // Sigstore keyless signing — applied here so it observes every
     // `MavenPublication` registered by `fkcSetupGradlePlugin` (the
     // plugin JAR AND the plugin marker POM). Hooks into `publish*` via
-    // the underlying `sigstoreSign*Publication` tasks; locally these
-    // require browser-OIDC, in CI they use GitHub Actions OIDC.
+    // the underlying `sigstoreSign*Publication` tasks. Those tasks are
+    // RELEASE-only gated below (see the `onlyIf` block near the bottom
+    // of this file) so local `publishToMavenLocal` doesn't block on
+    // browser-OIDC; in CI they use GitHub Actions OIDC.
     alias(libs.plugins.sigstore.sign)
 }
 
@@ -83,14 +85,38 @@ extensions.getByType(org.gradle.plugin.devel.GradlePluginDevelopmentExtension::c
 // task) is NOT a standard `PublishToMavenRepository` subclass, so the
 // Sigstore plugin's default `withType<...>` hook misses it. Force the
 // dependency explicitly so the upload includes the `.sigstore.bundle`
-// siblings for BOTH the plugin JAR and its marker POM. Local
-// `publishToMavenLocal` is unaffected — Sigstore tasks run only when
-// publishPlugins runs, which only happens in `release.yml` with OIDC
-// credentials available. `tasks.matching { }` is lazy and CC-safe;
-// `configureEach` ensures the wiring fires regardless of registration
-// order between sigstore-sign and gradle-plugin-publish.
+// siblings for BOTH the plugin JAR and its marker POM. `tasks.matching
+// { }` is lazy and CC-safe; `configureEach` ensures the wiring fires
+// regardless of registration order between sigstore-sign and
+// gradle-plugin-publish.
 tasks.matching { it.name == "publishPlugins" }.configureEach {
     dependsOn(tasks.matching { it.name.startsWith("sigstoreSign") })
+}
+
+// Gate Sigstore signing on the `RELEASE` env var so it fires ONLY in
+// `release.yml` (which already sets `RELEASE: true`). The Sigstore
+// plugin auto-wires its `sigstoreSign*Publication` tasks into every
+// `MavenPublication`'s publish chain — without this gate, a developer
+// running `./gradlew :plugin:publishToMavenLocal` would block on a
+// browser-OIDC prompt at `oauth2.sigstore.dev/auth/...`. To force-test
+// the Sigstore path locally, run with `RELEASE=true ./gradlew ...`
+// (opt-in; the developer accepts the OIDC ceremony).
+//
+// `notCompatibleWithConfigurationCache` is also required:
+// `dev.sigstore.sign 2.0.x` (`SigstoreSignFilesTask`) captures a
+// `DefaultProject` reference, which Gradle's configuration cache
+// refuses to serialize. With `org.gradle.configuration-cache.problems=fail`
+// + `max-problems=0` (gradle.properties), a fresh local
+// `publishToMavenLocal` would CC-fail at config-store time — BEFORE
+// `onlyIf` is even evaluated. Marking the task CC-incompatible bypasses
+// CC for just these tasks; the rest of the build still benefits from
+// CC. release.yml already passes `--no-configuration-cache`, so CI is
+// unaffected either way.
+tasks.matching { it.name.startsWith("sigstoreSign") }.configureEach {
+    onlyIf { providers.environmentVariable("RELEASE").orNull == "true" }
+    notCompatibleWithConfigurationCache(
+        "dev.sigstore.sign 2.0.x captures Project reference — upstream CC violation",
+    )
 }
 
 configurations.implementation {
