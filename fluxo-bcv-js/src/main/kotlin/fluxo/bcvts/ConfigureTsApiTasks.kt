@@ -9,7 +9,6 @@
 
 package fluxo.bcvts
 
-import kotlin.contracts.contract
 import kotlinx.validation.ApiValidationExtension
 import org.gradle.api.DefaultTask
 import org.gradle.api.DomainObjectCollection
@@ -54,12 +53,13 @@ private val BCV_PLATFORMS = arrayOf(
     KotlinPlatformType.androidJvm,
 )
 
-private fun apiCheckEnabled(projectName: String, bcv: ApiValidationExtension?): Boolean {
-    contract {
-        returns(true) implies (bcv != null)
-    }
-    return bcv == null || (!bcv.validationDisabled && projectName !in bcv.ignoredProjects)
-}
+// Default-on: only an active BCV extension can opt the project out
+// (globally disabled or in `ignoredProjects`). In embedded-only mode
+// `bcv == null`, so checks stay enabled. No `contract { }` here — the
+// previous `returns(true) implies (bcv != null)` was a lie since the
+// `bcv == null` branch also returns true (1.1.0 nullable-bcv refactor).
+private fun apiCheckEnabled(projectName: String, bcv: ApiValidationExtension?): Boolean =
+    bcv == null || (!bcv.validationDisabled && projectName !in bcv.ignoredProjects)
 
 
 /**
