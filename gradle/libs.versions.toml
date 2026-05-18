@@ -99,3 +99,14 @@ deps-guard = { id = "com.dropbox.dependency-guard", version = "0.5.0" }
 # https://runningcode.github.io/gradle-doctor/
 # https://plugins.gradle.org/plugin/com.osacky.doctor
 gradle-doctor = { id = "com.osacky.doctor", version = "0.12.0" }
+
+# Sigstore keyless signing for SLSA provenance.
+# Signs the plugin JAR + plugin marker POM alongside the existing PGP
+# signature required by Gradle Plugin Portal — Sigstore is additive,
+# not a replacement. Uses GitHub Actions OIDC in CI; falls back to
+# browser-based OIDC locally (so `:plugin:sigstoreSign` works on a
+# developer's workstation too, but the publication chain only invokes
+# it via release.yml).
+# https://github.com/sigstore/sigstore-java/releases
+# https://plugins.gradle.org/plugin/dev.sigstore.sign
+sigstore-sign = { id = "dev.sigstore.sign", version = "2.0.0" }

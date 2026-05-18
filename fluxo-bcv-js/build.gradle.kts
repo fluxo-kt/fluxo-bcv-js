@@ -1,5 +1,11 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
+    // Sigstore keyless signing — applied here so it observes every
+    // `MavenPublication` registered by `fkcSetupGradlePlugin` (the
+    // plugin JAR AND the plugin marker POM). Hooks into `publish*` via
+    // the underlying `sigstoreSign*Publication` tasks; locally these
+    // require browser-OIDC, in CI they use GitHub Actions OIDC.
+    alias(libs.plugins.sigstore.sign)
 }
 
 val pluginId = "io.github.fluxo-kt.binary-compatibility-validator-js"
@@ -64,6 +70,21 @@ fkcSetupGradlePlugin(
 // fluxo-kmp-conf. Upstream issue: TODO file at fluxo-kt/fluxo-kmp-conf.
 extensions.getByType(org.gradle.plugin.devel.GradlePluginDevelopmentExtension::class.java)
     .plugins.getByName("fluxo-bcv-ts").id = pluginId
+
+// Wire Sigstore bundle production into the Gradle Plugin Portal
+// publication chain. `publishPlugins` (the `com.gradle.plugin-publish`
+// task) is NOT a standard `PublishToMavenRepository` subclass, so the
+// Sigstore plugin's default `withType<...>` hook misses it. Force the
+// dependency explicitly so the upload includes the `.sigstore.bundle`
+// siblings for BOTH the plugin JAR and its marker POM. Local
+// `publishToMavenLocal` is unaffected — Sigstore tasks run only when
+// publishPlugins runs, which only happens in `release.yml` with OIDC
+// credentials available. `tasks.matching { }` is lazy and CC-safe;
+// `configureEach` ensures the wiring fires regardless of registration
+// order between sigstore-sign and gradle-plugin-publish.
+tasks.matching { it.name == "publishPlugins" }.configureEach {
+    dependsOn(tasks.matching { it.name.startsWith("sigstoreSign") })
+}
 
 configurations.implementation {
     exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib")

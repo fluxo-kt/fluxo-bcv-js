@@ -64,6 +64,17 @@ jobs:
   publish_release:
     runs-on: macos-latest
 
+    # Sigstore keyless signing relies on the workflow's GitHub OIDC
+    # identity. Without `id-token: write`, `sigstoreSign*Publication`
+    # cannot mint an OIDC token to exchange for a Fulcio cert, and the
+    # bundle production silently degrades to no-op (or hard-fails,
+    # depending on `dev.sigstore.sign` v2.x behaviour). `contents: read`
+    # is the minimum needed for checkout. No GitHub writes from this
+    # job — release notes/tags are owned by `gh_release`.
+    permissions:
+      id-token: write
+      contents: read
+
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
