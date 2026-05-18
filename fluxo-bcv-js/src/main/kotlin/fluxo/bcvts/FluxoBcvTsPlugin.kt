@@ -28,8 +28,13 @@ public class FluxoBcvTsPlugin : Plugin<Project> {
 
         // DSL key for the public extension. Consumers write
         // `fluxoBcvTs { preferEmbedded.set(true) }`. Standard Gradle
-        // camelCase convention.
-        public const val EXTENSION_NAME: String = "fluxoBcvTs"
+        // camelCase convention. Kept `private` (symmetric with
+        // `TRIGGER_FLAG`) — the const is only referenced inside this
+        // file; `public` inside a `private companion object` would
+        // emit a Java-accessible static field that Kotlin consumers
+        // could not import anyway, which is an unintentional ABI
+        // asymmetry.
+        private const val EXTENSION_NAME: String = "fluxoBcvTs"
     }
 
     override fun apply(target: Project) {
@@ -39,7 +44,16 @@ public class FluxoBcvTsPlugin : Plugin<Project> {
         // logic (which runs lazily in `afterEvaluate`) reads it back.
         // Managed type: Gradle's ManagedFactory injects `Property`
         // instances, so no explicit `objects.property()` boilerplate.
-        target.extensions.create(EXTENSION_NAME, FluxoBcvTsExtension::class.java)
+        val ext = target.extensions
+            .create(EXTENSION_NAME, FluxoBcvTsExtension::class.java)
+        // `preferEmbedded` deliberately has no convention: a null/unset
+        // value is the AUTO sentinel (prefer external for 1.0.x compat
+        // when both modes are active). `wireToKgpAbi` defaults to false
+        // — current call sites use `.orNull == true` which already
+        // null-handles, but the convention forward-protects any future
+        // `.get()` reader from `MissingValueException` and makes the
+        // documented default observable in IDE auto-complete.
+        ext.wireToKgpAbi.convention(false)
 
         // The plugin still needs Kotlin (KMP or legacy KJS) for target
         // discovery. The validator source — external BCV plugin or

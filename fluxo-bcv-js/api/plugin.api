@@ -5,7 +5,6 @@ public abstract class fluxo/bcvts/FluxoBcvTsExtension {
 }
 
 public final class fluxo/bcvts/FluxoBcvTsPlugin : org/gradle/api/Plugin {
-	public static final field EXTENSION_NAME Ljava/lang/String;
 	public fun <init> ()V
 	public synthetic fun apply (Ljava/lang/Object;)V
 	public fun apply (Lorg/gradle/api/Project;)V
