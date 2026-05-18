@@ -6,6 +6,7 @@ import java.lang.reflect.AccessibleObject
 import kotlinx.validation.ApiValidationExtension
 import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
+import org.gradle.api.plugins.ExtensionAware
 import org.jetbrains.kotlin.gradle.dsl.KotlinProjectExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
@@ -244,6 +245,82 @@ private val KotlinJsIrLinkModeCompatCaller: KotlinJsIrLink.() -> KotlinJsBinaryM
 
 internal val KotlinJsIrLink.modeCompat: KotlinJsBinaryMode?
     get() = safe { KotlinJsIrLinkModeCompatCaller(this) }
+
+
+// KGP-embedded ABI validation lookup (Kotlin 2.2+; @OptIn(ExperimentalAbiValidation::class)).
+// Fully reflective: types and package paths drift across Kotlin
+// versions, and consuming the typed `AbiValidationMultiplatformExtension`
+// would create a hard compile-time bond to a still-experimental KGP
+// surface. On any reflection failure we fail-closed (return Absent /
+// false) so a broken shim never spuriously fires the embedded pipeline.
+//
+// Known names KGP has used (or may use) for the extension. Add new
+// keys here when KGP renames — and remove the old one only after the
+// renamed key has shipped in every supported `kotlinLatest`.
+private val ABI_EXT_NAMES = arrayOf("abiValidation", "kotlinAbi")
+
+private enum class AbiLookup { Absent, Detected, Enabled }
+
+private fun Any.findAbiExt(): Any? {
+    val ea = this as? ExtensionAware ?: return null
+    return ABI_EXT_NAMES.firstNotNullOfOrNull { ea.extensions.findByName(it) }
+}
+
+private fun Any.readAbiEnabled(): Boolean? = safe {
+    val m = javaClass.methods.firstOrNull {
+        it.name == "getEnabled" && it.parameterCount == 0
+    } ?: return@safe null
+    @Suppress("UNCHECKED_CAST")
+    (m.invoke(this) as? org.gradle.api.provider.Property<Boolean>)?.orNull
+}
+
+private fun Project.abiLookup(): AbiLookup {
+    val kotlinExt: Any = extensions.findByName("kotlin") ?: return AbiLookup.Absent
+    // Scopes to probe: the kotlin extension itself (top-level
+    // `kotlin { abiValidation { } }`) plus every target (per-target
+    // `kotlin { jvm { abiValidation { } } }` — KMP fanout shape).
+    val scopes = mutableListOf<Any>(kotlinExt)
+    safe<Unit> {
+        val getTargets = kotlinExt.javaClass.methods.firstOrNull {
+            it.name == "getTargets" && it.parameterCount == 0
+        } ?: return@safe
+        (getTargets.invoke(kotlinExt) as? Iterable<*>)?.forEach { tgt ->
+            if (tgt != null) scopes.add(tgt)
+        }
+    }
+    var detected = false
+    for (scope in scopes) {
+        val abi = scope.findAbiExt() ?: continue
+        detected = true
+        if (abi.readAbiEnabled() == true) return AbiLookup.Enabled
+    }
+    return if (detected) AbiLookup.Detected else AbiLookup.Absent
+}
+
+/**
+ * True iff KGP's `abiValidation` extension is observable on the kotlin
+ * extension or any of its targets. A presence check — does NOT imply
+ * the user has opted into embedded validation. Use for diagnostic
+ * flow only (e.g. logging "embedded extension present but `enabled`
+ * cannot be read — shim might be broken"); use [kgpAbiValidationEnabledCompat]
+ * for trigger decisions.
+ *
+ * @see org.jetbrains.kotlin.gradle.dsl.abi.AbiValidationMultiplatformExtension
+ * @see org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation
+ */
+internal val Project.kgpAbiValidationDetectedCompat: Boolean
+    get() = abiLookup() != AbiLookup.Absent
+
+/**
+ * True iff KGP's embedded ABI validation is detected AND its
+ * `enabled` flag reads true on at least one scope (top-level or any
+ * target). Drives the embedded-mode trigger in [FluxoBcvTsPlugin].
+ *
+ * @see org.jetbrains.kotlin.gradle.dsl.abi.AbiValidationMultiplatformExtension
+ * @see org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation
+ */
+internal val Project.kgpAbiValidationEnabledCompat: Boolean
+    get() = abiLookup() == AbiLookup.Enabled
 
 
 internal fun setAccessible(field: AccessibleObject) {
