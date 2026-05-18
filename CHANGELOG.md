@@ -65,8 +65,62 @@
 - All GitHub Actions SHA-pinned via `actions-up`; third-party actions
   pinned at their resolved commits; CodeQL action bumped to v4.35.5;
   CI matrix JDK 17 → 21 LTS.
+- `gradle.properties` now enforces `kotlin.jvm.target.validation.mode=error`
+  — Kotlin/Java JVM target mismatch is a build-time hard fail at
+  config time, protecting the `javaLangTarget=1.8` invariant for
+  the `kotlinMin=1.7.22` consumer floor.
+- CI hardening sweep (sibling-aligned with `fluxo-kmp-conf`):
+  - `build.yml`: `permissions.contents` downgraded from `write` to
+    `read`; new workflow-level `concurrency` block cancels superseded
+    matrix runs (saves runner minutes on rapid PR iteration).
+  - `pr-baseline.yml`: replaced `git push --force` with
+    `--force-with-lease=ref:sha` — race-protected against concurrent
+    contributor pushes between workflow checkout and baseline push.
+  - `clear_cache.yml`: added `step-security/harden-runner` with
+    `egress-policy: block` allowlisting only `api.github.com:443`.
+  - `pr-clean-cache.yml`: pinned the `gh-actions-cache` extension
+    install to `--pin v1.0.4` (removes a silent supply-chain
+    surface).
+  - New `dependency-submission.yml` workflow: dedicated graph
+    submission on default-branch pushes only. Decouples
+    graph-submit failures from the build-matrix outcome and
+    enabled the build.yml `contents:read` tightening above.
 
 ### Fixed
+- **Publish-time main POM regression** — fluxo-kmp-conf 0.14.x's
+  `PluginMavenPublication` stopped wiring
+  `<name>/<description>/<url>/<inceptionYear>/<licenses>/<developers>/<scm>`
+  into the main POM (1.0.x shipped with all of them). Restored
+  inline via `publishing.publications.withType<MavenPublication> {
+  pom { ... } }`. Plugin Portal accepts incomplete POMs but Maven
+  Central / Sonatype OSSRH do not — restoring keeps the door open
+  for a 1.2.0 Central publication path and is industry-best-practice
+  regardless.
+- **Main artifactId restored to `fluxo-bcv-ts`** — same fluxo-kmp-conf
+  0.14.x surface change started rewriting `artifactId = projectName`,
+  which would have shipped 1.1.0 as `io.github.fluxo-kt:plugin`
+  (a meaningless coordinate that could collide with anything in the
+  group). 1.0.x's `io.github.fluxo-kt:fluxo-bcv-ts` contract is
+  preserved. Plugin-block consumers are unaffected (marker
+  indirection routes the resolution); direct-Maven-coord consumers
+  stay aligned with 1.0.x.
+- **`project.version` propagation fix** — fluxo-kmp-conf 0.14.x
+  configures its own `publicationConfig.version` (which targets the
+  main publication only) but does NOT propagate the value back to
+  `project.version`. The auto-generated plugin marker POM (which
+  Plugin Portal uses to resolve `plugins { id("...") }` requests)
+  reads `project.version` directly, so without an explicit
+  assignment the marker shipped as `<version>unspecified</version>`.
+  Set `version = pluginVersion` after `fkcSetupGradlePlugin`.
+- **Sigstore signing local-publish blocker** — `dev.sigstore.sign`
+  auto-wires `sigstoreSign*Publication` tasks into every
+  `MavenPublication`'s publish chain, which made
+  `./gradlew :plugin:publishToMavenLocal` block on a browser-OIDC
+  prompt. Gated the tasks on `RELEASE=true` env var (matching
+  release.yml) and marked them
+  `notCompatibleWithConfigurationCache(...)` because the upstream
+  v2.0.x task captures a `DefaultProject` reference. Local dev can
+  force-test signing via `RELEASE=true ./gradlew ...`.
 - Version-parser bug in `isVersionGreaterThanOrEqual` — pre-release
   suffixes like `1.7.22-Beta1` were incorrectly rejected against
   the floor when the suffix sat on the differentiating numeric
@@ -106,7 +160,7 @@
 - bump Gradle wrapper to _9.5.1_ (SHA-pinned).
 - bump `fluxo-kmp-conf` to _0.14.1_; bump `Dokka` to _2.2.0_;
   bump `gradle-plugin-publish` to _2.1.1_; bump `gradle-doctor` to
-  _0.12.0_; bump `android-lint` from _8.6.0-alpha05_ to _9.2.1_
+  _0.12.1_; bump `android-lint` from _8.6.0-alpha05_ to _9.2.1_
   stable.
 - Tightened CC: `org.gradle.configuration-cache.problems=fail`,
   `max-problems=0` — the root build now refuses to ship with any
