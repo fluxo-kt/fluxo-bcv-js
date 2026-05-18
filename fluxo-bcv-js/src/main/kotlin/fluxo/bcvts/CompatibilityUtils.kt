@@ -274,7 +274,28 @@ private fun Any.readAbiEnabled(): Boolean? = safe {
     (m.invoke(this) as? org.gradle.api.provider.Property<Boolean>)?.orNull
 }
 
+// KGP creates these tasks when (and only when) the user activates
+// `abiValidation` in any of its API shapes — 2.2/2.3's
+// `kotlin { abiValidation { enabled.set(true) } }`, 2.4+'s plain
+// `kotlin { abiValidation { } }` or `abiValidation()`. Task-based
+// detection is reliable across the matrix because it bypasses
+// the unstable extension-shape API (2.4 removed `.enabled` while
+// keeping the extension reachable, which would otherwise false-
+// positive a presence-based check).
+private const val CHECK_KOTLIN_ABI_TASK = "checkKotlinAbi"
+private const val UPDATE_KOTLIN_ABI_TASK = "updateKotlinAbi"
+
 private fun Project.abiLookup(): AbiLookup {
+    // Task-based primary signal. `tasks.names` is lazy (no task
+    // realization), CC-safe, and present in every supported Gradle.
+    val taskNames = tasks.names
+    if (CHECK_KOTLIN_ABI_TASK in taskNames || UPDATE_KOTLIN_ABI_TASK in taskNames) {
+        return AbiLookup.Enabled
+    }
+    // Extension-based fallback for older KGP that doesn't materialise
+    // the tasks (or where naming has drifted further). Preserves the
+    // 2.2/2.3 contract where `enabled: Property<Boolean>` is the opt-
+    // in signal.
     val kotlinExt: Any = extensions.findByName("kotlin") ?: return AbiLookup.Absent
     // Scopes to probe: the kotlin extension itself (top-level
     // `kotlin { abiValidation { } }`) plus every target (per-target
