@@ -1,0 +1,77 @@
+name: Dependency Submission
+
+# Submits the project's Gradle dependency graph to GitHub so
+# Dependabot can track transitive dependencies accurately. Runs ONLY
+# on default-branch pushes (per the job `if:` below) — PRs and
+# feature branches should not mutate the project's authoritative
+# dependency graph state.
+#
+# Decoupled from build.yml (which still resolves dependencies for
+# the build/check matrix but no longer submits) for three reasons:
+#   1. lets build.yml run with `contents: read` instead of `write`
+#      (least-priv hygiene; sibling fluxo-kmp-conf does the same)
+#   2. graph submission failure no longer takes down the build matrix
+#   3. removes a hidden coupling between OS-matrix expansion and the
+#      number of redundant graph submissions per push
+
+on:
+  push:
+    # Mirror build.yml's paths-ignore so doc-only pushes don't
+    # trigger a graph submission.
+    paths-ignore:
+      - '**.*ignore'
+      - '**.md'
+      - '**.txt'
+      - '**/pr-**.yml'
+      - '**/release.yml'
+      - '**dependabot.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  # `gradle/actions/dependency-submission` needs `contents: write`
+  # to attach the graph to the commit via GitHub's dependency-graph
+  # API. Scoped narrowly to this single-job workflow.
+  contents: write
+
+env:
+  CI: true
+  BUILD_NUMBER: ${{ github.run_number }}
+  SCM_TAG: ${{ github.sha }}
+
+jobs:
+  dependency-submission:
+    name: Submit Gradle dependency graph
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@ab7a9404c0f3da075243ca237b5fac12c98deaa5 # v2.19.3
+        with:
+          disable-sudo: true
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Generate and submit dependency graph
+        uses: gradle/actions/dependency-submission@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+        with:
+          cache-encryption-key: "${{ secrets.GRADLE_ENCRYPTION_KEY }}"
+          dependency-graph: generate-and-submit
+          dependency-graph-continue-on-failure: false
+          # Same scoping as build.yml previously used inline (drop
+          # buildscript classpath + helper modules from the graph).
+          dependency-graph-include-configurations: "^(?!(classpath)).*"
+          dependency-graph-include-projects: "^:(?!(buildSrc|test|check)).*"
+          artifact-retention-days: 1
