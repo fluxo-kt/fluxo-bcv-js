@@ -129,8 +129,9 @@ verify both `checks/latest` and `checks/js-only` still build.
 
 ## Surprises & gotchas (read before debugging)
 - **Gradle path is `:plugin`, not `:fluxo-bcv-js`** (the dir name).
-  `jitpack.yml` still references `:fluxo-bcv-js:publishToMavenLocal` —
-  likely stale post-rename; verify before relying on it.
+  Subproject was renamed in 1.0.0; `jitpack.yml` and the README JitPack
+  snippet were updated in 1.1.0. Watch for new artefacts (Dependabot
+  configs, badges) that drift back to the dir-name path.
 - **Plugin ID still says "js" not "ts"** despite 1.0.0 internal rename.
   Public contract; don't fix.
 - **Build wrapped by `fluxo-kmp-conf`** (`fkcSetupGradlePlugin`). Standard

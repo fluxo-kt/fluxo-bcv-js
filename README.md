@@ -6,7 +6,7 @@
 [![Build](../../actions/workflows/build.yml/badge.svg)](../../actions/workflows/build.yml)
 [![Common Changelog](https://common-changelog.org/badge.svg)](CHANGELOG.md)
 
-[![KotlinX BCV Compatibility](http://img.shields.io/badge/KotlinX%20BCV-0.8%20--%200.15-7F52FF?logo=kotlin&logoWidth=10&logoColor=7F52FF&labelColor=2B2B2B)][bcv]
+[![KotlinX BCV Compatibility](http://img.shields.io/badge/KotlinX%20BCV-0.8%20--%200.18.1-7F52FF?logo=kotlin&logoWidth=10&logoColor=7F52FF&labelColor=2B2B2B)][bcv]
 [![Kotlin Compatibility](http://img.shields.io/badge/Kotlin-1.7.22+-7F52FF?logo=kotlin&logoWidth=10&logoColor=7F52FF&labelColor=2B2B2B)](https://github.com/JetBrains/Kotlin)
 [![Gradle Compatibility](http://img.shields.io/badge/Gradle-7.6+-f68244?logo=gradle&labelColor=2B2B2B)](https://gradle.org/releases/)
 
@@ -42,11 +42,14 @@ but then published for general use.
 Kotlin has supported generation of TypeScript declarations [since 1.6.20](https://kotlinlang.org/docs/whatsnew1620.html#improvements-to-export-and-typescript-declaration-generation).
 Compatibility tested with:
 
-| Version |    BCV     | Kotlin  | Gradle |
-|:-------:|:----------:|:-------:|:------:|
-|  1.0.0  | 0.8 - 0.15 | 1.7.22+ |  7.6+  |
-|  0.3.0  | 0.8 - 0.14 | 1.6.20+ |  7.6+  |
-|  0.2.0  | 0.8 - 0.13 | 1.6.20+ |  7.4+  |
+|  Version   |     BCV      | Kotlin  | Gradle |
+|:----------:|:------------:|:-------:|:------:|
+|  1.1.0[^1] | 0.8 - 0.18.1 | 1.7.22+ |  7.6+  |
+|   1.0.0    |  0.8 - 0.15  | 1.7.22+ |  7.6+  |
+|   0.3.0    |  0.8 - 0.14  | 1.6.20+ |  7.6+  |
+|   0.2.0    |  0.8 - 0.13  | 1.6.20+ |  7.4+  |
+
+[^1]: External KotlinX BCV is [frozen at 0.18.1](https://github.com/Kotlin/binary-compatibility-validator/tree/0.18.1) — `0.18.1` is the physical ceiling, not an arbitrary pin.
 
 
 ### How to use
@@ -56,9 +59,9 @@ Compatibility tested with:
 ```kotlin
 // in the `build.gradle.kts` of the target module.
 plugins {
-  kotlin("multiplatform") version "2.0.0" // <-- versions from 1.7 to 2.0
-  id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.14.0" // <-- 0.8 .. 0.15
-  id("io.github.fluxo-kt.binary-compatibility-validator-js") version "1.0.0" // <-- add here
+  kotlin("multiplatform") version "2.3.21" // <-- 1.7 .. 2.3 (CI also exercises 2.4.0-RC)
+  id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.18.1" // <-- 0.8 .. 0.18.1
+  id("io.github.fluxo-kt.binary-compatibility-validator-js") version "1.1.0" // <-- add here
 }
 kotlin {
   js(IR) {
@@ -76,8 +79,8 @@ kotlin {
 ```kotlin
 // in the `build.gradle.kts` of the target module.
 plugins {
-  kotlin("multiplatform") version "2.0.0" // <-- versions from 1.7 to 2.0
-  id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.14.0" // <-- 0.8 .. 0.15
+  kotlin("multiplatform") version "2.3.21" // <-- 1.7 .. 2.3 (CI also exercises 2.4.0-RC)
+  id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.18.1" // <-- 0.8 .. 0.18.1
   id("io.github.fluxo-kt.binary-compatibility-validator-js") // <-- add here, no version needed for jitpack usage
 }
 kotlin {
@@ -96,7 +99,7 @@ pluginManagement {
   }
   resolutionStrategy.eachPlugin {
     if (requested.id.toString() == "io.github.fluxo-kt.binary-compatibility-validator-js")
-      useModule("com.github.fluxo-kt.fluxo-bcv-js:fluxo-bcv-js:dee48ac65c") // <-- specify a version, or a commit.
+      useModule("com.github.fluxo-kt.fluxo-bcv-js:plugin:dee48ac65c") // <-- specify a version, or a commit.
   }
 }
 ```

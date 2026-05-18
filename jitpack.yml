@@ -6,4 +6,4 @@ jdk:
   - openjdk21
 
 install:
-  - ./gradlew :fluxo-bcv-js:publishToMavenLocal
+  - ./gradlew :plugin:publishToMavenLocal
