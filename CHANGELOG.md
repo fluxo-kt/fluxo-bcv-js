@@ -148,6 +148,18 @@
   `sigstoreSign*` task — eliminates the class of CI-only release-time
   metadata regressions for all the fluxo-kmp-conf 0.14.x gaps we
   manually patch above.
+- `release.yml` is now idempotent against Plugin Portal duplicates.
+  A pre-`publishPlugins` probe step checks whether the tagged
+  version already exists on `plugins.gradle.org/m2/...`; if yes,
+  the upload step is skipped and Sigstore signing runs via an
+  alternate path. OIDC identity stays `release.yml@refs/tags/v*`,
+  so consumer cosign verification is unaffected. Eliminates the
+  failure class "tag pushed, publish succeeded, downstream step
+  failed → can't safely re-push the same tag." Tag deletion +
+  re-push is now a fully recoverable operation.
+- Sigstore bundle attach step now matches `*.sigstore.json` /
+  `*.sigstore.bundle` / `*.sigstore` via alternation, future-proof
+  against sigstore-java's extension flips across major versions.
 - Version-parser bug in `isVersionGreaterThanOrEqual` — pre-release
   suffixes like `1.7.22-Beta1` were incorrectly rejected against
   the floor when the suffix sat on the differentiating numeric

@@ -253,6 +253,22 @@ matrix ceiling is the physical upstream ceiling, not an arbitrary pin.
   page. An audit that only inspects published `.pom` files will miss
   the plugin-publish 2.x gate (which fires at task-execution time, so
   also invisible to `:publishToMavenLocal`).
+- **`dev.sigstore.sign 2.x` writes `.sigstore.json`, not
+  `.sigstore.bundle`.** sigstore-java's bundle extension flipped
+  between major versions: v0.x `.sigstore`, v1.x `.sigstore.bundle`,
+  v2.x `.sigstore.json`. `release.yml`'s asset-attach `find` covers
+  all three via alternation — keep the union when bumping the plugin,
+  do not narrow.
+- **`release.yml` is idempotent against Plugin Portal duplicates.**
+  The "Probe Plugin Portal for existing version" step short-circuits
+  `publishPlugins` when the marker POM already resolves at the
+  tagged version. Sigstore signing still fires via the alternate
+  "Sign artefacts (when publish was skipped)" path so re-tags
+  produce valid bundles with the original `release.yml@refs/tags/v*`
+  OIDC identity. The class of regression "tag pushed but downstream
+  step failed → can't safely re-push the same tag" is eliminated:
+  delete tag, re-tag, re-push — workflow auto-detects existing
+  Portal publication and skips just that step.
 - **Reflection failures are silently swallowed by `safe { }`.** If
   something silently no-ops on a new Kotlin/BCV, suspect the compat shim
   first.

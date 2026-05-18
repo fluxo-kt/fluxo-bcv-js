@@ -104,8 +104,37 @@ jobs:
           cache-disabled: true
           cache-read-only: true
 
+      # Idempotency probe: Plugin Portal rejects duplicate-version
+      # uploads with HTTP 4xx, which fails `publishPlugins`. To make
+      # release.yml safely re-runnable against an already-published
+      # tag (e.g. when a downstream step like Sigstore-bundle attach
+      # fails and the tag needs to be re-pushed), probe the Portal
+      # for the marker POM at this version. If present, skip
+      # `publishPlugins` but still run sigstoreSign + attach — those
+      # tasks run as dependencies of `publishPlugins` via the build
+      # script, so we invoke them directly via `:plugin:assemble +
+      # sigstoreSign*Publication` in the alternate run path below.
+      - name: Probe Plugin Portal for existing version
+        id: portal_probe
+        if: github.repository == 'fluxo-kt/fluxo-bcv-js'
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          # Plugin-marker POM is the canonical "is this version
+          # published" probe — Plugin Portal resolves `plugins { id }`
+          # through this artefact.
+          URL="https://plugins.gradle.org/m2/io/github/fluxo-kt/binary-compatibility-validator-js/io.github.fluxo-kt.binary-compatibility-validator-js.gradle.plugin/${VERSION}/io.github.fluxo-kt.binary-compatibility-validator-js.gradle.plugin-${VERSION}.pom"
+          echo "Probing: $URL"
+          if curl -fsSL --retry 3 --max-time 30 -o /dev/null "$URL"; then
+            echo "::notice::Plugin Portal already has v${VERSION}; skipping publishPlugins, still running Sigstore signing+attach."
+            echo "already_published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "already_published=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Publish plugin
-        if: always() && github.repository == 'fluxo-kt/fluxo-bcv-js'
+        if: steps.portal_probe.outputs.already_published != 'true' && github.repository == 'fluxo-kt/fluxo-bcv-js'
         env:
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
           SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
@@ -116,20 +145,31 @@ jobs:
           -Pgradle.publish.key="${{ secrets.GRADLE_PUBLISH_KEY }}"
           -Pgradle.publish.secret="${{ secrets.GRADLE_PUBLISH_SECRET }}"
 
-      # Attach `.sigstore.bundle` artefacts to the draft GitHub
-      # Release so consumers can `cosign verify-blob --bundle …` against
-      # the canonical distribution point. Plugin Portal (the
+      # When `publishPlugins` is skipped (probe-hit), its
+      # `sigstoreSign*` deps don't fire transitively. Run them
+      # explicitly so re-tags produce valid bundles. OIDC identity is
+      # still `release.yml@refs/tags/v*` (same workflow path & ref),
+      # so consumer cosign-verify regex stays unchanged.
+      - name: Sign artefacts (when publish was skipped)
+        if: steps.portal_probe.outputs.already_published == 'true' && github.repository == 'fluxo-kt/fluxo-bcv-js'
+        env:
+          RELEASE: true
+        run: >
+          ./gradlew :plugin:sigstoreSignPluginMavenPublication
+          :plugin:sigstoreSignFluxo-bcv-tsPluginMarkerMavenPublication
+          --no-build-cache --no-configuration-cache --stacktrace --scan
+
+      # Attach Sigstore bundles to the draft GitHub Release so
+      # consumers can `cosign verify-blob --bundle …` against the
+      # canonical distribution point. Plugin Portal (the
       # `com.gradle.plugin-publish` task) does NOT upload artefact
       # siblings, and Maven Central is also bundle-blind — without
-      # this step, Sigstore signing is performative and consumers must
-      # reconstruct verification from Rekor by JAR-SHA correlation.
+      # this step, consumers without rekor-cli must reconstruct
+      # verification from Rekor by JAR-SHA correlation.
       # Runs only on the canonical repo (fork pushes can't mint
-      # OIDC tokens, so no bundles would exist). Implicit `if:
-      # success()` between steps: skipped if `Publish plugin` failed,
-      # which is the correct semantic — no Plugin Portal upload
-      # means no release-asset consistency.
+      # OIDC tokens, so no bundles would exist).
       - name: Attach Sigstore bundles to GitHub Release
-        if: github.repository == 'fluxo-kt/fluxo-bcv-js'
+        if: always() && github.repository == 'fluxo-kt/fluxo-bcv-js'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
@@ -140,17 +180,28 @@ jobs:
           # `readarray`). The `while IFS= read -r -d ''` idiom works
           # on bash 3.0+ — process substitution + NUL-delimited read
           # is space-, newline-, and unicode-safe.
+          # File-extension union covers sigstore-java versions:
+          # v2.x writes `.sigstore.json` (current); v1.x wrote
+          # `.sigstore.bundle`; v0.x wrote bare `.sigstore`. The
+          # union future-proofs against extension flips and was the
+          # root cause of v1.1.0 release attempt #2's failure
+          # (find restricted to `.sigstore.bundle` while
+          # `dev.sigstore.sign 2.0.x` produces `.sigstore.json`).
           bundles=()
           while IFS= read -r -d '' file; do
             bundles+=("$file")
-          done < <(find . -name '*.sigstore.bundle' -type f -print0)
+          done < <(
+            find . -type f \
+              \( -name '*.sigstore.json' \
+                 -o -name '*.sigstore.bundle' \
+                 -o -name '*.sigstore' \) -print0
+          )
           if [ ${#bundles[@]} -eq 0 ]; then
-            echo "::error::No .sigstore.bundle files produced — Sigstore wiring may have regressed (check :plugin:tasks --group sigstore signing)"
+            echo "::error::No Sigstore bundle files produced — wiring regressed (check :plugin:tasks --group sigstore signing)"
             exit 1
           fi
           echo "Uploading ${#bundles[@]} Sigstore bundle(s) to release $GITHUB_REF_NAME:"
           printf '  %s\n' "${bundles[@]}"
-          # `--clobber` overwrites if a re-run produces same name
-          # (rare; only happens on workflow-rerun without bumping
-          # the tag); strictly safer than letting upload fail.
+          # `--clobber` overwrites on re-run (e.g. tag-retry); strictly
+          # safer than letting upload fail.
           gh release upload "$GITHUB_REF_NAME" --clobber "${bundles[@]}"
