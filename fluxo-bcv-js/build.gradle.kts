@@ -67,6 +67,25 @@ fkcSetupGradlePlugin(
     }
 }
 
+// Project-level `version` MUST be set AFTER `fkcSetupGradlePlugin`:
+// fluxo-kmp-conf 0.14.x configures its own `publicationConfig.version`
+// (which targets only the main `PluginMavenPublication`) but does NOT
+// propagate the value back to `project.version`. The
+// `com.gradle.plugin-publish` plugin then auto-generates a SECOND
+// publication — the plugin MARKER POM (used by Plugin Portal to
+// resolve `plugins { id("...") }` requests) — and that one reads
+// `project.version` directly, falling back to the literal
+// "unspecified" (Gradle's default). Without this assignment, the
+// marker POM AND its `<dependency><version>` line ship as
+// "unspecified" — a broken release at the Plugin Portal contract.
+// Reproducer: remove this line, run `./gradlew
+// :plugin:publishToMavenLocal`, inspect
+// `~/.m2/.../io.github.fluxo-kt.binary-compatibility-validator-js.gradle.plugin/`
+// — the only subdirectory is `unspecified/`.
+// TODO: upstream to fluxo-kmp-conf so `publicationConfig.version`
+// also writes through to `project.version`.
+version = pluginVersion
+
 // Workaround for fluxo-kmp-conf 0.14.x:
 // `fkcSetupGradlePlugin` invokes `gradlePlugin.plugins.maybeCreate(name)`
 // and then runs `if (id.isNullOrBlank()) { id = pluginId }`. Under
