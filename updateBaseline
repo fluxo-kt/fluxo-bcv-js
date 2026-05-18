@@ -5,7 +5,14 @@
 
 ./gradlew --stop --info
 
-COMMON_TASKS="apiDump dependencyGuardBaseline --continue -Dlint.baselines.continue=true"
+# `apiDump` exists in every cell (root via BCV; checks/* via this plugin
+# or KGP-embedded). `dependencyGuardBaseline` only exists where the
+# `dependency-guard` plugin is applied — currently the root plugin
+# module, `checks/latest`, and `checks/js-only` (NOT in `middle`,
+# `kgp-only`, `dual`). Including it in COMMON would fail task selection
+# in those three. Keep COMMON minimal; layer cell-specific tasks per
+# block below.
+COMMON_TASKS="apiDump --continue -Dlint.baselines.continue=true"
 export GRADLE_OPTS="${GRADLE_OPTS} -Dorg.gradle.logging.stacktrace=all"
 export GRADLE_OPTS="${GRADLE_OPTS} -Dorg.gradle.caching=false -Dkotlin.incremental=false"
 export CI=true
@@ -21,13 +28,20 @@ echo "===================================="
 # -U: Refresh dependencies
 #COMMON_TASKS="${COMMON_TASKS} --rerun-tasks -U"
 
-./gradlew ${COMMON_TASKS} detektBaselineMerge updateLintBaseline || EXIT_CODE=101
+# Root plugin module — has dependencyGuardBaseline. `detekt`-baseline
+# and Android-lint-baseline tasks DO NOT exist in this build (pure
+# JVM-Kotlin plugin, no `detekt --baseline` task wiring, no AGP). Do
+# not reintroduce `detektBaselineMerge` / `updateLintBaseline` unless
+# the underlying plugins are wired in (and then update this comment).
+./gradlew ${COMMON_TASKS} dependencyGuardBaseline || EXIT_CODE=101
 
 echo ""
 echo "=======> checks/latest"
 cd checks/latest || exit 102
 pwd
-./gradlew ${COMMON_TASKS} kotlinUpgradeYarnLock || EXIT_CODE=103
+# Latest cell has `dependency-guard` applied (matrix-top baseline)
+# plus KMP `kotlinUpgradeYarnLock` for js/wasmJs.
+./gradlew ${COMMON_TASKS} dependencyGuardBaseline kotlinUpgradeYarnLock || EXIT_CODE=103
 
 echo ""
 echo "=======> checks/middle"
@@ -53,12 +67,14 @@ echo ""
 echo "=======> checks/js-only"
 cd ../js-only || exit 104
 pwd
-# js-only uses the legacy `kotlin("js")` plugin (not KMP) but still
-# materialises `kotlin-js-store/yarn.lock`. Without this refresh the
-# lock silently rots on every Kotlin bump, surfacing later as a
-# `Lock file was changed. Run the kotlinUpgradeYarnLock task` failure
-# on the next CI run after a baseline regen.
-./gradlew ${COMMON_TASKS} kotlinUpgradeYarnLock || EXIT_CODE=105
+# js-only uses the legacy `kotlin("js")` plugin (NOT KMP). The KMP
+# `kotlinUpgradeYarnLock` task does NOT exist here; the legacy plugin
+# exposes only `kotlinStoreYarnLock` / `kotlinRestoreYarnLock`. Storing
+# (= overwriting the committed `kotlin-js-store/yarn.lock` from the
+# current resolved state) is the legacy-equivalent of the KMP upgrade
+# task; using it keeps the lock fresh against Kotlin bumps.
+# js-only also has `dependency-guard` applied (floor-cell baseline).
+./gradlew ${COMMON_TASKS} dependencyGuardBaseline kotlinStoreYarnLock || EXIT_CODE=105
 
 
 # Go back to root
