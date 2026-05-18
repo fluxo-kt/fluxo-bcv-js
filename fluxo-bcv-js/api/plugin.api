@@ -1,5 +1,4 @@
-public abstract class fluxo/bcvts/FluxoBcvTsExtension {
-	public fun <init> ()V
+public abstract interface class fluxo/bcvts/FluxoBcvTsExtension {
 	public abstract fun getPreferEmbedded ()Lorg/gradle/api/provider/Property;
 	public abstract fun getWireToKgpAbi ()Lorg/gradle/api/provider/Property;
 }

@@ -45,7 +45,7 @@ import org.gradle.api.provider.Property
  * for 1.2.0.
  */
 @Incubating
-public abstract class FluxoBcvTsExtension {
+public interface FluxoBcvTsExtension {
     /**
      * Decides which trigger path runs the `.d.ts` pipeline when both
      * the external KotlinX BCV plugin AND KGP-embedded `abiValidation`
@@ -66,7 +66,7 @@ public abstract class FluxoBcvTsExtension {
      * machine-observable in CI / build scans.
      */
     @get:Incubating
-    public abstract val preferEmbedded: Property<Boolean>
+    public val preferEmbedded: Property<Boolean>
 
     /**
      * Wire this plugin's umbrella `:apiCheck` task to also run when
@@ -80,5 +80,5 @@ public abstract class FluxoBcvTsExtension {
      * focused-check unexpectedly slow.
      */
     @get:Incubating
-    public abstract val wireToKgpAbi: Property<Boolean>
+    public val wireToKgpAbi: Property<Boolean>
 }
