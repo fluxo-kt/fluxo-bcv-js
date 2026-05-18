@@ -58,7 +58,7 @@ public class FluxoBcvTsPlugin : Plugin<Project> {
             val plugins = plugins
             if (!plugins.hasPlugin(PLUGIN_ID_KMP) && !plugins.hasPlugin(PLUGIN_ID_KJS)) {
                 val message = "Neither Kotlin Multiplatform nor Kotlin/JS plugin " +
-                    "is appplied to the :$name project. \n" +
+                    "is applied to the :$name project. \n" +
                     "There is no $KTS_API to provide stability for." +
                     " Fluxo-BCV-JS does nothing. \n" +
                     "Please read the setup instructions at " +
