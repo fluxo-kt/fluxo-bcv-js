@@ -42,14 +42,16 @@ but then published for general use.
 Kotlin has supported generation of TypeScript declarations [since 1.6.20](https://kotlinlang.org/docs/whatsnew1620.html#improvements-to-export-and-typescript-declaration-generation).
 Compatibility tested with:
 
-|  Version   |     BCV      | Kotlin  | Gradle |
-|:----------:|:------------:|:-------:|:------:|
-|  1.1.0[^1] | 0.8 - 0.18.1 | 1.7.22+ |  7.6+  |
-|   1.0.0    |  0.8 - 0.15  | 1.7.22+ |  7.6+  |
-|   0.3.0    |  0.8 - 0.14  | 1.6.20+ |  7.6+  |
-|   0.2.0    |  0.8 - 0.13  | 1.6.20+ |  7.4+  |
+|  Version   |       BCV[^1]        | Kotlin  | Gradle |
+|:----------:|:--------------------:|:-------:|:------:|
+|  1.1.0[^2] | 0.8 - 0.18.1 OR KGP-embedded[^3] | 1.7.22+ |  7.6+  |
+|   1.0.0    |      0.8 - 0.15      | 1.7.22+ |  7.6+  |
+|   0.3.0    |      0.8 - 0.14      | 1.6.20+ |  7.6+  |
+|   0.2.0    |      0.8 - 0.13      | 1.6.20+ |  7.4+  |
 
-[^1]: External KotlinX BCV is [frozen at 0.18.1](https://github.com/Kotlin/binary-compatibility-validator/tree/0.18.1) — `0.18.1` is the physical ceiling, not an arbitrary pin.
+[^1]: "BCV" denotes the ABI-validation source — until 1.0.x only the external [KotlinX Binary Compatibility Validator][bcv]; in 1.1.0 also KGP-embedded `abiValidation { }` (Kotlin 2.2+).
+[^2]: External KotlinX BCV is [frozen at 0.18.1](https://github.com/Kotlin/binary-compatibility-validator/tree/0.18.1) — `0.18.1` is the physical ceiling, not an arbitrary pin.
+[^3]: KGP-embedded `abiValidation { }` activates the embedded mode without applying the external BCV plugin. Requires Kotlin 2.2+ and the consumer-side `@OptIn(ExperimentalAbiValidation::class)` ceremony. See [Dual-mode usage](#dual-mode-usage-110) below.
 
 
 ### How to use
@@ -108,6 +110,53 @@ pluginManagement {
 Module examples for:
 - [Latest setup](checks/latest/build.gradle.kts)
 - [Oldest setup](checks/js-only/build.gradle.kts)
+- [Embedded-only setup](checks/kgp-only/build.gradle.kts) (KGP `abiValidation`, no external BCV)
+- [Dual-mode setup](checks/dual/build.gradle.kts) (both validators active)
+
+
+### Dual-mode usage (1.1.0+)
+
+The external [KotlinX BCV][bcv] plugin is [frozen since 0.18.1](https://github.com/Kotlin/binary-compatibility-validator/tree/0.18.1). To survive the transition to KGP-embedded `abiValidation { }`, the plugin now activates on **either** trigger source:
+
+- **external mode** — the external `org.jetbrains.kotlinx.binary-compatibility-validator` plugin is applied (the 1.0.x behaviour).
+- **embedded mode** — KGP-native `kotlin { abiValidation { } }` is configured (Kotlin 2.2+, opt-in via `@OptIn(ExperimentalAbiValidation::class)`).
+
+When **both** are present, by default the external plugin is preferred for backward-compatibility; a one-shot lifecycle hint recommends opting into embedded mode. The path is selectable via the `fluxoBcvTs` extension:
+
+```kotlin
+// in the `build.gradle.kts` of the target module.
+plugins {
+  kotlin("multiplatform") version "2.3.21"
+  id("io.github.fluxo-kt.binary-compatibility-validator-js") version "1.1.0"
+  // NOTE: NO `org.jetbrains.kotlinx.binary-compatibility-validator` —
+  // embedded mode replaces the external plugin entirely.
+}
+
+@OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class)
+kotlin {
+  abiValidation { } // activates KGP-embedded validation
+  js(IR) {
+    binaries.executable()
+    nodejs()
+  }
+  // … other targets …
+}
+
+// Optional — only needed when BOTH external BCV and embedded
+// `abiValidation` are applied simultaneously, e.g. during migration.
+fluxoBcvTs {
+  preferEmbedded.set(true)  // force the embedded trigger to win
+  // wireToKgpAbi.set(true)   // also run `:apiCheck` when `:checkKotlinAbi` runs (default: false)
+}
+```
+
+The plugin emits a single machine-parseable lifecycle line per build invocation indicating the resolved path:
+
+```
+[fluxo-bcv-ts] trigger=external|embedded preferEmbedded=auto|true|false
+```
+
+The `fluxoBcvTs` extension is marked `@Incubating`. It may change in any 1.x minor release; the stability commitment moment is targeted for 1.2.0. The KGP-side `abiValidation` extension is itself `@OptIn(ExperimentalAbiValidation::class)` — that ceremony is consumer-side and is independent of `fluxoBcvTs`.
 
 
 ### Versioning
