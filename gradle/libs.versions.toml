@@ -21,7 +21,7 @@ bcvLatest = "0.18.1"
 # avoid classloader split-brain when consumers apply BOTH the external
 # BCV plugin AND this one (`implementation(libs.diffutils)` runs in the
 # plugin's loader; BCV pulls its own copy from the buildscript loader).
-# Latest available is 4.16 (2025-07-07), but BCV 0.18.1 still ships 4.12,
+# Latest available is 4.17 (verified 2026-05-18), but BCV 0.18.1 ships 4.12,
 # which is the physical ceiling we will track until upstream BCV moves.
 # `bcv` is frozen at 0.18.1 (project no longer maintained — see §1) so
 # this pin is effectively permanent. DEPENDABOT: do not auto-bump.
@@ -98,7 +98,7 @@ deps-guard = { id = "com.dropbox.dependency-guard", version = "0.5.0" }
 # Gradle Doctor: helps diagnose and fix common build problems.
 # https://runningcode.github.io/gradle-doctor/
 # https://plugins.gradle.org/plugin/com.osacky.doctor
-gradle-doctor = { id = "com.osacky.doctor", version = "0.12.0" }
+gradle-doctor = { id = "com.osacky.doctor", version = "0.12.1" }
 
 # Sigstore keyless signing for SLSA provenance.
 # Signs the plugin JAR + plugin marker POM alongside the existing PGP
