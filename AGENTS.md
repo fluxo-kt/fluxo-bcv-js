@@ -179,9 +179,24 @@ matrix ceiling is the physical upstream ceiling, not an arbitrary pin.
   is emitted exactly once per build invocation and asserted by
   `checks/dual`. Keep the format stable; `checks/dual`'s CI step
   greps for it.
-- **`FluxoBcvTsExtension` is `@Incubating`** (1.1.0). Stability
-  commitment moment is targeted for 1.2.0 (remove `@Incubating`).
-  Until then any 1.x minor may break the extension shape.
+- **`FluxoBcvTsExtension` is an `@Incubating` `interface`** (1.1.0).
+  Managed type with abstract `Property<T>` getters — Gradle's
+  ManagedFactory synthesizes the impl. Stability commitment moment
+  is targeted for 1.2.0 (remove `@Incubating`). Until then any 1.x
+  minor may break the extension shape.
+- **Sigstore signing is CI-only** (1.1.0+). `dev.sigstore.sign` plugin
+  in `fluxo-bcv-js/build.gradle.kts` wires `sigstoreSign*Publication`
+  tasks to run BEFORE `publishPlugins` (via `tasks.matching
+  { name == "publishPlugins" }.configureEach { dependsOn(...) }`).
+  Locally these tasks don't run because `publishPlugins` isn't
+  invoked from `publishToMavenLocal` — no browser-OIDC ceremony for
+  developers. Bundles ship to consumers as GitHub Release assets
+  (Plugin Portal and Maven Central don't upload `.sigstore.bundle`
+  siblings); `release.yml`'s `Attach Sigstore bundles` step does the
+  upload via `gh release upload` and hard-fails if zero bundles are
+  found (silent regression guard). Consumer verification path:
+  `cosign verify-blob --bundle <name>.sigstore.bundle …` with
+  identity anchored to `release.yml@refs/tags/v*`.
 - **Reflection failures are silently swallowed by `safe { }`.** If
   something silently no-ops on a new Kotlin/BCV, suspect the compat shim
   first.
