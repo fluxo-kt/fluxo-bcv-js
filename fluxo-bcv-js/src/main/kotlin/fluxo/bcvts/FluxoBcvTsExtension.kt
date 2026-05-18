@@ -18,6 +18,28 @@ import org.gradle.api.provider.Property
  * }
  * ```
  *
+ * ### Lifecycle observable (integration-test contract)
+ *
+ * Every build invocation that activates the pipeline emits exactly
+ * one machine-parseable line to Gradle's lifecycle log:
+ *
+ * ```
+ * [fluxo-bcv-ts] trigger=<external|embedded> preferEmbedded=<auto|true|false>
+ * ```
+ *
+ * - `trigger=external` — external KotlinX BCV plugin drives the pipeline.
+ * - `trigger=embedded` — KGP-embedded `abiValidation` drives it.
+ * - `preferEmbedded=auto` — `[preferEmbedded]` is unset.
+ * - `preferEmbedded=true|false` — `[preferEmbedded]` was set to that value.
+ *
+ * When AUTO resolves with BOTH sources active, an additional
+ * recommendation line follows (asking the consumer to migrate to
+ * `preferEmbedded=true` once external BCV is removed); when a forced
+ * preference cannot be satisfied, a fallback-notice line follows.
+ * Format is stable across 1.x minor releases — `checks/dual` asserts
+ * exact whole-line equality via `grep -Fxq`. External CI integrations
+ * can rely on the same shape.
+ *
  * Marked `@Incubating` while the dual-mode contract beds in; the
  * stability commitment moment (removal of `@Incubating`) is targeted
  * for 1.2.0.
