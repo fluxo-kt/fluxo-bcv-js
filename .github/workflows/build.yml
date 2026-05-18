@@ -97,6 +97,7 @@ jobs:
           expect .                  '9\.5\.1'
           expect checks/latest      '9\.5\.1'
           expect checks/kgp-only    '9\.5\.1'
+          expect checks/dual        '9\.5\.1'
           expect checks/js-only     '8\.6'
 
       - name: 'Set up JDK ${{ matrix.java }}'
@@ -171,6 +172,35 @@ jobs:
         # `checkKotlinAbi` so KGP's KLIB ABI baseline is verified in
         # the same matrix invocation.
         run: ./gradlew check checkKotlinAbi --continue --stacktrace --scan
+        env:
+          GITHUB_DEPENDENCY_GRAPH_ENABLED: false
+
+      - name: Run check-dual (path-selection sweep)
+        if: always() && matrix.os == 'ubuntu'
+        timeout-minutes: 12
+        working-directory: checks/dual
+        # Both external BCV AND KGP-embedded `abiValidation` applied —
+        # the migration-window cell. Sweeps `preferEmbedded={auto,true,
+        # false}` and asserts the lifecycle observable's contract:
+        #   AUTO    → trigger=external + migrate-to-embedded recommendation
+        #   true    → trigger=embedded (no recommendation)
+        #   false   → trigger=external (no recommendation)
+        # The baseline `.d.ts` byte content is identical across all
+        # three (path is observable, output isn't) — that property is
+        # preserved implicitly by all three runs passing apiCheck
+        # against the same committed baselines.
+        shell: bash
+        run: |
+          set -euo pipefail
+          assert_observable() {  # $1=invocation args  $2=expected trigger  $3=expected preferEmbedded label
+            local out
+            out=$(./gradlew apiCheck $1 --rerun-tasks 2>&1)
+            echo "$out" | grep -q "trigger=$2 preferEmbedded=$3" \
+              || { echo "::error::missing/wrong lifecycle observable for $1 (expected trigger=$2 preferEmbedded=$3)"; echo "$out"; exit 1; }
+          }
+          assert_observable "" external auto
+          assert_observable "-PpreferEmbedded=true"  embedded true
+          assert_observable "-PpreferEmbedded=false" external false
         env:
           GITHUB_DEPENDENCY_GRAPH_ENABLED: false
 
