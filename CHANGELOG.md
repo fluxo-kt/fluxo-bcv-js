@@ -27,10 +27,13 @@
   `[fluxo-bcv-ts] trigger=external|embedded preferEmbedded=auto|true|false`
   printed exactly once per build invocation when the pipeline fires.
 - SLSA provenance via [Sigstore](https://www.sigstore.dev/) keyless
-  signing — every Plugin Portal release now ships `.sigstore.bundle`
-  siblings for both the plugin JAR and its marker POM;
-  cosign-verifiable identity-anchored to
-  `release.yml@refs/tags/v*`.
+  signing — every release attaches per-publication Sigstore bundles
+  (`*.sigstore.json`, sigstore-java v2.x format) as GitHub Release
+  assets covering plugin JAR, sources, javadoc, module metadata, and
+  both POMs (main + plugin marker); cosign-verifiable identity-anchored
+  to `release.yml@refs/tags/v*`. Plugin Portal and Maven Central don't
+  host bundle siblings — GitHub Releases is the canonical distribution
+  point.
 - OSSF [Scorecard](https://github.com/ossf/scorecard) workflow —
   weekly + push-to-main analysis; SARIF results surface in GitHub
   Code Scanning.

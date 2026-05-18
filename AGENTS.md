@@ -202,12 +202,16 @@ matrix ceiling is the physical upstream ceiling, not an arbitrary pin.
   `RELEASE=true ./gradlew :plugin:publishToMavenLocal` (developer
   accepts the OIDC ceremony). Bundles ship to consumers as GitHub
   Release assets (Plugin Portal and Maven Central don't upload
-  `.sigstore.bundle` siblings); `release.yml`'s `Attach Sigstore
-  bundles` step does the upload via `gh release upload` and
-  hard-fails if zero bundles are found (silent regression guard).
-  Consumer verification path: `cosign verify-blob --bundle
-  <name>.sigstore.bundle …` with identity anchored to
-  `release.yml@refs/tags/v*`.
+  bundle siblings); `release.yml`'s `Attach Sigstore bundles` step
+  does the upload via `gh release upload` and hard-fails if zero
+  bundles are found (silent regression guard). Asset names are
+  publication-prefixed (e.g. `PluginMaven-plugin-1.1.0.jar.sigstore.json`,
+  `Fluxo-bcv-tsPluginMarkerMaven-pom-default.xml.sigstore.json`) so
+  the marker-POM signature doesn't collide with the main-pub POM
+  signature; sigstore-java v2.x writes `.sigstore.json`. Consumer
+  verification path:
+  `cosign verify-blob --bundle <PluginMaven-…>.sigstore.json …` with
+  identity anchored to `release.yml@refs/tags/v*`.
 - **`project.version` MUST be assigned AFTER `fkcSetupGradlePlugin`**
   (`fluxo-bcv-js/build.gradle.kts`, near `version = pluginVersion`).
   fluxo-kmp-conf 0.14.x configures `publicationConfig.version`
