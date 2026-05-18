@@ -184,19 +184,44 @@ matrix ceiling is the physical upstream ceiling, not an arbitrary pin.
   ManagedFactory synthesizes the impl. Stability commitment moment
   is targeted for 1.2.0 (remove `@Incubating`). Until then any 1.x
   minor may break the extension shape.
-- **Sigstore signing is CI-only** (1.1.0+). `dev.sigstore.sign` plugin
-  in `fluxo-bcv-js/build.gradle.kts` wires `sigstoreSign*Publication`
-  tasks to run BEFORE `publishPlugins` (via `tasks.matching
-  { name == "publishPlugins" }.configureEach { dependsOn(...) }`).
-  Locally these tasks don't run because `publishPlugins` isn't
-  invoked from `publishToMavenLocal` — no browser-OIDC ceremony for
-  developers. Bundles ship to consumers as GitHub Release assets
-  (Plugin Portal and Maven Central don't upload `.sigstore.bundle`
-  siblings); `release.yml`'s `Attach Sigstore bundles` step does the
-  upload via `gh release upload` and hard-fails if zero bundles are
-  found (silent regression guard). Consumer verification path:
-  `cosign verify-blob --bundle <name>.sigstore.bundle …` with
-  identity anchored to `release.yml@refs/tags/v*`.
+- **Sigstore signing is RELEASE-only** (1.1.0+). `dev.sigstore.sign`
+  auto-wires `sigstoreSign*Publication` tasks into **every**
+  `MavenPublication`'s publish chain — including
+  `publishToMavenLocal`. Without a gate, the canonical local-consumer
+  smoke test blocks on a browser-OIDC prompt at
+  `oauth2.sigstore.dev/auth/...`. The script gates these tasks with
+  `onlyIf { providers.environmentVariable("RELEASE").orNull == "true" }`
+  AND `notCompatibleWithConfigurationCache(...)` (Sigstore 2.0.x
+  `SigstoreSignFilesTask` captures a `DefaultProject` ref, which our
+  strict CC config — `problems=fail max-problems=0` — would
+  otherwise treat as fatal). The `RELEASE: true` env var is set at
+  the workflow level in `release.yml`. To force-test locally:
+  `RELEASE=true ./gradlew :plugin:publishToMavenLocal` (developer
+  accepts the OIDC ceremony). Bundles ship to consumers as GitHub
+  Release assets (Plugin Portal and Maven Central don't upload
+  `.sigstore.bundle` siblings); `release.yml`'s `Attach Sigstore
+  bundles` step does the upload via `gh release upload` and
+  hard-fails if zero bundles are found (silent regression guard).
+  Consumer verification path: `cosign verify-blob --bundle
+  <name>.sigstore.bundle …` with identity anchored to
+  `release.yml@refs/tags/v*`.
+- **`project.version` MUST be assigned AFTER `fkcSetupGradlePlugin`**
+  (`fluxo-bcv-js/build.gradle.kts`, near `version = pluginVersion`).
+  fluxo-kmp-conf 0.14.x configures `publicationConfig.version`
+  (which only flows to the main `PluginMavenPublication`) but does
+  NOT propagate the value back to `project.version`. The
+  `com.gradle.plugin-publish` plugin then auto-generates a SECOND
+  publication — the plugin MARKER POM that Plugin Portal uses to
+  resolve `plugins { id("...") }` requests — and that one reads
+  `project.version` directly. Without the post-hoc assignment the
+  marker ships as `<version>unspecified</version>` (Gradle's
+  default), breaking the Plugin Portal contract. Reproducer: remove
+  the line, run `./gradlew :plugin:publishToMavenLocal`, and inspect
+  `~/.m2/.../io.github.fluxo-kt.binary-compatibility-validator-js.gradle.plugin/`
+  — the only subdirectory will be `unspecified/`. Assigning earlier
+  (e.g. next to `group =`) is silently overwritten by
+  `fkcSetupGradlePlugin`'s internal configuration. Upstream fix is
+  TODO at fluxo-kmp-conf.
 - **Reflection failures are silently swallowed by `safe { }`.** If
   something silently no-ops on a new Kotlin/BCV, suspect the compat shim
   first.
