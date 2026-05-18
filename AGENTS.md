@@ -8,8 +8,11 @@ class — `fluxo.bcvts.FluxoBcvTsPlugin`. Plugin ID:
 `io.github.fluxo-kt.binary-compatibility-validator-js`.
 
 ## Vibe & principles
-- **Compatibility is the product.** Must work across BCV 0.8–0.15.x ×
-  Kotlin 1.7.22–2.0.x × Gradle 7.6+. Reflection + `safe { }` shims in
+- **Compatibility is the product.** Must work across BCV 0.8–0.18.1
+  (upstream frozen at 0.18.1) × Kotlin 1.7.22–2.4 (`kotlinLatest` is
+  bleeding-edge in `checks/latest`) × Gradle 7.6+. Plus the embedded
+  KGP `abiValidation { }` path since 1.1.0 (Kotlin 2.2+).
+  Reflection + `safe { }` shims in
   `CompatibilityUtils.kt` are *intentional, not a smell*. New KGP/BCV API
   access → add a `*Compat` accessor with `safe { }` fallbacks and a KDoc
   `@see` to the upstream symbol; never call newer APIs directly.
