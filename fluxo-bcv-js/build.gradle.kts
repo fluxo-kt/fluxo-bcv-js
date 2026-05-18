@@ -86,6 +86,69 @@ fkcSetupGradlePlugin(
 // also writes through to `project.version`.
 version = pluginVersion
 
+// Restore the 1.0.x main-publication artifactId AND the POM metadata
+// (name/description/url/licenses/developers/scm) that fluxo-kmp-conf
+// 0.14.x stopped wiring into the `PluginMavenPublication`. Two
+// related regressions from the same upstream surface change:
+//
+// 1. artifactId — fluxo-kmp-conf's `SetupPublication.kt:559` rewrites
+//    `artifactId = projectName`, so our coord became `plugin` (from
+//    `settings.gradle.kts`'s `project(":fluxo-bcv-js").name = "plugin"`
+//    rename). 1.0.x shipped as `io.github.fluxo-kt:fluxo-bcv-ts`; we
+//    restore that contract here. `plugin` is a meaningless coord that
+//    would collide with anything else in the same group.
+// 2. POM metadata — 1.0.x's published POM at
+//    plugins.gradle.org/m2/io/github/fluxo-kt/fluxo-bcv-ts/1.0.0/
+//    has full <name>/<description>/<url>/<licenses>/<developers>/<scm>;
+//    fluxo-kmp-conf 0.14.x's PluginMavenPublication ships them as
+//    empty (the marker POM has them because `com.gradle.plugin-publish`
+//    populates the marker itself from `displayName`/`description`).
+//    Plugin Portal accepts incomplete POMs but Maven Central / OSSRH
+//    do not — restoring keeps the door open for §1.2.0 Central
+//    publishing and is industry-best-practice regardless.
+//
+// Both consume metadata already known to the script (description,
+// pluginVersion) plus a small constant block — no duplication of
+// truth. Reproducer for either regression: comment out the relevant
+// `pom { … }` line OR the `artifactId = …` line, run
+// `./gradlew :plugin:publishToMavenLocal`, inspect the produced
+// .pom — the missing field reappears as blank or the dir is `plugin/`.
+// TODO: upstream so fluxo-kmp-conf preserves both contracts.
+val publishedArtifactId = "fluxo-bcv-ts"
+val projectUrl = "https://github.com/fluxo-kt/fluxo-bcv-js"
+publishing.publications.withType<MavenPublication>().configureEach {
+    if (name == "pluginMaven") artifactId = publishedArtifactId
+    pom {
+        if (name.orNull.isNullOrBlank()) name.set("Fluxo BCV TS")
+        if (description.orNull.isNullOrBlank()) {
+            description.set(project.description)
+        }
+        url.set(projectUrl)
+        inceptionYear.set("2023")
+        licenses {
+            license {
+                name.set("The Apache License, Version 2.0")
+                url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+                distribution.set("repo")
+            }
+        }
+        developers {
+            developer {
+                id.set("amal")
+                name.set("Artyom Shendrik")
+                email.set("artyom.shendrik@gmail.com")
+            }
+        }
+        scm {
+            url.set(projectUrl)
+            connection.set("scm:git:https://github.com/fluxo-kt/fluxo-bcv-js.git")
+            developerConnection
+                .set("scm:git:ssh://git@github.com/fluxo-kt/fluxo-bcv-js.git")
+            tag.set("v${project.version}")
+        }
+    }
+}
+
 // Workaround for fluxo-kmp-conf 0.14.x:
 // `fkcSetupGradlePlugin` invokes `gradlePlugin.plugins.maybeCreate(name)`
 // and then runs `if (id.isNullOrBlank()) { id = pluginId }`. Under
