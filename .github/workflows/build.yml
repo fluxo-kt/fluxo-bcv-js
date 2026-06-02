@@ -50,9 +50,11 @@ permissions:
   # needed `write` for that submission. No other step in build.yml
   # writes back to git.
   contents: read
-  # required for all workflows (CodeQL)
+  # SARIF uploads (Detekt + Lint via codeql-action/upload-sarif) require
+  # `security-events: write`; `actions: read` is required by upload-sarif
+  # (incl. private repos). CodeQL *analysis* moved to codeql.yml, but
+  # these stay — upload-sarif needs them independently of CodeQL.
   security-events: write
-  # required for workflows in private repositories (CodeQL)
   actions: read
   # We appear to need write permission for both pull-requests and
   # issues to post a comment to a pull request.
@@ -76,7 +78,6 @@ jobs:
       matrix:
         java: [ '21' ]
         os: [ 'macos', 'ubuntu', 'windows' ]
-        language: [ 'java-kotlin' ]
 
     name: 'Build and check on ${{ matrix.os }}'
     timeout-minutes: 25
@@ -130,7 +131,11 @@ jobs:
         with:
           # Folded-in from the deleted gradle-wrapper-validation.yml.
           validate-wrappers: true
-          gradle-home-cache-cleanup: true
+          # `gradle-home-cache-cleanup: true` was deprecated in gradle/actions
+          # v4 → `cache-cleanup`. `on-success` is its documented successor
+          # (and current default): prune stale Gradle Home entries only after
+          # a successful build, before saving the Actions cache.
+          cache-cleanup: on-success
           cache-disabled: ${{ matrix.os == 'windows' }} # super slow on Windows.
           cache-encryption-key: "${{ secrets.GRADLE_ENCRYPTION_KEY }}"
           cache-read-only: ${{ !env.IS_DEFAULT_BRANCH }}
@@ -141,12 +146,6 @@ jobs:
           dependency-graph: disabled
           add-job-summary-as-pr-comment: on-failure
           artifact-retention-days: 1
-
-      - name: Initialize CodeQL
-        if: matrix.os == 'ubuntu'
-        uses: github/codeql-action/init@9e0d7b8d25671d64c341c19c0152d693099fb5ba # v4.35.5
-        with:
-          languages: ${{ matrix.language }}
 
       - name: 'Build and check plugin itself'
         timeout-minutes: 15
@@ -268,13 +267,6 @@ jobs:
             **/build/output/
             build/*-merged.*
           compression-level: 9
-
-      - name: Perform CodeQL Analysis
-        if: matrix.os == 'ubuntu'
-        timeout-minutes: 6
-        uses: github/codeql-action/analyze@9e0d7b8d25671d64c341c19c0152d693099fb5ba # v4.35.5
-        with:
-          category: "/language:${{matrix.language}}"
 
       - name: "Post result in PR comment"
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0

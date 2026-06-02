@@ -1,0 +1,126 @@
+name: CodeQL
+
+# Why a dedicated workflow (split out of build.yml)?
+#   CodeQL's java-kotlin extractor HARD-FAILS on Kotlin newer than its
+#   bundled ceiling (`KotlinVersionTooRecentError`). github/codeql pins one
+#   compiled extractor per Kotlin release via `versions.bzl`; there is no
+#   skip-not-fail switch (the gate lives in the closed extractor agent).
+#   While CodeQL ran inside build.yml it traced the composite `checks/*`
+#   smoke builds, which compile `kotlinLatest` (currently a 2.x-RC) past
+#   that ceiling — so analysis killed the entire build matrix.
+#
+#   The shipped product is the plugin source only; `checks/*` are throwaway
+#   consumer fixtures, not something to security-scan. So we scope analysis
+#   to `:plugin` (built at the repo's own Kotlin, under the ceiling) and
+#   isolate it here — mirroring the dependency-submission.yml split:
+#   focused single job, least privilege, decoupled failure domain.
+#
+#   ADVISORY by design — intentionally NOT a required check (see P3 branch
+#   protection). When the repo's Kotlin later crosses the bundle ceiling
+#   this goes red until the floating CodeQL bundle catches up (we pin the
+#   ACTION by SHA for supply-chain, but deliberately omit `tools:` so the
+#   bundle — hence the Kotlin ceiling — auto-rises). It must never block
+#   merges on that inherent, transient lag.
+
+on:
+  pull_request:
+    # Mirror build.yml: skip doc/CI-only PRs (paths-ignore is an exclude
+    # list of non-code, far lower maintenance than a positive allow-list).
+    paths-ignore:
+      - '**.*ignore'
+      - '**.md'
+      - '**.txt'
+      - '**/pr-**.yml'
+      - '**/release.yml'
+      - '**dependabot.yml'
+  push:
+    branches: [main, dev]
+    paths-ignore:
+      - '**.*ignore'
+      - '**.md'
+      - '**.txt'
+      - '**/pr-**.yml'
+      - '**/release.yml'
+      - '**dependabot.yml'
+  schedule:
+    # Weekly baseline so advisories on unchanged code (and a newly-caught-up
+    # CodeQL bundle) still surface without a push. Runs from the default
+    # branch only, per GitHub's scheduled-workflow semantics.
+    - cron: '37 4 * * 1'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  # CodeQL uploads its SARIF results to the code-scanning API.
+  security-events: write
+  # Required by codeql-action (incl. private repositories).
+  actions: read
+
+env:
+  CI: true
+
+jobs:
+  analyze:
+    name: Analyze (java-kotlin, :plugin only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@ab7a9404c0f3da075243ca237b5fac12c98deaa5 # v2.19.3
+        with:
+          disable-sudo: true
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+        with:
+          validate-wrappers: true
+          cache-cleanup: on-success
+          cache-encryption-key: "${{ secrets.GRADLE_ENCRYPTION_KEY }}"
+          # PRs read the cache but never write it (keep default-branch cache
+          # authoritative); pushes/schedule may refresh it.
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+          dependency-graph: disabled
+          artifact-retention-days: 1
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@9e0d7b8d25671d64c341c19c0152d693099fb5ba # v4.35.5
+        with:
+          languages: java-kotlin
+          # We compile manually below; CodeQL must not autobuild (autobuild
+          # would invoke a full Gradle build that traces the kotlinLatest
+          # `checks/*` modules and re-trip the version ceiling).
+          build-mode: manual
+
+      - name: Build plugin for tracing
+        # Every flag is load-bearing for a POPULATED database:
+        #   --no-daemon       Gradle daemon escapes CodeQL's build tracer.
+        #   in-process        Kotlin's OWN daemon is a second escape; run
+        #                     kotlinc inside the (traced) Gradle process.
+        #   --no-build-cache  a cache HIT serves outputs without invoking
+        #   --rerun-tasks     kotlinc → "no source code seen" / empty DB.
+        # Scope `:plugin` only — root Kotlin is under the extractor ceiling;
+        # pulling `checks/latest` would compile the RC and fail extraction.
+        run: >-
+          ./gradlew :plugin:compileKotlin
+          --no-daemon --no-build-cache --rerun-tasks
+          -Pkotlin.compiler.execution.strategy=in-process
+          --stacktrace
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@9e0d7b8d25671d64c341c19c0152d693099fb5ba # v4.35.5
+        with:
+          category: "/language:java-kotlin"
