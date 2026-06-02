@@ -133,8 +133,14 @@ matrix ceiling is the physical upstream ceiling, not an arbitrary pin.
 
 ## CI / branches / release
 - Workflows under `.github/workflows/`.
-- `build.yml` runs on PR + push (skips `dev/feat*/fix/mr/pr/pull/wip` branches
-  on push to avoid duplicate runs vs PR triggers).
+- `build.yml`: builds **every PR** (any base) + **push to `main`/`dev` only**
+  (no tags — a `v*` tag sits on already-built `main` HEAD). PRs are the
+  gateable pre-merge check; the concurrency group de-dupes. Do NOT re-add a
+  `pull_request: branches-ignore` — those match the PR *base*, so ignoring
+  `dev` (the default branch) silently disables builds for every feature PR.
+- `codeql.yml`: SAST, **separate + advisory** (not a required check). Builds
+  ONLY `:plugin` (the CodeQL java-kotlin extractor hard-fails on Kotlin past
+  its bundled ceiling; `checks/*` compile `kotlinLatest`). See gotchas.
 - `release.yml` triggers on `v*` tags.
 - `pr-fast-forward.yml` enables fast-forward merges via PR comment.
 - `pr-baseline.yml` regenerates baselines from PR comment command.
@@ -303,6 +309,39 @@ matrix ceiling is the physical upstream ceiling, not an arbitrary pin.
   fails. Capture providers/values into local vals first.
 - **`DSL_SCOPE_VIOLATION` suppress** in `checks/js-only/build.gradle.kts`
   is for old Gradle <8 catalog access. Keep it.
+- **GitHub default branch is `dev`, NOT `main`** (`gh repo view`). Dependabot
+  alerts + the dependency graph are scoped to the default branch ⇒ a CI/
+  supply-chain fix CLEARS alerts once it ff-merges to `dev`; no `main` round-
+  trip needed. `main` is the release branch (dev→main release PR).
+- **CodeQL lives in its own advisory `codeql.yml`, building ONLY `:plugin`.**
+  The java-kotlin extractor hard-fails (`KotlinVersionTooRecentError`) on
+  Kotlin newer than its bundled ceiling — github/codeql pins one compiled
+  extractor per Kotlin (`versions.bzl`), no skip switch. While CodeQL ran in
+  `build.yml` it traced the `checks/*` smoke builds (which compile
+  `kotlinLatest`, an RC) → killed the matrix for ~6mo. `:plugin` builds at
+  repo Kotlin (under the ceiling); `checks/*` are fixtures, not scan targets.
+  The build step needs `--no-daemon` + `-Pkotlin.compiler.execution.strategy=
+  in-process` (both daemons escape tracing) + `--no-build-cache --rerun-tasks`
+  (a cache hit ⇒ empty DB / "no source seen"). Action pinned by SHA but
+  `tools:` omitted so the bundle (hence ceiling) floats. Advisory by design:
+  goes red when repo Kotlin crosses the ceiling, never blocks merges.
+- **Never commit `checks/*/kotlin-js-store/yarn.lock`** (gitignored). A bare
+  `yarn.lock` (no package.json) makes GitHub raise npm Dependabot alerts on
+  Kotlin/JS dev-toolchain transitives that are NEVER shipped (plugin runtime
+  = java-diff-utils) + aborts security-update runs. The `.d.ts` baselines are
+  compiler-derived (npm-toolchain-independent), so pinning protects nothing
+  the checks assert. Kotlin regenerates the store per build; `updateBaseline`
+  therefore has NO `kotlinUpgradeYarnLock`/`kotlinStoreYarnLock`. Escape hatch
+  if a floating npm transitive breaks a check: rename via
+  `YarnRootExtension.lockFileName` (unindexed name) and re-commit.
+- **Maven Dependabot alerts on build tooling ⇒ fix the dep-graph filter, not
+  the deps.** `dependency-submission.yml` submits `include-configurations:
+  "^runtimeClasspath$"` (positive allow-list = shipped deps only). A negative
+  name filter (the old `^(?!(classpath)).*`) leaks the settings plugin-
+  resolution classpath (Develocity→protobuf/grpc; Sigstore/kmp-conf→
+  BouncyCastle; commons-io) because it isn't named `classpath`. If a NEW
+  never-shipped coord alerts under `manifest=settings.gradle.kts`, the filter
+  regressed — don't bump/dismiss the dep.
 - ⚠ **Hit something else surprising? Add it here and tell the user.**
 
 ## What's NOT in this repo
