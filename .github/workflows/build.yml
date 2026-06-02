@@ -1,6 +1,13 @@
 name: Build
 
 on:
+  # Build EVERY pull request (base `dev` OR `main`) so each PR is a
+  # gateable pre-merge status check.
+  # NOTE: `pull_request` branch filters match the PR *base* (target)
+  # branch, not the head. The previous `branches-ignore: [dev, feat*, …]`
+  # therefore disabled builds for PRs *into* `dev` — our default branch
+  # and the merge target of every feature PR — so red shipped unseen.
+  # Removed deliberately; never re-add a base filter that hides `dev` PRs.
   pull_request:
     paths-ignore:
       - '**.*ignore'
@@ -9,20 +16,16 @@ on:
       - '**/pr-**.yml'
       - '**/release.yml'
       - '**dependabot.yml'
-    # Avoid useless and/or duplicate runs.
-    # Also, we merge with --ff-only,
-    # so we don't need to run on the merge commit.
-    branches-ignore:
-      # Dependabot creates both branch and PR. Avoid running twice.
-      - 'dependabot/**'
-      - 'dev'
-      - 'feat*/**'
-      - 'fix/**'
-      - 'mr/**'
-      - 'pr/**'
-      - 'pull/**'
-      - 'wip/**'
+  # Build only integration-branch pushes. Feature and `dependabot/**`
+  # branches are already covered by their PR run above; gating them here
+  # too would double-run (push + PR). No `tags:` trigger: a `v*` tag is
+  # cut on `main` HEAD *after* a dev→main ff-merge, and that exact commit
+  # is built by this `push` (main) run — so the tagged tree is already
+  # validated; release.yml then only publishes. This `branches` allow-list
+  # is the single-run-per-change contract the old (misplaced, base-side)
+  # `branches-ignore` was trying — and failing — to express.
   push:
+    branches: [main, dev]
     paths-ignore:
       - '**.*ignore'
       - '**.md'
