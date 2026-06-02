@@ -1,0 +1,6 @@
+# THIS FILE IS A DELIBERATE TEST FIXTURE for the CI lockfile guard.
+# A committed kotlin-js-store/yarn.lock is forbidden (see .gitignore).
+# yarn lockfile v1
+minimatch@^3.0.4:
+  version "3.0.4"
+  resolved "https://registry.yarnpkg.com/minimatch/-/minimatch-3.0.4.tgz"
