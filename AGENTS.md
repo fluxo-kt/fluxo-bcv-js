@@ -138,9 +138,8 @@ matrix ceiling is the physical upstream ceiling, not an arbitrary pin.
   gateable pre-merge check; the concurrency group de-dupes. Do NOT re-add a
   `pull_request: branches-ignore` — those match the PR *base*, so ignoring
   `dev` (the default branch) silently disables builds for every feature PR.
-- `codeql.yml`: SAST, **separate + advisory** (not a required check). Builds
-  ONLY `:plugin` (the CodeQL java-kotlin extractor hard-fails on Kotlin past
-  its bundled ceiling; `checks/*` compile `kotlinLatest`). See gotchas.
+- `codeql.yml`: SAST, **separate + advisory** (not a required check); builds
+  ONLY `:plugin`. See "Surprises & gotchas" for why.
 - `release.yml` triggers on `v*` tags.
 - `pr-fast-forward.yml` enables fast-forward merges via PR comment.
 - `pr-baseline.yml` regenerates baselines from PR comment command.

@@ -129,7 +129,11 @@ jobs:
         # Kotlin regenerates the store per build — it must never be committed.
         shell: bash
         run: |
-          tracked=$(git ls-files '*kotlin-js-store*')
+          # Match files *inside* a kotlin-js-store dir at any depth (root or
+          # nested) — mirroring .gitignore's depth-agnostic `kotlin-js-store/`.
+          # NOT a bare `*kotlin-js-store*` substring, which false-positives on
+          # unrelated paths (e.g. docs-kotlin-js-store-notes.txt).
+          tracked=$(git ls-files '*/kotlin-js-store/*' 'kotlin-js-store/*')
           if [ -n "$tracked" ]; then
             echo "::error::Committed kotlin-js-store/ lockfile(s) below. These are gitignored on purpose: a bare yarn.lock raises npm Dependabot alerts on never-shipped JS-toolchain deps + aborts security-update runs. Fix: 'git rm --cached <file>' (Kotlin regenerates them per build)."
             echo "$tracked"
