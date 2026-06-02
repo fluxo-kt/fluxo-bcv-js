@@ -70,8 +70,18 @@ jobs:
           cache-encryption-key: "${{ secrets.GRADLE_ENCRYPTION_KEY }}"
           dependency-graph: generate-and-submit
           dependency-graph-continue-on-failure: false
-          # Same scoping as build.yml previously used inline (drop
-          # buildscript classpath + helper modules from the graph).
-          dependency-graph-include-configurations: "^(?!(classpath)).*"
+          # Positive allow-list: submit ONLY each project's runtimeClasspath
+          # = exactly what ships to consumers (here just java-diff-utils;
+          # BCV is compileOnly / consumer-provided, so not shipped). The
+          # prior negative `^(?!(classpath)).*` tried to drop build tooling
+          # by config NAME, but the settings plugin-resolution classpath is
+          # NOT named `classpath`, so Develocity (protobuf, grpc-netty-
+          # shaded), Sigstore/fluxo-kmp-conf (BouncyCastle) and commons-io
+          # leaked in as 9 false maven Dependabot alerts on never-shipped
+          # build tooling. A positive list is robust by construction:
+          # build-tooling classpaths are never named `runtimeClasspath`.
+          # Anchored so `testRuntimeClasspath` (test deps) is excluded too;
+          # scales to future published JVM modules (each has runtimeClasspath).
+          dependency-graph-include-configurations: "^runtimeClasspath$"
           dependency-graph-include-projects: "^:(?!(buildSrc|test|check)).*"
           artifact-retention-days: 1
