@@ -9,6 +9,17 @@ projectFilesBackup*/
 .gradle/
 build/
 
+# Kotlin/JS yarn lockfile dir (checks/*). Deliberately NOT committed: a
+# bare `yarn.lock` (no package.json) makes GitHub's dependency graph raise
+# npm Dependabot alerts on dev-toolchain transitives that are NEVER shipped
+# (plugin runtime deps = BCV + java-diff-utils), plus daily-aborting
+# security-update runs. The `.d.ts` baselines are Kotlin-compiler-derived,
+# so npm-toolchain pinning protects nothing the checks assert. Kotlin
+# regenerates the store per build. Escape hatch if a floating npm
+# transitive ever breaks a check build: rename the lock via
+# `YarnRootExtension.lockFileName` (unindexed name) and re-commit it.
+kotlin-js-store/
+
 # JVM/Android
 local.properties
 # Heap dumps from `-XX:+HeapDumpOnOutOfMemoryError` (set in the Gradle
