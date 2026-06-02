@@ -341,6 +341,17 @@ matrix ceiling is the physical upstream ceiling, not an arbitrary pin.
   BouncyCastle; commons-io) because it isn't named `classpath`. If a NEW
   never-shipped coord alerts under `manifest=settings.gradle.kts`, the filter
   regressed — don't bump/dismiss the dep.
+- **`dependency-submission.yml` MUST keep its `workflow_dispatch` + `schedule`
+  triggers.** Default-branch merges land via the `/ff` bot, whose push uses
+  `GITHUB_TOKEN`; GitHub does NOT fire push-triggered workflows on GITHUB_TOKEN
+  pushes (recursion guard), so the `push:` trigger never runs on a bot-merged
+  `dev`. Without the other two triggers the submitted dependency graph silently
+  rots → stale transitives → lingering/late Dependabot alerts. After a
+  dep-changing merge, refresh now via `gh workflow run
+  dependency-submission.yml --ref dev` (dispatched on your own token, so not
+  suppressed); the weekly `schedule` is the hands-off backstop. build.yml needs
+  no equivalent — required status checks read the PR-run contexts already
+  attached to the merged SHA, so its suppressed dev-push run is redundant.
 - ⚠ **Hit something else surprising? Add it here and tell the user.**
 
 ## What's NOT in this repo

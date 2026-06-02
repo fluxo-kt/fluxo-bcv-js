@@ -25,6 +25,19 @@ on:
       - '**/pr-**.yml'
       - '**/release.yml'
       - '**dependabot.yml'
+  # `workflow_dispatch` + `schedule` are LOAD-BEARING, not conveniences. Every
+  # merge into the protected default branch lands via the `/ff` bot, whose push
+  # uses GITHUB_TOKEN — and GitHub deliberately does NOT fire push-triggered
+  # workflows on GITHUB_TOKEN pushes (recursion guard). So the `push:` trigger
+  # above never fires on a bot-merged default branch; without these two the
+  # submitted graph would silently rot (stale transitives → lingering/late
+  # Dependabot alerts). `workflow_dispatch` (user/PAT token → not suppressed)
+  # gives on-demand re-submission after a dep-changing merge or for recovery;
+  # `schedule` keeps freshness hands-off so it never depends on someone
+  # remembering to dispatch. The job `if:` (default-branch only) still gates both.
+  workflow_dispatch:
+  schedule:
+    - cron: '47 3 * * 1'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
