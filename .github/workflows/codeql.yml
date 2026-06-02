@@ -15,8 +15,9 @@ name: CodeQL
 #   isolate it here — mirroring the dependency-submission.yml split:
 #   focused single job, least privilege, decoupled failure domain.
 #
-#   ADVISORY by design — intentionally NOT a required check (see P3 branch
-#   protection). When the repo's Kotlin later crosses the bundle ceiling
+#   ADVISORY by design — intentionally NOT a required status check; a branch
+#   ruleset must never gate on it. When the repo's Kotlin later crosses the
+#   bundle ceiling
 #   this goes red until the floating CodeQL bundle catches up (we pin the
 #   ACTION by SHA for supply-chain, but deliberately omit `tools:` so the
 #   bundle — hence the Kotlin ceiling — auto-rises). It must never block

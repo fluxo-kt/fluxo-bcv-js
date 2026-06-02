@@ -131,7 +131,7 @@ jobs:
         run: |
           tracked=$(git ls-files '*kotlin-js-store*')
           if [ -n "$tracked" ]; then
-            echo "::error::Committed Kotlin/JS lockfile(s) — never commit kotlin-js-store/; remove via 'git rm --cached':"
+            echo "::error::Committed kotlin-js-store/ lockfile(s) below. These are gitignored on purpose: a bare yarn.lock raises npm Dependabot alerts on never-shipped JS-toolchain deps + aborts security-update runs. Fix: 'git rm --cached <file>' (Kotlin regenerates them per build)."
             echo "$tracked"
             exit 1
           fi
