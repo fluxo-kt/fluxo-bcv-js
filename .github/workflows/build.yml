@@ -19,8 +19,8 @@ on:
   # so the invariant is "no file-path filter", enforced by the guard step
   # below. Docs PRs therefore build in full and report a real pass;
   # `concurrency` below cancels superseded runs so iteration doesn't pile
-  # up. The `push` trigger keeps its `paths-ignore` (post-merge pushes
-  # aren't status-gated), so the glob list lives in exactly one place.
+  # up. The `push` trigger likewise carries NO path filter (see its own
+  # note below) — there is no glob list anywhere, by design.
   pull_request:
   # Build only integration-branch pushes. Feature and `dependabot/**`
   # branches are already covered by their PR run above; gating them here
