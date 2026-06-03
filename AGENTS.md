@@ -374,6 +374,20 @@ matrix ceiling is the physical upstream ceiling, not an arbitrary pin.
   this — the failure is cosmetic AND a job rename also breaks the ruleset's
   required contexts (blocking merges loudly), so it can't slip by unnoticed.
   Tracks `dev` (integration line), not `main` (lags until the release PR).
+- **`${{ !env.X }}` / `env.X` in a boolean position is a constant, not a
+  condition.** GitHub coerces a non-empty string to boolean `true` — and an
+  `env:` value is ALWAYS a string, so the literal `"false"` is truthy. A guard
+  like `cache-read-only: ${{ !env.IS_DEFAULT_BRANCH }}` therefore pinned to a
+  constant `false` (every PR wrote a Gradle cache — `actions/caches` showed
+  42 `refs/pull/57/merge` entries vs 1 on `dev`), and
+  `if: … || env.IS_DEFAULT_BRANCH` was always-true. actionlint does NOT flag
+  this (valid GitHub syntax, just dead semantics). Use the boolean-producing
+  comparison directly (`github.ref == format('refs/heads/{0}', …)`) or
+  `env.X == 'true'`; never negate/branch on a bare string env. The fix removed
+  the variable entirely — a correct gate is one line away if genuinely needed
+  (YAGNI). NB: here the constant-`false` was benign by accident — under
+  bot-`/ff` the default-branch build run is suppressed, so PR-writable caches
+  are what we actually want; see the `cache-read-only` comment in build.yml.
 - **`dev`+`main` are protected by a branch ruleset
   (`protect-integration-branches`), the recurrence-prevention from the
   CI-recovery work.** It has NO in-repo file (GitHub-side config) — query it via

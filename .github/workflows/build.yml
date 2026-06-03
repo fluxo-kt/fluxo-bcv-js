@@ -75,7 +75,6 @@ env:
   # Dependency-graph filter regexes live in
   # dependency-submission.yml now (the inline graph-submit step here
   # was removed alongside the `contents: write` tightening).
-  IS_DEFAULT_BRANCH: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
 
 jobs:
   buildAndCheck:
@@ -199,7 +198,15 @@ jobs:
           cache-cleanup: on-success
           cache-disabled: ${{ matrix.os == 'windows' }} # super slow on Windows.
           cache-encryption-key: "${{ secrets.GRADLE_ENCRYPTION_KEY }}"
-          cache-read-only: ${{ !env.IS_DEFAULT_BRANCH }}
+          # Writable on every run, deliberately. The canonical "write only on
+          # the default branch" pattern assumes the default branch gets build
+          # runs — but bot-`/ff` merges push via GITHUB_TOKEN, which GitHub's
+          # recursion guard stops from triggering this workflow, so a `dev`
+          # build run effectively never happens. Gating writes to it would
+          # leave the cache permanently cold. Instead each PR self-warms its
+          # own cache; pr-clean-cache.yml reaps the `refs/pull/N/merge` entries
+          # when the PR closes, so writable PRs don't accumulate.
+          cache-read-only: false
           # Dependency-graph submission moved to its own workflow
           # (dependency-submission.yml) so build.yml can run with
           # `contents: read`. The split also decouples graph-submit
@@ -213,7 +220,7 @@ jobs:
         run: ./gradlew build assemble check --continue --stacktrace --scan
 
       - name: Upload sarif report (Detekt)
-        if: always() && (github.event_name == 'pull_request' || env.IS_DEFAULT_BRANCH)
+        if: always()
         uses: github/codeql-action/upload-sarif@9e0d7b8d25671d64c341c19c0152d693099fb5ba # v4.35.5
         continue-on-error: true
         with:
@@ -221,7 +228,7 @@ jobs:
           category: detekt
 
       - name: Upload sarif report (Lint)
-        if: always() && (github.event_name == 'pull_request' || env.IS_DEFAULT_BRANCH)
+        if: always()
         uses: github/codeql-action/upload-sarif@9e0d7b8d25671d64c341c19c0152d693099fb5ba # v4.35.5
         continue-on-error: true
         with:
