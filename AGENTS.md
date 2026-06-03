@@ -414,9 +414,14 @@ matrix ceiling is the physical upstream ceiling, not an arbitrary pin.
   {ubuntu,macos,windows}`, each pinned to `integration_id: 15368` (github-actions)
   so a same-named context from another app can't satisfy the gate. It uses the
   `non_fast_forward` rule (blocks force-push), NOT the `pull_request` rule — so
-  the `/ff` bot's legitimate ff-push of an already-green SHA still merges; that's
-  also why `bypass_actors` is empty (no bypass needed). CodeQL + Scorecard are
-  deliberately NOT required (advisory). **Corollary trap — never add a
+  the `/ff` bot's legitimate ff-push of an already-green SHA still merges.
+  `bypass_actors` is `[{OrganizationAdmin, always}]`: the solo founder (org
+  owner) direct-pushes `dev`/`main` with no PR ceremony, while the `/ff` bot (a
+  github-actions *app*, not an org-admin user) and external contributors stay
+  gated by required checks — so a red dependabot/feature *auto-merge* is still
+  blocked, the recurrence target. The badge surfaces any red the owner pushes
+  directly. Reset `bypass_actors` to `[]` to re-impose PR-only on everyone.
+  CodeQL + Scorecard are deliberately NOT required (advisory). **Corollary trap — never add a
   file-path filter (`paths-ignore` OR `paths`) to build.yml's `pull_request`
   trigger:** an `on:`-level path filter emits no check runs for a non-matching
   PR, so the required contexts never report and every docs-only PR is permanently
@@ -425,9 +430,12 @@ matrix ceiling is the physical upstream ceiling, not an arbitrary pin.
   of the listed globs — so the invariant is "no path filter on the required
   trigger", machine-enforced by build.yml's "Forbid path filters on the
   pull_request trigger" step (a `paths-ignore`-only guard would miss the `paths` half).
-  Docs PRs must build in full; the `push` trigger keeps `paths-ignore` (post-merge
-  pushes aren't gated). If you change a build.yml matrix job NAME, update the
-  ruleset's required contexts in lockstep or the gate silently stops matching.
+  Docs PRs must build in full. The `push` trigger has NO `paths-ignore` either:
+  with the OrganizationAdmin bypass, owner direct-pushes are the only pushes it
+  sees (`/ff` is GITHUB_TOKEN-suppressed), and the badge reads dev HEAD's build
+  check-run — so a docs-only push must still build or the badge blanks to "no
+  check runs". If you change a build.yml matrix job NAME, update the ruleset's
+  required contexts in lockstep or the gate silently stops matching.
 - ⚠ **Hit something else surprising? Add it here and tell the user.**
 
 ## What's NOT in this repo

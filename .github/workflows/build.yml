@@ -32,13 +32,11 @@ on:
   # `branches-ignore` was trying — and failing — to express.
   push:
     branches: [main, dev]
-    paths-ignore:
-      - '**.*ignore'
-      - '**.md'
-      - '**.txt'
-      - '**/pr-**.yml'
-      - '**/release.yml'
-      - '**dependabot.yml'
+    # No `paths-ignore`: the README badge reads dev HEAD's build check-run, so
+    # every dev commit must build — a docs-only skip blanks it to "no check
+    # runs". This trigger only ever sees owner direct-pushes anyway (`/ff` bot
+    # merges are GITHUB_TOKEN-suppressed), so the old filter merely suppressed
+    # the very pushes that must build to keep the badge truthful.
 
 # Cancel superseded runs on the same ref. Without this, rapid
 # force-pushes during PR iteration spawn parallel matrix runs
