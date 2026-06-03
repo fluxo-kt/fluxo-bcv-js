@@ -251,11 +251,10 @@ jobs:
         timeout-minutes: 10
         working-directory: checks/kgp-only
         # Embedded-only smoke: KGP `abiValidation { }` activated, no
-        # external BCV plugin. Validates the new dual-mode trigger
-        # (commit 21), the task-based detection shim (commit 20), and
-        # `DirConfig.TARGET_DIR` short-circuit (commit 23). Also runs
-        # `checkKotlinAbi` so KGP's KLIB ABI baseline is verified in
-        # the same matrix invocation.
+        # external BCV plugin. Validates the dual-mode trigger, the
+        # task-based detection shim, and the `DirConfig.TARGET_DIR`
+        # short-circuit. Also runs `checkKotlinAbi` so KGP's KLIB ABI
+        # baseline is verified in the same matrix invocation.
         run: ./gradlew check checkKotlinAbi --continue --stacktrace --scan
         env:
           GITHUB_DEPENDENCY_GRAPH_ENABLED: false
