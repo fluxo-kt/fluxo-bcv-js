@@ -360,8 +360,8 @@ matrix ceiling is the physical upstream ceiling, not an arbitrary pin.
   the branch*; under bot-`/ff` no `build.yml` run ever lands on protected `dev`
   (GITHUB_TOKEN push suppression), so it stayed frozen on the pre-recovery RED
   run while every PR was green. The shields badge reads dev HEAD's per-SHA
-  check status — the SAME
-  source the ruleset gates on, always fresh, zero compute:
+  check status — the SAME source the ruleset gates on, always fresh, zero
+  compute:
   `…/github/check-runs/<owner>/<repo>/dev?nameFilter=Build%20and%20check%20on%20ubuntu&label=Build`.
   `nameFilter` is EXACT-match (no substring/regex) → pins ONE context: ubuntu is
   the strictest cell (only it runs `check-dual`) and all three OS contexts are
