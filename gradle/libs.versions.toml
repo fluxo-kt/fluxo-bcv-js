@@ -26,7 +26,7 @@ bcvLatest = "0.18.1"
 # `bcv` is frozen at 0.18.1 (project no longer maintained — see §1) so
 # this pin is effectively permanent. DEPENDABOT: do not auto-bump.
 # https://github.com/Kotlin/binary-compatibility-validator/blob/0.18.1/gradle/libs.versions.toml#L5
-diffutils = "4.12"
+diffutils = "4.17"
 
 # Java/Kotlin compatibility, aligned with BCV.
 # `kotlinLangVersion` is the lowest source-language version the
