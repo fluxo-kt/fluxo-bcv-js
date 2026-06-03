@@ -16,7 +16,17 @@ updates:
     labels:
       - "gradle"
       - "dependencies"
+    ignore:
+      # java-diff-utils is INTENTIONALLY pinned to BCV's transitive version to
+      # avoid a classloader split-brain — full rationale at
+      # gradle/libs.versions.toml (`diffutils`). Newer releases exist but are
+      # unusable here; this is effectively permanent. Never auto-bump.
+      - dependency-name: "io.github.java-diff-utils:java-diff-utils"
 
+  # GitHub Actions: dependabot is kept as the DETECTION signal (its PRs surface
+  # outdated pins), but these PRs are NOT merged directly. Apply action updates
+  # via the `actions-up` CLI (SHA-pinned, version-commented — the single
+  # authoritative channel), then close the corresponding dependabot PR.
   - package-ecosystem: "github-actions"
     directory: "/"
     commit-message:
