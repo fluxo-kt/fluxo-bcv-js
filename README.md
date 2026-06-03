@@ -3,7 +3,7 @@
 
 [![Gradle Plugin Portal][badge-plugin]][plugin]
 [![JitPack][badge-jitpack]][jitpack]
-[![Build](../../actions/workflows/build.yml/badge.svg)](../../actions/workflows/build.yml)
+[![Build](https://img.shields.io/github/check-runs/fluxo-kt/fluxo-bcv-js/dev?nameFilter=Build%20and%20check%20on%20ubuntu&label=Build)](../../actions/workflows/build.yml)
 [![Common Changelog](https://common-changelog.org/badge.svg)](CHANGELOG.md)
 
 [![KotlinX BCV Compatibility](http://img.shields.io/badge/KotlinX%20BCV-0.8%20--%200.18.1-7F52FF?logo=kotlin&logoWidth=10&logoColor=7F52FF&labelColor=2B2B2B)][bcv]

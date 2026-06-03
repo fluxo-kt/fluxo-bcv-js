@@ -349,9 +349,31 @@ matrix ceiling is the physical upstream ceiling, not an arbitrary pin.
   rots → stale transitives → lingering/late Dependabot alerts. After a
   dep-changing merge, refresh now via `gh workflow run
   dependency-submission.yml --ref dev` (dispatched on your own token, so not
-  suppressed); the weekly `schedule` is the hands-off backstop. build.yml needs
-  no equivalent — required status checks read the PR-run contexts already
-  attached to the merged SHA, so its suppressed dev-push run is redundant.
+  suppressed); the weekly `schedule` is the hands-off backstop (the graph
+  feeds Dependabot **security alerts**, so freshness matters even absent a
+  merge). build.yml needs no equivalent — required status checks read the
+  PR-run contexts already attached to the merged SHA, so its suppressed
+  dev-push run is redundant (and the README build badge reads those same
+  per-SHA contexts, NOT build.yml's run history — see the badge gotcha below).
+- **README build badge = shields.io check-runs badge, NOT the Actions workflow
+  badge.** The workflow badge (`build.yml/badge.svg`) shows the latest *run on
+  the branch*; under bot-`/ff` no `build.yml` run ever lands on protected `dev`
+  (GITHUB_TOKEN push suppression), so it stayed frozen on the pre-recovery RED
+  run while every PR was green. The shields badge reads dev HEAD's per-SHA
+  check status — the SAME
+  source the ruleset gates on, always fresh, zero compute:
+  `…/github/check-runs/<owner>/<repo>/dev?nameFilter=Build%20and%20check%20on%20ubuntu&label=Build`.
+  `nameFilter` is EXACT-match (no substring/regex) → pins ONE context: ubuntu is
+  the strictest cell (only it runs `check-dual`) and all three OS contexts are
+  ruleset-required on an immutable-between-merges `dev`, so ubuntu-green ⟺
+  all-green — a faithful proxy that EXCLUDES advisory CodeQL/Scorecard (no
+  false-red in the mode they're designed to tolerate). Couples to the exact job
+  name (same string as the ruleset's required contexts): a rename detaches the
+  badge — it renders grey "unknown status" (NOT red), so update the badge
+  `nameFilter` in lockstep when renaming a matrix job. No machine guard for
+  this — the failure is cosmetic AND a job rename also breaks the ruleset's
+  required contexts (blocking merges loudly), so it can't slip by unnoticed.
+  Tracks `dev` (integration line), not `main` (lags until the release PR).
 - **`dev`+`main` are protected by a branch ruleset (`protect-integration-
   branches`), the recurrence-prevention from the CI-recovery work.** It has NO
   in-repo file (GitHub-side config) — query it via `gh api repos/<owner>/<repo>/
