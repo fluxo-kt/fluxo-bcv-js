@@ -143,6 +143,24 @@ jobs:
             exit 1
           fi
 
+      - name: Forbid paths-ignore on the pull_request trigger
+        # Self-guard (ubuntu runners ship yq). The branch ruleset requires
+        # this workflow's `Build and check on *` matrix contexts; an
+        # `on:`-level path-skip emits NO check runs, so re-adding
+        # `paths-ignore` to `pull_request` would silently make every
+        # docs-only PR un-mergeable (the contexts never report) — see the
+        # `on:` block comment. This gate converts that regression into an
+        # immediate red on the next code PR, instead of a mystery BLOCKED
+        # docs PR. `.["on"]` quotes the key: YAML 1.1 reads bare `on` as a
+        # boolean. Keep `paths-ignore` on `push` only (not status-gated).
+        if: matrix.os == 'ubuntu'
+        shell: bash
+        run: |
+          if [ "$(yq '.["on"].pull_request | has("paths-ignore")' .github/workflows/build.yml)" = "true" ]; then
+            echo "::error file=.github/workflows/build.yml::paths-ignore on the pull_request trigger is forbidden: a path-skipped workflow emits no check runs, so the ruleset-required 'Build and check on *' contexts never report and docs-only PRs are BLOCKED from merge forever. Keep paths-ignore on push only."
+            exit 1
+          fi
+
       - name: 'Set up JDK ${{ matrix.java }}'
         uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
