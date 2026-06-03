@@ -8,14 +8,17 @@ on:
   # therefore disabled builds for PRs *into* `dev` — our default branch
   # and the merge target of every feature PR — so red shipped unseen.
   # Removed deliberately; never re-add a base filter that hides `dev` PRs.
+  #
+  # NO `paths-ignore` here, deliberately: the branch ruleset requires the
+  # `Build and check on {ubuntu,macos,windows}` contexts to pass before
+  # merge. A path-skipped workflow emits NO check runs, so those required
+  # contexts would never report and EVERY docs-only PR would be permanently
+  # BLOCKED from merge (empirically reproduced on PR #48). Docs PRs therefore
+  # build in full and report a real pass; `concurrency` below cancels
+  # superseded runs so iteration doesn't pile up. The `push` trigger keeps
+  # its `paths-ignore` (post-merge pushes aren't status-gated), so the glob
+  # list lives in exactly one place.
   pull_request:
-    paths-ignore:
-      - '**.*ignore'
-      - '**.md'
-      - '**.txt'
-      - '**/pr-**.yml'
-      - '**/release.yml'
-      - '**dependabot.yml'
   # Build only integration-branch pushes. Feature and `dependabot/**`
   # branches are already covered by their PR run above; gating them here
   # too would double-run (push + PR). No `tags:` trigger: a `v*` tag is

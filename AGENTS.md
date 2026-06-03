@@ -352,6 +352,23 @@ matrix ceiling is the physical upstream ceiling, not an arbitrary pin.
   suppressed); the weekly `schedule` is the hands-off backstop. build.yml needs
   no equivalent — required status checks read the PR-run contexts already
   attached to the merged SHA, so its suppressed dev-push run is redundant.
+- **`dev`+`main` are protected by a branch ruleset (`protect-integration-
+  branches`), the recurrence-prevention from the CI-recovery work.** It has NO
+  in-repo file (GitHub-side config) — query it via `gh api repos/<owner>/<repo>/
+  rulesets` (don't hardcode its numeric id; that changes on recreate). Required
+  contexts are EXACTLY build.yml's matrix job names `Build and check on
+  {ubuntu,macos,windows}`, each pinned to `integration_id: 15368` (github-actions)
+  so a same-named context from another app can't satisfy the gate. It uses the
+  `non_fast_forward` rule (blocks force-push), NOT the `pull_request` rule — so
+  the `/ff` bot's legitimate ff-push of an already-green SHA still merges; that's
+  also why `bypass_actors` is empty (no bypass needed). CodeQL + Scorecard are
+  deliberately NOT required (advisory). **Corollary trap — never add
+  `paths-ignore` to build.yml's `pull_request` trigger:** an `on:`-level
+  path-skip emits no check runs, so the required contexts never report and every
+  docs-only PR is permanently BLOCKED from merge (reproduced on PR #48). Docs PRs
+  must build in full; the `push` trigger keeps `paths-ignore` (post-merge pushes
+  aren't gated). If you change a build.yml matrix job NAME, update the ruleset's
+  required contexts in lockstep or the gate silently stops matching.
 - ⚠ **Hit something else surprising? Add it here and tell the user.**
 
 ## What's NOT in this repo
