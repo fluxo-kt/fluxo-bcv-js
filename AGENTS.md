@@ -374,10 +374,11 @@ matrix ceiling is the physical upstream ceiling, not an arbitrary pin.
   this — the failure is cosmetic AND a job rename also breaks the ruleset's
   required contexts (blocking merges loudly), so it can't slip by unnoticed.
   Tracks `dev` (integration line), not `main` (lags until the release PR).
-- **`dev`+`main` are protected by a branch ruleset (`protect-integration-
-  branches`), the recurrence-prevention from the CI-recovery work.** It has NO
-  in-repo file (GitHub-side config) — query it via `gh api repos/<owner>/<repo>/
-  rulesets` (don't hardcode its numeric id; that changes on recreate). Required
+- **`dev`+`main` are protected by a branch ruleset
+  (`protect-integration-branches`), the recurrence-prevention from the
+  CI-recovery work.** It has NO in-repo file (GitHub-side config) — query it via
+  `gh api repos/<owner>/<repo>/rulesets` (don't hardcode its numeric id; that
+  changes on recreate). Required
   contexts are EXACTLY build.yml's matrix job names `Build and check on
   {ubuntu,macos,windows}`, each pinned to `integration_id: 15368` (github-actions)
   so a same-named context from another app can't satisfy the gate. It uses the
@@ -392,7 +393,7 @@ matrix ceiling is the physical upstream ceiling, not an arbitrary pin.
   `paths-ignore` on PRs touching only ignored globs, `paths` on PRs touching none
   of the listed globs — so the invariant is "no path filter on the required
   trigger", machine-enforced by build.yml's "Forbid path filters on the
-  pull_request trigger" step (a `paths:`-only guard would miss the `paths` half).
+  pull_request trigger" step (a `paths-ignore`-only guard would miss the `paths` half).
   Docs PRs must build in full; the `push` trigger keeps `paths-ignore` (post-merge
   pushes aren't gated). If you change a build.yml matrix job NAME, update the
   ruleset's required contexts in lockstep or the gate silently stops matching.
