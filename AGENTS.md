@@ -146,10 +146,19 @@ matrix ceiling is the physical upstream ceiling, not an arbitrary pin.
 - Flow: branch off `dev` → PR → ff-merge to `dev` → release PR `dev`→`main`.
 - Conventional Commits enforced.
 - Dependabot opens Gradle + GH-Actions bumps with `build(deps)` /
-  `ci(GitHub)` prefixes. **When picking up a bump-PR**: if a Gradle dep
-  changed (esp. KGP / BCV / `fluxo-kmp-conf`), run `./updateBaseline`
-  before merge so `dependencies/*.txt` and any drifted api dumps are
-  refreshed.
+  `ci(GitHub)` prefixes. **Two ecosystems, two handling paths:**
+  - **Gradle bump-PR** → mergeable. If a Gradle dep changed (esp. KGP /
+    BCV / `fluxo-kmp-conf`), run `./updateBaseline` before merge so
+    `dependencies/*.txt` and any drifted api dumps are refreshed.
+  - **GH-Actions bump-PR** → **NEVER merge directly.** Dependabot's
+    `github-actions` ecosystem is kept ONLY as a *detection signal* (its
+    PRs surface outdated pins). The authoritative update channel is the
+    `actions-up` CLI (`actions-up --style sha --mode major --yes` — pins
+    by SHA with a version comment, the provenance the bare dependabot
+    `uses:` bump lacks). Apply via `actions-up`, push to `dev`, then
+    **close** the corresponding dependabot PR. Never hand-edit `uses:`
+    SHAs — the tool resolves tag→SHA from the GitHub API; a manual edit
+    has no provenance trail and drifts from the tool's version comments.
 
 ## Surprises & gotchas (read before debugging)
 - **Gradle path is `:plugin`, not `:fluxo-bcv-js`** (the dir name).
