@@ -355,6 +355,23 @@ matrix ceiling is the physical upstream ceiling, not an arbitrary pin.
   PR-run contexts already attached to the merged SHA, so its suppressed
   dev-push run is redundant (and the README build badge reads those same
   per-SHA contexts, NOT build.yml's run history — see the badge gotcha below).
+- **`pr-clean-cache.yml` only reaps MANUALLY-closed PRs, never `/ff` merges —
+  by the same GITHUB_TOKEN recursion guard.** It triggers on
+  `pull_request: closed`, but a PR auto-closed by the `/ff` bot's GITHUB_TOKEN
+  fast-forward push does NOT fire that event (verified: bot-merged PRs produce
+  no run). So `/ff`-merged PRs' `refs/pull/N/merge` Gradle caches are reaped by
+  GitHub's **7-day unused-cache eviction**, not this workflow. That is
+  sufficient and intentional: cleanup is storage hygiene only (usage stays well
+  under the 10 GB cap at this repo's velocity), and it does NOT affect CI
+  warmth — the `dev` baseline cache is evicted by its own 7-day inactivity, and
+  LRU evicts least-recently-*accessed* first, so the frequently-restored
+  baseline is the last victim, not the first. **Do NOT "fix" this** by adding a
+  `gh cache delete` step to `pr-fast-forward.yml` (marginal storage gain the
+  usage doesn't justify) or by pushing `/ff` via a PAT (long-lived credential
+  liability). The workflow uses native `gh cache delete --all --ref …` (the old
+  `actions/gh-actions-cache` extension's binary download is egress-blocked at
+  `release-assets.githubusercontent.com`; native needs only api.github.com and
+  drops a supply-chain dep).
 - **README build badge = shields.io check-runs badge, NOT the Actions workflow
   badge.** The workflow badge (`build.yml/badge.svg`) shows the latest *run on
   the branch*; under bot-`/ff` no `build.yml` run ever lands on protected `dev`
