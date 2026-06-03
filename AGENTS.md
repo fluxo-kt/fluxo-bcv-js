@@ -362,13 +362,18 @@ matrix ceiling is the physical upstream ceiling, not an arbitrary pin.
   `non_fast_forward` rule (blocks force-push), NOT the `pull_request` rule — so
   the `/ff` bot's legitimate ff-push of an already-green SHA still merges; that's
   also why `bypass_actors` is empty (no bypass needed). CodeQL + Scorecard are
-  deliberately NOT required (advisory). **Corollary trap — never add
-  `paths-ignore` to build.yml's `pull_request` trigger:** an `on:`-level
-  path-skip emits no check runs, so the required contexts never report and every
-  docs-only PR is permanently BLOCKED from merge (reproduced on PR #48). Docs PRs
-  must build in full; the `push` trigger keeps `paths-ignore` (post-merge pushes
-  aren't gated). If you change a build.yml matrix job NAME, update the ruleset's
-  required contexts in lockstep or the gate silently stops matching.
+  deliberately NOT required (advisory). **Corollary trap — never add a
+  file-path filter (`paths-ignore` OR `paths`) to build.yml's `pull_request`
+  trigger:** an `on:`-level path filter emits no check runs for a non-matching
+  PR, so the required contexts never report and every docs-only PR is permanently
+  BLOCKED from merge (reproduced on PR #48). Both keys skip identically —
+  `paths-ignore` on PRs touching only ignored globs, `paths` on PRs touching none
+  of the listed globs — so the invariant is "no path filter on the required
+  trigger", machine-enforced by build.yml's "Forbid path filters on the
+  pull_request trigger" step (a `paths:`-only guard would miss the `paths` half).
+  Docs PRs must build in full; the `push` trigger keeps `paths-ignore` (post-merge
+  pushes aren't gated). If you change a build.yml matrix job NAME, update the
+  ruleset's required contexts in lockstep or the gate silently stops matching.
 - ⚠ **Hit something else surprising? Add it here and tell the user.**
 
 ## What's NOT in this repo
