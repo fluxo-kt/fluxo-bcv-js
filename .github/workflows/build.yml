@@ -164,10 +164,22 @@ jobs:
         if: matrix.os == 'ubuntu'
         shell: bash
         run: |
-          if [ "$(yq '.["on"].pull_request | (has("paths-ignore") or has("paths"))' .github/workflows/build.yml)" = "true" ]; then
-            echo "::error file=.github/workflows/build.yml::A path filter (paths-ignore/paths) on the pull_request trigger is forbidden: a path-skipped workflow emits no check runs, so the ruleset-required 'Build and check on *' contexts never report and docs-only PRs are BLOCKED from merge forever. Keep path filtering on push only."
-            exit 1
-          fi
+          set -euo pipefail
+          # Fail CLOSED. A fail-open guard on a merge-gate is worse than none —
+          # it reads as "verified" while verifying nothing. `set -e` makes a
+          # missing/erroring yq abort the step; the `*)` arm blocks any
+          # unexpected output (empty/null from a restructured trigger) instead
+          # of silently passing.
+          has_filter=$(yq '.["on"].pull_request | (has("paths-ignore") or has("paths"))' .github/workflows/build.yml)
+          case "$has_filter" in
+            false) ;;
+            true)
+              echo "::error file=.github/workflows/build.yml::A path filter (paths-ignore/paths) on the pull_request trigger is forbidden: a path-skipped workflow emits no check runs, so the ruleset-required 'Build and check on *' contexts never report and docs-only PRs are BLOCKED from merge forever. Keep path filtering on push only."
+              exit 1 ;;
+            *)
+              echo "::error file=.github/workflows/build.yml::path-filter guard could not evaluate the pull_request trigger (yq returned '$has_filter') — failing closed. Check the yq expression / build.yml structure."
+              exit 1 ;;
+          esac
 
       - name: 'Set up JDK ${{ matrix.java }}'
         uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
