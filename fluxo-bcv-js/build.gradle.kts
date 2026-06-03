@@ -298,7 +298,7 @@ tasks.named("check") { dependsOn(verifyPluginPortalMetadata) }
 // (opt-in; the developer accepts the OIDC ceremony).
 //
 // `notCompatibleWithConfigurationCache` is also required:
-// `dev.sigstore.sign 2.0.x` (`SigstoreSignFilesTask`) captures a
+// `dev.sigstore.sign 2.0.x–2.1.x` (`SigstoreSignFilesTask`) captures a
 // `DefaultProject` reference, which Gradle's configuration cache
 // refuses to serialize. With `org.gradle.configuration-cache.problems=fail`
 // + `max-problems=0` (gradle.properties), a fresh local
@@ -310,7 +310,7 @@ tasks.named("check") { dependsOn(verifyPluginPortalMetadata) }
 tasks.matching { it.name.startsWith("sigstoreSign") }.configureEach {
     onlyIf { providers.environmentVariable("RELEASE").orNull == "true" }
     notCompatibleWithConfigurationCache(
-        "dev.sigstore.sign 2.0.x captures Project reference — upstream CC violation",
+        "dev.sigstore.sign 2.0.x–2.1.x captures Project reference — upstream CC violation",
     )
 }
 
