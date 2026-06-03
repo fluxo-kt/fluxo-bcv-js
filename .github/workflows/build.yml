@@ -205,7 +205,8 @@ jobs:
           # build run effectively never happens. Gating writes to it would
           # leave the cache permanently cold. Instead each PR self-warms its
           # own cache; pr-clean-cache.yml reaps the `refs/pull/N/merge` entries
-          # when the PR closes, so writable PRs don't accumulate.
+          # when the PR closes (and GitHub's 7-day unused-cache eviction is the
+          # backstop if that ever fails), so writable PRs don't accumulate.
           cache-read-only: false
           # Dependency-graph submission moved to its own workflow
           # (dependency-submission.yml) so build.yml can run with

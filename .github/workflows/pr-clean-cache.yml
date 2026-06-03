@@ -4,8 +4,8 @@ on:
   pull_request:
     types: [ closed ]
 
-# Strictly scoped — this job only deletes its own cache keys via
-# `gh actions-cache delete`. No writes to PRs, issues, or contents.
+# Strictly scoped — this job only deletes the closed PR's own cache
+# entries via `gh cache delete`. No writes to PRs, issues, or contents.
 permissions:
   actions: write
   contents: read
@@ -20,34 +20,21 @@ jobs:
         with:
           disable-sudo: true
           egress-policy: block
+          # Native `gh cache` uses only the api.github.com REST API.
           allowed-endpoints: >
             api.github.com:443
-            objects.githubusercontent.com:443
 
       - name: Clean up
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
-          BRANCH: refs/pull/${{ github.event.pull_request.number }}/merge
-        run: |
-          # Binary gh extensions are pinned by release tag; commit
-          # pins are for script extensions cloned from source.
-          # Without `--pin`, every workflow invocation pulls the
-          # extension's latest release — a silent supply-chain
-          # surface. v1.0.4 (2024-04-09) is the latest tagged
-          # release and matches sibling fluxo-kmp-conf's pin.
-          gh extension install actions/gh-actions-cache \
-            --pin v1.0.4
-
-          echo "Fetching list of cache key"
-          cacheKeysForPR=$(gh actions-cache list -R "$REPO" -B "$BRANCH" -L 100 | cut -f 1 )
-
-          ## Setting this to not fail the workflow while deleting cache keys.
-          set +e
-          echo "Deleting caches..."
-          for cacheKey in $cacheKeysForPR
-          do
-              gh actions-cache delete "$cacheKey" -R "$REPO" -B "$BRANCH" --confirm
-              echo " - Deleted cache key: $cacheKey"
-          done
-          echo "Done"
+          REF: refs/pull/${{ github.event.pull_request.number }}/merge
+        # Native `gh cache` (built into the gh CLI) replaces the old
+        # `actions/gh-actions-cache` extension. The extension's binary
+        # asset is served from release-assets.githubusercontent.com,
+        # which the egress allow-list blocks → `gh extension install`
+        # failed → cleanup silently stopped reaping closed-PR caches.
+        # Native talks only to api.github.com and drops a third-party
+        # supply-chain dependency. `--succeed-on-no-caches` keeps PRs
+        # that never produced a cache from failing the step.
+        run: gh cache delete --all --ref "$REF" --repo "$REPO" --succeed-on-no-caches
