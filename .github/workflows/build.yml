@@ -8,14 +8,17 @@ on:
   # therefore disabled builds for PRs *into* `dev` — our default branch
   # and the merge target of every feature PR — so red shipped unseen.
   # Removed deliberately; never re-add a base filter that hides `dev` PRs.
+  #
+  # NO `paths-ignore` here, deliberately: the branch ruleset requires the
+  # `Build and check on {ubuntu,macos,windows}` contexts to pass before
+  # merge. A path-skipped workflow emits NO check runs, so those required
+  # contexts would never report and EVERY docs-only PR would be permanently
+  # BLOCKED from merge (empirically reproduced on PR #48). Docs PRs therefore
+  # build in full and report a real pass; `concurrency` below cancels
+  # superseded runs so iteration doesn't pile up. The `push` trigger keeps
+  # its `paths-ignore` (post-merge pushes aren't status-gated), so the glob
+  # list lives in exactly one place.
   pull_request:
-    paths-ignore:
-      - '**.*ignore'
-      - '**.md'
-      - '**.txt'
-      - '**/pr-**.yml'
-      - '**/release.yml'
-      - '**dependabot.yml'
   # Build only integration-branch pushes. Feature and `dependabot/**`
   # branches are already covered by their PR run above; gating them here
   # too would double-run (push + PR). No `tags:` trigger: a `v*` tag is
@@ -137,6 +140,24 @@ jobs:
           if [ -n "$tracked" ]; then
             echo "::error::Committed kotlin-js-store/ lockfile(s) below. These are gitignored on purpose: a bare yarn.lock raises npm Dependabot alerts on never-shipped JS-toolchain deps + aborts security-update runs. Fix: 'git rm --cached <file>' (Kotlin regenerates them per build)."
             echo "$tracked"
+            exit 1
+          fi
+
+      - name: Forbid paths-ignore on the pull_request trigger
+        # Self-guard (ubuntu runners ship yq). The branch ruleset requires
+        # this workflow's `Build and check on *` matrix contexts; an
+        # `on:`-level path-skip emits NO check runs, so re-adding
+        # `paths-ignore` to `pull_request` would silently make every
+        # docs-only PR un-mergeable (the contexts never report) — see the
+        # `on:` block comment. This gate converts that regression into an
+        # immediate red on the next code PR, instead of a mystery BLOCKED
+        # docs PR. `.["on"]` quotes the key: YAML 1.1 reads bare `on` as a
+        # boolean. Keep `paths-ignore` on `push` only (not status-gated).
+        if: matrix.os == 'ubuntu'
+        shell: bash
+        run: |
+          if [ "$(yq '.["on"].pull_request | has("paths-ignore")' .github/workflows/build.yml)" = "true" ]; then
+            echo "::error file=.github/workflows/build.yml::paths-ignore on the pull_request trigger is forbidden: a path-skipped workflow emits no check runs, so the ruleset-required 'Build and check on *' contexts never report and docs-only PRs are BLOCKED from merge forever. Keep paths-ignore on push only."
             exit 1
           fi
 
