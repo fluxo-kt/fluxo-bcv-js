@@ -47,15 +47,16 @@ kotlinApiVersion = "2.0"
 # emit bytecode/metadata quirks that leak into the published plugin
 # JAR. `kotlinLatest` drives the `checks/latest` smoke test only; an
 # RC pin there is acceptable because the smoke test isn't published.
-kotlin = "2.3.21"
+kotlin = "2.4.0"
 kotlinMin = "1.7.22"
 # `kotlinLatest` drives `checks/latest` only — not the published JAR —
-# so an RC pin is acceptable here. The plugin's discovery glob accepts
-# `.d.ts` AND `.d.mts` (commit 7b91ad4), so Kotlin 2.4's ESM-form
-# wasmJs declarations are picked up natively. Trip-wire: if a 2.4-RC
-# upstream regression (not in our shim) breaks `checks/latest`, pin
-# back to "2.3.21" with the failing GH issue cited in a comment.
-kotlinLatest = "2.4.0-RC"
+# so tracking the newest Kotlin (RC or GA) is acceptable here. The
+# plugin's discovery glob accepts `.d.ts` AND `.d.mts` (commit 7b91ad4),
+# so Kotlin 2.4's ESM-form wasmJs declarations are picked up natively.
+# Trip-wire: if a newer upstream release (not in our shim) breaks
+# `checks/latest`, pin back to the build-side `kotlin` above, citing the
+# failing GH issue in a comment.
+kotlinLatest = "2.4.0"
 
 # Dokka is a documentation engine for Kotlin/Java
 # https://github.com/Kotlin/dokka/releases
