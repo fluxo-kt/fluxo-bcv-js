@@ -61,7 +61,7 @@ Compatibility tested with:
 ```kotlin
 // in the `build.gradle.kts` of the target module.
 plugins {
-  kotlin("multiplatform") version "2.3.21" // <-- 1.7 .. 2.3 (CI also exercises 2.4.0-RC)
+  kotlin("multiplatform") version "2.3.21" // <-- any Kotlin 1.7.22+ (see Compatibility above)
   id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.18.1" // <-- 0.8 .. 0.18.1
   id("io.github.fluxo-kt.binary-compatibility-validator-js") version "1.1.0" // <-- add here
 }
@@ -81,7 +81,7 @@ kotlin {
 ```kotlin
 // in the `build.gradle.kts` of the target module.
 plugins {
-  kotlin("multiplatform") version "2.3.21" // <-- 1.7 .. 2.3 (CI also exercises 2.4.0-RC)
+  kotlin("multiplatform") version "2.3.21" // <-- any Kotlin 1.7.22+ (see Compatibility above)
   id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.18.1" // <-- 0.8 .. 0.18.1
   id("io.github.fluxo-kt.binary-compatibility-validator-js") // <-- add here, no version needed for jitpack usage
 }
