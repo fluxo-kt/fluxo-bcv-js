@@ -478,8 +478,17 @@ touches only the root classpath txts; a `kotlinLatest` bump only
 - No unit/integration tests for the plugin itself; coverage is the two
   `checks/*` composite builds. TestKit suite is in `ROADMAP.md`.
 - No published Dokka site. Source-level KDoc only.
-- No release-notes generator; `CHANGELOG.md` is hand-edited (Common
-  Changelog style).
+- No release-notes generator; `CHANGELOG.md` is hand-edited, Common
+  Changelog *style* with two deliberate house deviations — do NOT
+  "correct" them: (1) an extra `### Updated` category for version
+  bumps (used in every release, not in canonical Common Changelog);
+  (2) released entries are treated as IMMUTABLE history — fix a
+  released entry only to correct a factual error (as `1e264ab` did
+  for the Sigstore bullet), never to re-categorise/re-order. A
+  consumer-invisible change (CI/infra/tooling/build-compiler bump
+  proven across the 4 channels above) gets NO entry and leaves
+  `## Unreleased` empty — that emptiness is correct, not an omission;
+  the changelog is a *consumer* document.
 
 ## External pointers
 - BCV upstream: https://github.com/Kotlin/binary-compatibility-validator
