@@ -132,18 +132,25 @@ external BCV plugin (1.0.x behaviour) OR KGP-embedded `abiValidation { }`
 matrix ceiling is the physical upstream ceiling, not an arbitrary pin.
 
 **Bumping build-side `kotlin` (the published-JAR compiler) is
-consumer-invisible — but FALSIFY across three independent channels, never
+consumer-invisible — but FALSIFY across four independent channels, never
 just one.** The published POM **and** Gradle `.module` exclude
 `kotlin-stdlib*`/`kotlin-metadata` (Gradle supplies the Kotlin runtime to
 plugin consumers), so `java-diff-utils` is the *only* declared runtime dep
 and the compiler version cannot leak downstream. Before concluding
-"tooling-only, no release" on a `kotlin` bump, diff all three against the
-pre-bump revision: `:plugin:apiCheck` (JVM ABI — signatures only),
-`:plugin:generatePomFileForPluginMavenPublication` (POM dep contract), and
-`:plugin:generateMetadataFileForPluginMavenPublication` (`.module` — the
-*primary* contract for Gradle consumers; the POM defers to it). `apiCheck`
-alone is insufficient: it never sees the POM/metadata dependency
-declarations. Pair the bump with `kotlinLatest`: when the RC it tracked
+"tooling-only, no release" on a `kotlin` bump, diff all four against the
+pre-bump revision: (1) `:plugin:apiCheck` (JVM ABI — signatures only);
+(2) `:plugin:generatePomFileForPluginMavenPublication` (POM dep contract);
+(3) `:plugin:generateMetadataFileForPluginMavenPublication` (`.module` —
+the *primary* contract for Gradle consumers; the POM defers to it); and
+(4) the emitted **bytecode major version** (`javap -v` on
+`build/classes/kotlin/main`, must stay `52`/Java 8 — the basis of the
+Gradle-7.6+/old-runtime compat claim). `apiCheck` alone is insufficient:
+it sees neither the POM/metadata dep declarations nor the bytecode target.
+A new Kotlin minor can trip a `[fluxo-kmp-conf] … JVM target may be
+silently capped … extend the table` warning — benign **only** because we
+target the 1.8 floor (capping limits the ceiling, not the floor); verify
+channel (4), don't trust the warning's "silently". Pair the bump with
+`kotlinLatest`: when the RC it tracked
 goes GA, move build-side onto the GA **and** advance `kotlinLatest` to the
 next preview (or the GA itself if none exists yet) so `checks/latest`
 keeps testing the newest available, not a superseded prerelease. Refresh
