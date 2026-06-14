@@ -131,6 +131,26 @@ external BCV plugin (1.0.x behaviour) OR KGP-embedded `abiValidation { }`
 (Kotlin 2.2+). External BCV is **frozen** upstream at 0.18.1 — the
 matrix ceiling is the physical upstream ceiling, not an arbitrary pin.
 
+**Bumping build-side `kotlin` (the published-JAR compiler) is
+consumer-invisible — but FALSIFY across three independent channels, never
+just one.** The published POM **and** Gradle `.module` exclude
+`kotlin-stdlib*`/`kotlin-metadata` (Gradle supplies the Kotlin runtime to
+plugin consumers), so `java-diff-utils` is the *only* declared runtime dep
+and the compiler version cannot leak downstream. Before concluding
+"tooling-only, no release" on a `kotlin` bump, diff all three against the
+pre-bump revision: `:plugin:apiCheck` (JVM ABI — signatures only),
+`:plugin:generatePomFileForPluginMavenPublication` (POM dep contract), and
+`:plugin:generateMetadataFileForPluginMavenPublication` (`.module` — the
+*primary* contract for Gradle consumers; the POM defers to it). `apiCheck`
+alone is insufficient: it never sees the POM/metadata dependency
+declarations. Pair the bump with `kotlinLatest`: when the RC it tracked
+goes GA, move build-side onto the GA **and** advance `kotlinLatest` to the
+next preview (or the GA itself if none exists yet) so `checks/latest`
+keeps testing the newest available, not a superseded prerelease. Refresh
+dependency-guard baselines with `./updateBaseline` (a `kotlin` bump
+touches only the root classpath txts; a `kotlinLatest` bump only
+`checks/latest`).
+
 ## CI / branches / release
 - Workflows under `.github/workflows/`.
 - `build.yml`: builds **every PR** (any base) + **push to `main`/`dev` only**
