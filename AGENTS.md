@@ -480,8 +480,8 @@ touches only the root classpath txts; a `kotlinLatest` bump only
 - No published Dokka site. Source-level KDoc only.
 - No release-notes generator; `CHANGELOG.md` is hand-edited, Common
   Changelog *style* with two deliberate house deviations — do NOT
-  "correct" them: (1) an extra `### Updated` category for version
-  bumps (used in every release, not in canonical Common Changelog);
+  "correct" them: (1) a recurring `### Updated` category for version/
+  dependency bumps (not a canonical Common Changelog category);
   (2) released entries are treated as IMMUTABLE history — fix a
   released entry only to correct a factual error (as `1e264ab` did
   for the Sigstore bullet), never to re-categorise/re-order. A

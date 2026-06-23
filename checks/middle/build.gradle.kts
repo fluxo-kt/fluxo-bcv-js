@@ -1,9 +1,9 @@
-// Matrix-interior smoke: Kotlin 2.2.21 (last 2.x stable line before
-// the 2.4-RC at `checks/latest`) + BCV 0.16.3 (first BCV that introduced
+// Matrix-interior smoke: Kotlin 2.2.21 (a 2.x stable line below the
+// ceiling at `checks/latest`) + BCV 0.16.3 (first BCV that introduced
 // the worker-isolation classpath boundary at #208/#256/#258). Catches
 // drift between the matrix endpoints — between the floor
 // (`checks/js-only`: Kotlin 1.7.22 + BCV 0.8.0) and the ceiling
-// (`checks/latest`: Kotlin 2.4.0-RC + BCV 0.18.1). Without this cell,
+// (`checks/latest`: newest Kotlin + BCV 0.18.1). Without this cell,
 // regressions in the Kotlin 2.0→2.4 metadata rename or the BCV 0.14→0.16
 // reflective task-surface change would only surface on the ceiling, by
 // which point a bisect would have to cross multiple commits.
