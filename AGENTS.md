@@ -360,6 +360,20 @@ touches only the root classpath txts; a `kotlinLatest` bump only
   (a cache hit ⇒ empty DB / "no source seen"). Action pinned by SHA but
   `tools:` omitted so the bundle (hence ceiling) floats. Advisory by design:
   goes red when repo Kotlin crosses the ceiling, never blocks merges.
+- **Scorecard's open alerts are advisory FPs by design — don't chase the
+  score.** `TokenPermissions` (the bulk): every workflow already declares
+  a minimal, documented top-level `permissions:`; the findings only flag
+  top-level `write`, but every flagged workflow is single-job (top-level
+  *is* job-level) except `release.yml`, whose **both** jobs genuinely need
+  `contents: write` — so pushing `write` down to job scope is zero
+  security delta, pure pattern-matching. `BinaryArtifacts` = the committed
+  `gradle-wrapper.jar`s, required by Gradle and checksum-verified by
+  build.yml's `wrapper-validation` step (FP). `CodeReview`/`BranchProtection`
+  = solo-founder direct-push + a ruleset (not classic protection, which
+  Scorecard can't always read). `Fuzzing`/`CIIBestPractices` = N/A for a
+  tiny plugin. `SecurityPolicy` is cleared by `SECURITY.md` + enabled
+  private vulnerability reporting. Re-deriving this costs ~6 `gh api`
+  calls; that's why it's written down.
 - **Never commit `checks/*/kotlin-js-store/yarn.lock`** (gitignored). A bare
   `yarn.lock` (no package.json) makes GitHub raise npm Dependabot alerts on
   Kotlin/JS dev-toolchain transitives that are NEVER shipped (plugin runtime
