@@ -366,9 +366,15 @@ touches only the root classpath txts; a `kotlinLatest` bump only
   top-level `write`, but every flagged workflow is single-job (top-level
   *is* job-level) except `release.yml`, whose **both** jobs genuinely need
   `contents: write` — so pushing `write` down to job scope is zero
-  security delta, pure pattern-matching. `BinaryArtifacts` = the committed
-  `gradle-wrapper.jar`s, required by Gradle and checksum-verified by
-  build.yml's `wrapper-validation` step (FP). `CodeReview`/`BranchProtection`
+  security delta, pure pattern-matching. `BinaryArtifacts` = the 3
+  committed `gradle-wrapper.jar`s (root/js-only/middle = Gradle
+  9.5.1/8.6/8.14.5, one per version, irreducible), checksum-gated by
+  build.yml's `validate-wrappers` (FP). `checks/{latest,dual,kgp-only}`
+  are also 9.5.1 → they symlink `gradle`+`gradlew`+`gradlew.bat` →
+  `../../gradle` to share root's wrapper (no own jar); they look
+  wrapper-less in `git ls-files` but work — NEVER commit jars for them
+  (duplicate binary, desyncs Gradle version, worsens this finding).
+  `CodeReview`/`BranchProtection`
   = solo-founder direct-push + a ruleset (not classic protection, which
   Scorecard can't always read). `Fuzzing`/`CIIBestPractices` = N/A for a
   tiny plugin. `SecurityPolicy` is cleared by `SECURITY.md` + enabled
