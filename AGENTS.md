@@ -136,7 +136,7 @@ target is `javaLangTarget=1.8` (aligned with BCV).
 Single source of truth: `gradle/libs.versions.toml`. Plugin tested against
 the matrix in `README.md`. **Don't widen `kotlinMin`/`bcvMin` casually** —
 the reflective compat layer's value is precisely that range. If you bump,
-verify **all four** smoke modules still build: `checks/js-only` (floor),
+verify **all** smoke modules still build: `checks/js-only` (floor),
 `checks/middle` (interior), `checks/latest` (ceiling), `checks/kgp-only`
 (embedded-only), and `checks/dual` (coexistence).
 
@@ -302,8 +302,10 @@ Commits, flat `--ff-only` (`CONTRIBUTING.md`).
 - ⚠ **Hit something else surprising? Add it here and tell the user.**
 
 ## What's NOT in this repo
-- No unit/integration tests for the plugin itself; coverage is the two
-  `checks/*` composite builds. TestKit suite is in `ROADMAP.md`.
+- No unit/integration tests for the plugin itself; coverage is the
+  `checks/*` composite builds. They `includeBuild` the source, so no test
+  resolves the *published* coordinate end-to-end (the seam the JitPack-coord
+  bug slipped through). Integration tests: a `ROADMAP.md` item.
 - No published Dokka site. Source-level KDoc only.
 - No release-notes generator; `CHANGELOG.md` is hand-edited, Common
   Changelog *style* with two deliberate house deviations — do NOT

@@ -3,7 +3,9 @@
 <details>
   <summary>Show</summary>
 
-- Integration tests
+- Integration tests — incl. resolving the *published* plugin end-to-end
+  (Portal `plugins{}` + JitPack `useModule`), the seam `checks/*` skip via
+  `includeBuild` (a wrong JitPack coordinate shipped undetected in 1.1.0)
 - Pull requests for
   - ★4000 https://github.com/square/wire
   - ★49 https://github.com/DrewCarlson/mobius.kt
