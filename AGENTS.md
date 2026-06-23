@@ -368,12 +368,12 @@ touches only the root classpath txts; a `kotlinLatest` bump only
   `tools:` omitted so the bundle (hence ceiling) floats. Advisory by design:
   goes red when repo Kotlin crosses the ceiling, never blocks merges.
 - **No OSSF Scorecard** (added 1.1.0, removed `5d7bff3`). Its generic
-  repo-hygiene checklist is structurally N/A for a solo stop-gap: every
-  finding was noise (CodeReview/Fuzzing/CII want a team; BinaryArtifacts
+  repo-hygiene checklist is structurally N/A for a solo stop-gap: nearly
+  every finding was noise (CodeReview/Fuzzing/CII want a team; BinaryArtifacts
   flags the *required* wrapper jars; Token-Permissions flags the *necessary*
-  `security-events: write`). Its only real signals are already covered —
-  SHA-pins via `actions-up`, dep freshness via Dependabot, SecurityPolicy
-  via `SECURITY.md`. **Decision rule (vs CodeQL above, kept):** advisory
+  `security-events: write`). Useful checks are covered elsewhere — pinning via
+  `actions-up`, freshness via Dependabot; the lone real gap (SecurityPolicy)
+  is closed by `SECURITY.md`. **Decision rule (vs CodeQL above, kept):** advisory
   tooling earns its keep only when findings are *actionable for THIS repo*
   — Scorecard's never were, so don't re-add.
 - **Never commit `checks/*/kotlin-js-store/yarn.lock`** (gitignored). A bare

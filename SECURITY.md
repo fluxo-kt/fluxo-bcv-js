@@ -3,8 +3,6 @@
 ## Supported versions
 
 This is a stop-gap build-time Gradle plugin (see [`README.md`](README.md)).
-Fixes land only on the latest published release; older versions are not
-patched.
 
 | Version        | Supported |
 |----------------|:---------:|
