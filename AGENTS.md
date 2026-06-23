@@ -370,8 +370,8 @@ touches only the root classpath txts; a `kotlinLatest` bump only
   committed `gradle-wrapper.jar`s (root/js-only/middle = Gradle
   9.5.1/8.6/8.14.5, one per version, irreducible), checksum-gated by
   build.yml's `validate-wrappers` (FP). `checks/{latest,dual,kgp-only}`
-  are also 9.5.1 → they symlink `gradle`+`gradlew`+`gradlew.bat` →
-  `../../gradle` to share root's wrapper (no own jar); they look
+  are also 9.5.1 → they symlink `gradle`/`gradlew`/`gradlew.bat` to their
+  `../../` root copies to share root's wrapper (no own jar); they look
   wrapper-less in `git ls-files` but work — NEVER commit jars for them
   (duplicate binary, desyncs Gradle version, worsens this finding).
   `CodeReview`/`BranchProtection`
