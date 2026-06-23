@@ -37,7 +37,12 @@ class — `fluxo.bcvts.FluxoBcvTsPlugin`. Plugin ID:
 - `fluxo-bcv-js/` — the plugin module. `settings.gradle.kts` does
   `project(":fluxo-bcv-js").name = "plugin"`, so **Gradle path is
   `:plugin`** (verified via `./gradlew projects`). The dir is still
-  `fluxo-bcv-js/`, and the artifact is `plugin.api` / `plugin-*.jar`.
+  `fluxo-bcv-js/`; local build outputs are `plugin.api` / `plugin-*.jar`.
+  **The *published* Maven artifactId is `fluxo-bcv-ts`** (`build.gradle.kts`
+  `artifactId = publishedArtifactId`), so the JitPack/Portal coordinate is
+  `…fluxo-bcv-js:fluxo-bcv-ts:<ver>`, NOT `:plugin:` (that's the Gradle *task*
+  path / local jar name). README's JitPack `useModule` must use the published
+  artifactId — `:plugin:` 404s on JitPack (shipped broken in 1.1.0).
 - `fluxo-bcv-js/src/main/kotlin/fluxo/bcvts/` — all sources, single package.
 - `fluxo-bcv-js/api/plugin.api` — JVM API baseline of the plugin itself.
 - `checks/latest/` — composite-build smoke, newest Kotlin+BCV, KMP
