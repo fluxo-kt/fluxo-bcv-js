@@ -372,8 +372,7 @@ touches only the root classpath txts; a `kotlinLatest` bump only
   = solo-founder direct-push + a ruleset (not classic protection, which
   Scorecard can't always read). `Fuzzing`/`CIIBestPractices` = N/A for a
   tiny plugin. `SecurityPolicy` is cleared by `SECURITY.md` + enabled
-  private vulnerability reporting. Re-deriving this costs ~6 `gh api`
-  calls; that's why it's written down.
+  private vulnerability reporting.
 - **Never commit `checks/*/kotlin-js-store/yarn.lock`** (gitignored). A bare
   `yarn.lock` (no package.json) makes GitHub raise npm Dependabot alerts on
   Kotlin/JS dev-toolchain transitives that are NEVER shipped (plugin runtime
