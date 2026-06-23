@@ -166,33 +166,12 @@ touches only the root classpath txts; a `kotlinLatest` bump only
 `checks/latest`).
 
 ## CI / branches / release
-- Workflows under `.github/workflows/`.
-- `build.yml`: builds **every PR** (any base) + **push to `main`/`dev` only**
-  (no tags — a `v*` tag sits on already-built `main` HEAD). PRs are the
-  gateable pre-merge check; the concurrency group de-dupes. Do NOT re-add a
-  `pull_request: branches-ignore` — those match the PR *base*, so ignoring
-  `dev` (the default branch) silently disables builds for every feature PR.
-- `codeql.yml`: SAST, **separate + advisory** (not a required check); builds
-  ONLY `:plugin`. See "Surprises & gotchas" for why.
-- `release.yml` triggers on `v*` tags.
-- `pr-fast-forward.yml` enables fast-forward merges via PR comment.
-- `pr-baseline.yml` regenerates baselines from PR comment command.
-- Flow: branch off `dev` → PR → ff-merge to `dev` → release PR `dev`→`main`.
-- Conventional Commits enforced.
-- Dependabot opens Gradle + GH-Actions bumps with `build(deps)` /
-  `ci(GitHub)` prefixes. **Two ecosystems, two handling paths:**
-  - **Gradle bump-PR** → mergeable. If a Gradle dep changed (esp. KGP /
-    BCV / `fluxo-kmp-conf`), run `./updateBaseline` before merge so
-    `dependencies/*.txt` and any drifted api dumps are refreshed.
-  - **GH-Actions bump-PR** → **NEVER merge directly.** Dependabot's
-    `github-actions` ecosystem is kept ONLY as a *detection signal* (its
-    PRs surface outdated pins). The authoritative update channel is the
-    `actions-up` CLI (`actions-up --style sha --mode major --yes` — pins
-    by SHA with a version comment, the provenance the bare dependabot
-    `uses:` bump lacks). Apply via `actions-up`, push to `dev`, then
-    **close** the corresponding dependabot PR. Never hand-edit `uses:`
-    SHAs — the tool resolves tag→SHA from the GitHub API; a manual edit
-    has no provenance trail and drifts from the tool's version comments.
+Workflows in `.github/workflows/`. **Workflow/release/Sigstore specifics,
+dependabot+`actions-up` protocol, branch ruleset, build badge + their hard-won
+gotchas → `.github/AGENTS.md`** (auto-loads on `.github/` edits). Universal
+essentials: default branch = `dev` (NOT `main`; `main` is release-only); flow =
+branch `dev` → PR → `/ff`-merge `dev` → release PR `dev`→`main`; Conventional
+Commits, flat `--ff-only` (`CONTRIBUTING.md`).
 
 ## Surprises & gotchas (read before debugging)
 - **Gradle path is `:plugin`, not `:fluxo-bcv-js`** (the dir name).
@@ -235,31 +214,16 @@ touches only the root classpath txts; a `kotlinLatest` bump only
   ManagedFactory synthesizes the impl. Stability commitment moment
   is targeted for 1.2.0 (remove `@Incubating`). Until then any 1.x
   minor may break the extension shape.
-- **Sigstore signing is RELEASE-only** (1.1.0+). `dev.sigstore.sign`
-  auto-wires `sigstoreSign*Publication` tasks into **every**
-  `MavenPublication`'s publish chain — including
-  `publishToMavenLocal`. Without a gate, the canonical local-consumer
-  smoke test blocks on a browser-OIDC prompt at
-  `oauth2.sigstore.dev/auth/...`. The script gates these tasks with
-  `onlyIf { providers.environmentVariable("RELEASE").orNull == "true" }`
-  AND `notCompatibleWithConfigurationCache(...)` (Sigstore 2.0.x
-  `SigstoreSignFilesTask` captures a `DefaultProject` ref, which our
-  strict CC config — `problems=fail max-problems=0` — would
-  otherwise treat as fatal). The `RELEASE: true` env var is set at
-  the workflow level in `release.yml`. To force-test locally:
-  `RELEASE=true ./gradlew :plugin:publishToMavenLocal` (developer
-  accepts the OIDC ceremony). Bundles ship to consumers as GitHub
-  Release assets (Plugin Portal and Maven Central don't upload
-  bundle siblings); `release.yml`'s `Attach Sigstore bundles` step
-  does the upload via `gh release upload` and hard-fails if zero
-  bundles are found (silent regression guard). Asset names are
-  publication-prefixed (e.g. `PluginMaven-plugin-1.1.0.jar.sigstore.json`,
-  `Fluxo-bcv-tsPluginMarkerMaven-pom-default.xml.sigstore.json`) so
-  the marker-POM signature doesn't collide with the main-pub POM
-  signature; sigstore-java v2.x writes `.sigstore.json`. Consumer
-  verification path:
-  `cosign verify-blob --bundle <PluginMaven-…>.sigstore.json …` with
-  identity anchored to `release.yml@refs/tags/v*`.
+- **Sigstore signing is RELEASE-only** (1.1.0+). `dev.sigstore.sign` auto-wires
+  `sigstoreSign*Publication` into **every** `MavenPublication`'s publish chain —
+  incl. `publishToMavenLocal`, so without a gate the canonical local-consumer
+  smoke test blocks on a browser-OIDC prompt. `build.gradle.kts` gates with
+  `onlyIf { providers.environmentVariable("RELEASE").orNull == "true" }` AND
+  `notCompatibleWithConfigurationCache(...)` (Sigstore 2.0.x
+  `SigstoreSignFilesTask` captures a `DefaultProject` ref → fatal under our
+  strict CC `problems=fail max-problems=0`). Force-test: `RELEASE=true ./gradlew
+  :plugin:publishToMavenLocal`. Release-side bundle attach/naming/verification →
+  `.github/AGENTS.md`.
 - **`project.version` MUST be assigned AFTER `fkcSetupGradlePlugin`**
   (`fluxo-bcv-js/build.gradle.kts`, near `version = pluginVersion`).
   fluxo-kmp-conf 0.14.x configures `publicationConfig.version`
@@ -305,38 +269,6 @@ touches only the root classpath txts; a `kotlinLatest` bump only
   page. An audit that only inspects published `.pom` files will miss
   the plugin-publish 2.x gate (which fires at task-execution time, so
   also invisible to `:publishToMavenLocal`).
-- **`dev.sigstore.sign 2.x` writes `.sigstore.json`, not
-  `.sigstore.bundle`.** sigstore-java's bundle extension flipped
-  between major versions: v0.x `.sigstore`, v1.x `.sigstore.bundle`,
-  v2.x `.sigstore.json`. `release.yml`'s asset-attach `find` covers
-  all three via alternation — keep the union when bumping the plugin,
-  do not narrow.
-- **`release.yml` is idempotent against Plugin Portal duplicates.**
-  The "Probe Plugin Portal for existing version" step short-circuits
-  `publishPlugins` when the marker POM already resolves at the
-  tagged version. Sigstore signing still fires via the alternate
-  "Sign artefacts (when publish was skipped)" path so re-tags
-  produce valid bundles with the original `release.yml@refs/tags/v*`
-  OIDC identity. The class of regression "tag pushed but downstream
-  step failed → can't safely re-push the same tag" is eliminated:
-  delete tag, re-tag, re-push — workflow auto-detects existing
-  Portal publication and skips just that step.
-- **Sigstore bundles need asset-name disambiguation when uploaded to
-  GitHub Releases.** The `pluginMaven` and `fluxo-bcv-tsPluginMarkerMaven`
-  publications each produce a `pom-default.xml.sigstore.json`. `gh
-  release upload` derives asset name from each file's basename, and
-  GitHub's `ReleaseAsset.name` is unique per release — same-basename
-  files from distinct publications collide with HTTP 422
-  ("ReleaseAsset.name already exists"). `--clobber` only resolves
-  same-name conflicts across re-runs, NOT distinct-content same-basename
-  uploads in one command. **Trap: `gh`'s `file#displayName` syntax does
-  NOT solve this** — it sets the asset LABEL, not the NAME (the failed
-  upload URL exposes the truth: `?label=…&name=<basename>`). The fix in
-  `release.yml`'s attach step renames files on disk via `mv` to prefix
-  every bundle with its publication name (derived from the parent
-  `sigstoreSign…Publication` task dir), so the basename gh reads is the
-  unique form. Prefixing is unconditional, not collision-driven, so
-  adding future Sigstore outputs cannot regress the gate.
 - **Reflection failures are silently swallowed by `safe { }`.** If
   something silently no-ops on a new Kotlin/BCV, suspect the compat shim
   first.
@@ -351,31 +283,6 @@ touches only the root classpath txts; a `kotlinLatest` bump only
   fails. Capture providers/values into local vals first.
 - **`DSL_SCOPE_VIOLATION` suppress** in `checks/js-only/build.gradle.kts`
   is for old Gradle <8 catalog access. Keep it.
-- **GitHub default branch is `dev`, NOT `main`** (`gh repo view`). Dependabot
-  alerts + the dependency graph are scoped to the default branch ⇒ a CI/
-  supply-chain fix CLEARS alerts once it ff-merges to `dev`; no `main` round-
-  trip needed. `main` is the release branch (dev→main release PR).
-- **CodeQL lives in its own advisory `codeql.yml`, building ONLY `:plugin`.**
-  The java-kotlin extractor hard-fails (`KotlinVersionTooRecentError`) on
-  Kotlin newer than its bundled ceiling — github/codeql pins one compiled
-  extractor per Kotlin (`versions.bzl`), no skip switch. While CodeQL ran in
-  `build.yml` it traced the `checks/*` smoke builds (which compile
-  `kotlinLatest`, an RC) → killed the matrix for ~6mo. `:plugin` builds at
-  repo Kotlin (under the ceiling); `checks/*` are fixtures, not scan targets.
-  The build step needs `--no-daemon` + `-Pkotlin.compiler.execution.strategy=
-  in-process` (both daemons escape tracing) + `--no-build-cache --rerun-tasks`
-  (a cache hit ⇒ empty DB / "no source seen"). Action pinned by SHA but
-  `tools:` omitted so the bundle (hence ceiling) floats. Advisory by design:
-  goes red when repo Kotlin crosses the ceiling, never blocks merges.
-- **No OSSF Scorecard** (added 1.1.0, removed `5d7bff3`). Its generic
-  repo-hygiene checklist is structurally N/A for a solo stop-gap: nearly
-  every finding was noise (CodeReview/Fuzzing/CII want a team; BinaryArtifacts
-  flags the *required* wrapper jars; Token-Permissions flags the *necessary*
-  `security-events: write`). Useful checks are covered elsewhere — pinning via
-  `actions-up`, freshness via Dependabot; the lone real gap (SecurityPolicy)
-  is closed by `SECURITY.md`. **Decision rule (vs CodeQL above, kept):** advisory
-  tooling earns its keep only when findings are *actionable for THIS repo*
-  — Scorecard's never were, so don't re-add.
 - **Never commit `checks/*/kotlin-js-store/yarn.lock`** (gitignored). A bare
   `yarn.lock` (no package.json) makes GitHub raise npm Dependabot alerts on
   Kotlin/JS dev-toolchain transitives that are NEVER shipped (plugin runtime
@@ -385,109 +292,6 @@ touches only the root classpath txts; a `kotlinLatest` bump only
   therefore has NO `kotlinUpgradeYarnLock`/`kotlinStoreYarnLock`. Escape hatch
   if a floating npm transitive breaks a check: rename via
   `YarnRootExtension.lockFileName` (unindexed name) and re-commit.
-- **Maven Dependabot alerts on build tooling ⇒ fix the dep-graph filter, not
-  the deps.** `dependency-submission.yml` submits `include-configurations:
-  "^runtimeClasspath$"` (positive allow-list = shipped deps only). A negative
-  name filter (the old `^(?!(classpath)).*`) leaks the settings plugin-
-  resolution classpath (Develocity→protobuf/grpc; Sigstore/kmp-conf→
-  BouncyCastle; commons-io) because it isn't named `classpath`. If a NEW
-  never-shipped coord alerts under `manifest=settings.gradle.kts`, the filter
-  regressed — don't bump/dismiss the dep.
-- **`dependency-submission.yml` MUST keep its `workflow_dispatch` + `schedule`
-  triggers.** Default-branch merges land via the `/ff` bot, whose push uses
-  `GITHUB_TOKEN`; GitHub does NOT fire push-triggered workflows on GITHUB_TOKEN
-  pushes (recursion guard), so the `push:` trigger never runs on a bot-merged
-  `dev`. Without the other two triggers the submitted dependency graph silently
-  rots → stale transitives → lingering/late Dependabot alerts. After a
-  dep-changing merge, refresh now via `gh workflow run
-  dependency-submission.yml --ref dev` (dispatched on your own token, so not
-  suppressed); the weekly `schedule` is the hands-off backstop (the graph
-  feeds Dependabot **security alerts**, so freshness matters even absent a
-  merge). build.yml needs no equivalent — required status checks read the
-  PR-run contexts already attached to the merged SHA, so its suppressed
-  dev-push run is redundant (and the README build badge reads those same
-  per-SHA contexts, NOT build.yml's run history — see the badge gotcha below).
-- **`pr-clean-cache.yml` only reaps MANUALLY-closed PRs, never `/ff` merges —
-  by the same GITHUB_TOKEN recursion guard.** It triggers on
-  `pull_request: closed`, but a PR auto-closed by the `/ff` bot's GITHUB_TOKEN
-  fast-forward push does NOT fire that event (verified: bot-merged PRs produce
-  no run). So `/ff`-merged PRs' `refs/pull/N/merge` Gradle caches are reaped by
-  GitHub's **7-day unused-cache eviction**, not this workflow. That is
-  sufficient and intentional: cleanup is storage hygiene only (usage stays well
-  under the 10 GB cap at this repo's velocity), and it does NOT affect CI
-  warmth — the `dev` baseline cache is evicted by its own 7-day inactivity, and
-  LRU evicts least-recently-*accessed* first, so the frequently-restored
-  baseline is the last victim, not the first. **Do NOT "fix" this** by adding a
-  `gh cache delete` step to `pr-fast-forward.yml` (marginal storage gain the
-  usage doesn't justify) or by pushing `/ff` via a PAT (long-lived credential
-  liability). The workflow uses native `gh cache delete --all --ref …` (the old
-  `actions/gh-actions-cache` extension's binary download is egress-blocked at
-  `release-assets.githubusercontent.com`; native needs only api.github.com and
-  drops a supply-chain dep).
-- **README build badge = shields.io check-runs badge, NOT the Actions workflow
-  badge.** The workflow badge (`build.yml/badge.svg`) shows the latest *run on
-  the branch*; under bot-`/ff` no `build.yml` run ever lands on protected `dev`
-  (GITHUB_TOKEN push suppression), so it stayed frozen on the pre-recovery RED
-  run while every PR was green. The shields badge reads dev HEAD's per-SHA
-  check status — the SAME source the ruleset gates on, always fresh, zero
-  compute:
-  `…/github/check-runs/<owner>/<repo>/dev?nameFilter=Build%20and%20check%20on%20ubuntu&label=Build`.
-  `nameFilter` is EXACT-match (no substring/regex) → pins ONE context: ubuntu is
-  the strictest cell (only it runs `check-dual`) and all three OS contexts are
-  ruleset-required on an immutable-between-merges `dev`, so ubuntu-green ⟺
-  all-green — a faithful proxy that EXCLUDES advisory CodeQL (no
-  false-red in the mode they're designed to tolerate). Couples to the exact job
-  name (same string as the ruleset's required contexts): a rename detaches the
-  badge — it renders grey "unknown status" (NOT red), so update the badge
-  `nameFilter` in lockstep when renaming a matrix job. No machine guard for
-  this — the failure is cosmetic AND a job rename also breaks the ruleset's
-  required contexts (blocking merges loudly), so it can't slip by unnoticed.
-  Tracks `dev` (integration line), not `main` (lags until the release PR).
-- **`${{ !env.X }}` / `env.X` in a boolean position is a constant, not a
-  condition.** GitHub coerces a non-empty string to boolean `true` — and an
-  `env:` value is ALWAYS a string, so the literal `"false"` is truthy. A guard
-  like `cache-read-only: ${{ !env.IS_DEFAULT_BRANCH }}` therefore pinned to a
-  constant `false` (every PR wrote a Gradle cache — `actions/caches` showed
-  42 `refs/pull/57/merge` entries vs 1 on `dev`), and
-  `if: … || env.IS_DEFAULT_BRANCH` was always-true. actionlint does NOT flag
-  this (valid GitHub syntax, just dead semantics). Use the boolean-producing
-  comparison directly (`github.ref == format('refs/heads/{0}', …)`) or
-  `env.X == 'true'`; never negate/branch on a bare string env. The fix removed
-  the variable entirely — a correct gate is one line away if genuinely needed
-  (YAGNI). NB: here the constant-`false` was benign by accident — under
-  bot-`/ff` the default-branch build run is suppressed, so PR-writable caches
-  are what we actually want; see the `cache-read-only` comment in build.yml.
-- **`dev`+`main` are protected by a branch ruleset
-  (`protect-integration-branches`), the recurrence-prevention from the
-  CI-recovery work.** It has NO in-repo file (GitHub-side config) — query it via
-  `gh api repos/<owner>/<repo>/rulesets` (don't hardcode its numeric id; that
-  changes on recreate). Required
-  contexts are EXACTLY build.yml's matrix job names `Build and check on
-  {ubuntu,macos,windows}`, each pinned to `integration_id: 15368` (github-actions)
-  so a same-named context from another app can't satisfy the gate. It uses the
-  `non_fast_forward` rule (blocks force-push), NOT the `pull_request` rule — so
-  the `/ff` bot's legitimate ff-push of an already-green SHA still merges.
-  `bypass_actors` is `[{OrganizationAdmin, always}]`: the solo founder (org
-  owner) direct-pushes `dev`/`main` with no PR ceremony, while the `/ff` bot (a
-  github-actions *app*, not an org-admin user) and external contributors stay
-  gated by required checks — so a red dependabot/feature *auto-merge* is still
-  blocked, the recurrence target. The badge surfaces any red the owner pushes
-  directly. Reset `bypass_actors` to `[]` to re-impose PR-only on everyone.
-  CodeQL is deliberately NOT required (advisory). **Corollary trap — never add a
-  file-path filter (`paths-ignore` OR `paths`) to build.yml's `pull_request`
-  trigger:** an `on:`-level path filter emits no check runs for a non-matching
-  PR, so the required contexts never report and every docs-only PR is permanently
-  BLOCKED from merge (reproduced on PR #48). Both keys skip identically —
-  `paths-ignore` on PRs touching only ignored globs, `paths` on PRs touching none
-  of the listed globs — so the invariant is "no path filter on the required
-  trigger", machine-enforced by build.yml's "Forbid path filters on the
-  pull_request trigger" step (a `paths-ignore`-only guard would miss the `paths` half).
-  Docs PRs must build in full. The `push` trigger has NO `paths-ignore` either:
-  with the OrganizationAdmin bypass, owner direct-pushes are the only pushes it
-  sees (`/ff` is GITHUB_TOKEN-suppressed), and the badge reads dev HEAD's build
-  check-run — so a docs-only push must still build or the badge blanks to "no
-  check runs". If you change a build.yml matrix job NAME, update the ruleset's
-  required contexts in lockstep or the gate silently stops matching.
 - ⚠ **Hit something else surprising? Add it here and tell the user.**
 
 ## What's NOT in this repo
