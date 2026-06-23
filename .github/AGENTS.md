@@ -16,13 +16,11 @@ the user.**
 - `release.yml`: `v*` tags. `pr-fast-forward.yml`: `/ff` merge via PR comment.
   `pr-baseline.yml`: baseline regen via comment. `dependency-submission.yml`:
   submits dep graph that feeds Dependabot alerts.
-- Flow: branch off `dev` → PR → `/ff`-merge to `dev` → release PR `dev`→`main`.
-  Conventional Commits enforced.
 
-## Default branch = `dev`, NOT `main`
-Dependabot alerts + dep graph are scoped to the default branch ⇒ a CI/
-supply-chain fix CLEARS alerts once it ff-merges to `dev`; no `main` round-trip.
-`main` is the release branch (dev→main release PR).
+## Alerts clear on a `dev` merge
+Dependabot alerts + dep graph are scoped to the default branch (`dev`) ⇒ a CI/
+supply-chain fix CLEARS them once it ff-merges to `dev`; no `main` round-trip.
+(Branch model + flow → root AGENTS.md.)
 
 ## Dependabot — two ecosystems, two paths
 - **Gradle bump-PR** → mergeable. If a Gradle dep changed (esp. KGP / BCV /
