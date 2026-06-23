@@ -19,10 +19,6 @@ Please do not open a public issue for security reports.
 
 ## Scope
 
-The plugin runs only at **build time**. Its sole declared runtime
-dependency is `io.github.java-diff-utils:java-diff-utils` — the Kotlin
-runtime is supplied by Gradle, and `kotlin-stdlib*`/metadata are excluded
-from the published POM and Gradle module metadata, so the build compiler
-cannot leak downstream. Release artifacts carry Sigstore provenance
-(bundles attached to each GitHub Release; verify with `cosign
-verify-blob`).
+This plugin runs only at **build time**; its sole runtime dependency is
+`java-diff-utils` (the Kotlin runtime is Gradle-supplied, not bundled).
+Release artifacts are Sigstore-signed (bundles on each GitHub Release).

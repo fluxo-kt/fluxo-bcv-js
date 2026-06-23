@@ -52,6 +52,13 @@ class — `fluxo.bcvts.FluxoBcvTsPlugin`. Plugin ID:
 - `checks/js-only/` — floor smoke (`bcvMin`, `kotlinMin`,
   legacy `kotlin("js")` plugin, Gradle 8.6).
 - All composite modules `includeBuild("../../")` against the root build.
+- **`checks/{latest,dual,kgp-only}` symlink `gradle`/`gradlew`/`gradlew.bat`
+  → their `../../` root copies** (all are Gradle 9.5.1, so they share root's
+  wrapper — no committed jar of their own); `js-only` (8.6) and `middle`
+  (8.14.5) pin different Gradle versions so keep their own wrappers. The
+  3 symlinked modules look wrapper-less in `git ls-files` but run fine —
+  NEVER "fix" that by committing jars (duplicate binary, desyncs their
+  Gradle version from root).
 - `gradle/libs.versions.toml` — version matrix. `bcv`/`bcvMin`/`bcvLatest`
   and `kotlin`/`kotlinMin`/`kotlinLatest` drive both the plugin and the
   check modules.
@@ -360,25 +367,6 @@ touches only the root classpath txts; a `kotlinLatest` bump only
   (a cache hit ⇒ empty DB / "no source seen"). Action pinned by SHA but
   `tools:` omitted so the bundle (hence ceiling) floats. Advisory by design:
   goes red when repo Kotlin crosses the ceiling, never blocks merges.
-- **Scorecard's open alerts are advisory FPs by design — don't chase the
-  score.** `TokenPermissions` (the bulk): every workflow already declares
-  a minimal, documented top-level `permissions:`; the findings only flag
-  top-level `write`, but every flagged workflow is single-job (top-level
-  *is* job-level) except `release.yml`, whose **both** jobs genuinely need
-  `contents: write` — so pushing `write` down to job scope is zero
-  security delta, pure pattern-matching. `BinaryArtifacts` = the 3
-  committed `gradle-wrapper.jar`s (root/js-only/middle = Gradle
-  9.5.1/8.6/8.14.5, one per version, irreducible), checksum-gated by
-  build.yml's `validate-wrappers` (FP). `checks/{latest,dual,kgp-only}`
-  are also 9.5.1 → they symlink `gradle`/`gradlew`/`gradlew.bat` to their
-  `../../` root copies to share root's wrapper (no own jar); they look
-  wrapper-less in `git ls-files` but work — NEVER commit jars for them
-  (duplicate binary, desyncs Gradle version, worsens this finding).
-  `CodeReview`/`BranchProtection`
-  = solo-founder direct-push + a ruleset (not classic protection, which
-  Scorecard can't always read). `Fuzzing`/`CIIBestPractices` = N/A for a
-  tiny plugin. `SecurityPolicy` is cleared by `SECURITY.md` + enabled
-  private vulnerability reporting.
 - **Never commit `checks/*/kotlin-js-store/yarn.lock`** (gitignored). A bare
   `yarn.lock` (no package.json) makes GitHub raise npm Dependabot alerts on
   Kotlin/JS dev-toolchain transitives that are NEVER shipped (plugin runtime
@@ -438,7 +426,7 @@ touches only the root classpath txts; a `kotlinLatest` bump only
   `nameFilter` is EXACT-match (no substring/regex) → pins ONE context: ubuntu is
   the strictest cell (only it runs `check-dual`) and all three OS contexts are
   ruleset-required on an immutable-between-merges `dev`, so ubuntu-green ⟺
-  all-green — a faithful proxy that EXCLUDES advisory CodeQL/Scorecard (no
+  all-green — a faithful proxy that EXCLUDES advisory CodeQL (no
   false-red in the mode they're designed to tolerate). Couples to the exact job
   name (same string as the ruleset's required contexts): a rename detaches the
   badge — it renders grey "unknown status" (NOT red), so update the badge
@@ -476,7 +464,7 @@ touches only the root classpath txts; a `kotlinLatest` bump only
   gated by required checks — so a red dependabot/feature *auto-merge* is still
   blocked, the recurrence target. The badge surfaces any red the owner pushes
   directly. Reset `bypass_actors` to `[]` to re-impose PR-only on everyone.
-  CodeQL + Scorecard are deliberately NOT required (advisory). **Corollary trap — never add a
+  CodeQL is deliberately NOT required (advisory). **Corollary trap — never add a
   file-path filter (`paths-ignore` OR `paths`) to build.yml's `pull_request`
   trigger:** an `on:`-level path filter emits no check runs for a non-matching
   PR, so the required contexts never report and every docs-only PR is permanently
