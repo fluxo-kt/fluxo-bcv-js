@@ -110,4 +110,4 @@ gradle-doctor = { id = "com.osacky.doctor", version = "0.12.1" }
 # it via release.yml).
 # https://github.com/sigstore/sigstore-java/releases
 # https://plugins.gradle.org/plugin/dev.sigstore.sign
-sigstore-sign = { id = "dev.sigstore.sign", version = "2.1.0" }
+sigstore-sign = { id = "dev.sigstore.sign", version = "2.2.0" }
