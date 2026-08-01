@@ -47,7 +47,7 @@ kotlinApiVersion = "2.0"
 # emit bytecode/metadata quirks that leak into the published plugin
 # JAR. `kotlinLatest` drives the `checks/latest` smoke test only; an
 # RC pin there is acceptable because the smoke test isn't published.
-kotlin = "2.4.0"
+kotlin = "2.4.10"
 kotlinMin = "1.7.22"
 # `kotlinLatest` drives `checks/latest` only — not the published JAR —
 # so tracking the newest Kotlin (RC or GA) is acceptable here. The
