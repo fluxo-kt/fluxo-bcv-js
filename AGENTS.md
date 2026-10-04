@@ -8,9 +8,10 @@ class — `fluxo.bcvts.FluxoBcvTsPlugin`. Plugin ID:
 `io.github.fluxo-kt.binary-compatibility-validator-js`.
 
 ## Vibe & principles
-- **Compatibility is the product.** Must work across BCV 0.8–0.18.x
-  (upstream in maintenance mode) × Kotlin 1.7.22–2.4 (`kotlinLatest` is
-  bleeding-edge in `checks/latest`) × Gradle 7.6+. Plus the embedded
+- **Compatibility is the product.** Must work across BCV `bcvMin`–`bcvLatest`
+  (upstream in maintenance mode) × Kotlin `kotlinMin`–`kotlinLatest` (the
+  newest preview, in `checks/latest`) × Gradle 7.6+ (keys in
+  `gradle/libs.versions.toml`). Plus the embedded
   KGP `abiValidation { }` path since 1.1.0 (Kotlin 2.2+).
   Reflection + `safe { }` shims in
   `CompatibilityUtils.kt` are *intentional, not a smell*. New KGP/BCV API
@@ -19,8 +20,10 @@ class — `fluxo.bcvts.FluxoBcvTsPlugin`. Plugin ID:
 - **Stop-gap by design.** Built originally for the Fluxo state-management
   framework, then published. Should be deletable the day upstream BCV adds
   JS support — keep the seam clean, don't grow scope. *Exit path*: when
-  upstream covers JS/Wasm-JS, this plugin should become a thin delegator
-  or be removed — verify the eventual upstream API before deciding.
+  upstream covers JS/Wasm-JS `.d.ts` declarations (in practice KGP-embedded
+  ABI validation, since external BCV only gets bug fixes; JVM + KLIB only as
+  of Kotlin 2.5.0-Beta1), this plugin should become a thin delegator or be
+  removed — verify the eventual upstream API before deciding.
 - **Don't fight BCV; integrate.** Re-use BCV task names/groups; piggy-back
   on `apiDump`/`apiCheck` lifecycle. Custom tasks only where reflection
   into `KotlinApiCompareTask` would be too brittle.
@@ -48,24 +51,35 @@ class — `fluxo.bcvts.FluxoBcvTsPlugin`. Plugin ID:
 - `fluxo-bcv-js/src/main/kotlin/fluxo/bcvts/` — all sources, single package.
 - `fluxo-bcv-js/api/plugin.api` — JVM API baseline of the plugin itself.
 - `checks/latest/` — composite-build smoke, newest Kotlin+BCV, KMP
-  (`jvm + linuxX64 + js + wasmJs + wasmWasi`), Gradle 9.5.1.
-- `checks/middle/` — matrix interior (Kotlin 2.2.21 + BCV 0.16.3,
-  Gradle 8.14.5). Catches drift between floor and ceiling.
+  (`jvm + linuxX64 + js + wasmJs + wasmWasi`), root's Gradle.
+- `checks/middle/` — matrix interior (`kotlinMiddle` + `bcvMiddle`, its own
+  Gradle wrapper). Catches drift between floor and ceiling.
 - `checks/kgp-only/` — embedded-only path: KGP `abiValidation { }`,
   NO external BCV. Validates dual-mode trigger + `DirConfig.TARGET_DIR`.
 - `checks/dual/` — both validators active; `checks/dual/sweep` (run by CI
   and local gates) runs `-PpreferEmbedded={auto,true,false}` and asserts the
   lifecycle line plus the baseline layout (`api/` external, `api/ts/` embedded).
-- `checks/js-only/` — floor smoke (`bcvMin`, `kotlinMin`,
-  legacy `kotlin("js")` plugin, Gradle 8.6).
-- All composite modules `includeBuild("../../")` against the root build.
+- `checks/js-only/` — floor smoke (`bcvMin`, `kotlinMin`, legacy
+  `kotlin("js")` plugin, the Gradle 7.6.x floor on JDK 17). Gradle 7.6 cannot
+  build the plugin (KGP 2.x, plugin-publish 2.x), so this cell resolves the
+  PUBLISHED plugin from `fluxo-bcv-js/build/checks-repo`: run
+  `./gradlew :plugin:publishAllPublicationsToChecksRepository` first, or it
+  tests a stale jar.
+- Every other cell `includeBuild("../../")`s the root build.
 - **`checks/{latest,dual,kgp-only}` symlink `gradle`/`gradlew`/`gradlew.bat`
-  → their `../../` root copies** (all are Gradle 9.5.1, so they share root's
-  wrapper — no committed jar of their own); `js-only` (8.6) and `middle`
-  (8.14.5) pin different Gradle versions so keep their own wrappers. The
+  → their `../../` root copies** (they run root's Gradle, so they share its
+  wrapper — no committed jar of their own); `js-only` and `middle` pin
+  different Gradle versions so keep their own wrappers. The
   3 symlinked modules look wrapper-less in `git ls-files` but run fine —
   NEVER "fix" that by committing jars (duplicate binary, desyncs their
   Gradle version from root).
+- **`checks/{latest,middle,kgp-only,dual}/gradle.properties` symlink
+  `checks/gradle.properties`**: strict configuration cache (problems fail the
+  build), build cache, parallel — consumer builds must fail on a plugin CC
+  problem before a user hits it. Never link them to the root
+  `gradle.properties`: its `kotlin.stdlib.default.dependency=false` is right
+  for the plugin jar and strips the stdlib from KMP consumer modules.
+  `js-only` has none (Gradle 7.6 + Kotlin 1.7 is not a CC-supported pair).
 - `gradle/libs.versions.toml` — version matrix. `bcv`/`bcvMin`/`bcvLatest`
   and `kotlin`/`kotlinMin`/`kotlinLatest` drive both the plugin and the
   check modules.
