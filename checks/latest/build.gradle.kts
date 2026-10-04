@@ -17,15 +17,18 @@ kotlin {
     // The build script enables TS generation itself, as real consumers do
     // (e.g. fluxo). KGP's `generateTypeScriptDefinitions()` is not idempotent,
     // so this cell covers the plugin's second call on an already-enabled target.
+    // Library + executable together: the plugin must link only the library.
     js {
         nodejs()
         browser()
+        binaries.library()
         binaries.executable()
         generateTypeScriptDefinitions()
     }
     wasmJs {
         nodejs()
         browser()
+        binaries.library()
         binaries.executable()
         generateTypeScriptDefinitions()
     }

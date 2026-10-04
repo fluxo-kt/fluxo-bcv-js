@@ -57,17 +57,21 @@ internal abstract class KotlinTsApiBuildTask : DefaultTask() {
             @Suppress("MaxLineLength")
             val message = "No generated Kotlin TS definitions found for $path! " +
                 "$KTS_API verification is not possible. \n" +
-                "Please, enable TS definitions with `binaries.executable()`$code. \n" +
+                "Please, enable TS definitions with `binaries.library()` or " +
+                "`binaries.executable()`$code. \n" +
                 "More instructions at " +
                 "https://kotlinlang.org/docs/whatsnew1820.html#opt-in-for-generation-of-typescript-definition-files"
             logger.error(message)
             return
         }
-        if (files.size > 1) {
+        // Sorted: a FileCollection's order follows the filesystem, so `first()` alone
+        // could dump different files on different machines.
+        val sorted = files.sortedBy { it.path }
+        if (sorted.size > 1) {
             logger.error(
-                "Ambigous generated TS definitions for $path" +
-                    ", taking only first:" +
-                    " \n  ${files.joinToString("\n  ")}",
+                "Ambiguous generated TS definitions for $path" +
+                    ", taking the first by path:" +
+                    " \n  ${sorted.joinToString("\n  ")}",
             )
         }
 
@@ -75,7 +79,7 @@ internal abstract class KotlinTsApiBuildTask : DefaultTask() {
         // 2) Make sure the file uses \n line endings and has a final new line.
         val lines = mutableListOf<String>()
         var lastEmpty = 0
-        files.first().useLines { linesSeq ->
+        sorted.first().useLines { linesSeq ->
             for (line in linesSeq) {
                 val cleanLine = line.trimEnd()
                 lines.add(cleanLine)

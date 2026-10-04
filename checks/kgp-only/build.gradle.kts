@@ -30,15 +30,17 @@ kotlin {
     abiValidation { }
 
     jvm()
+    // Library-only binaries: the npm-library setup gets its own lane (middle and
+    // dual cover executable-only, latest covers both together).
     js {
         nodejs()
         browser()
-        binaries.executable()
+        binaries.library()
     }
     wasmJs {
         nodejs()
         browser()
-        binaries.executable()
+        binaries.library()
     }
 }
 

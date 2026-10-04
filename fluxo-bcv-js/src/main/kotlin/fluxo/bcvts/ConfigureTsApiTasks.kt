@@ -231,19 +231,24 @@ private fun Project.configureTarget(
                 (target.platformType != KotlinPlatformType.js ||
                     !it.name.contains("wasm", ignoreCase = true))
         }
-    val linkTasks: Set<KotlinJsIrLink> = linkTasksCollection + linkTasksFromBinaries
+    val candidates: Set<KotlinJsIrLink> = linkTasksCollection + linkTasksFromBinaries
 
-    if (logger.isDebugEnabled) {
-        linkTasks.forEach {
-            logger.debug(" >> linkTask {}: {}", it.name, it)
-        }
-    }
-    if (linkTasks.size > 1) {
-        logger.warn(
-            "Ambigous link tasks for $targetName target $KTS_API verification!" +
-                "\n\t${linkTasks.map { it.name }}",
+    // Wire ONE link task: each extra one is a whole production link per `apiBuild`,
+    // for declarations that are byte-identical (library vs executable, checked on
+    // Kotlin 2.5.0-Beta1 for js `.d.ts` and wasmJs `.d.mts`). Library first: it is
+    // the npm-facing contract if the two ever diverge. KGP puts the binary kind in
+    // the task name (`compileProductionLibraryKotlinJs`); if that naming drifts, the
+    // rank falls back to name order, which stays deterministic across machines.
+    val linkTask = candidates.minWithOrNull(
+        compareBy({ !it.name.contains("Library") }, { it.name }),
+    )
+    if (candidates.size > 1) {
+        logger.info(
+            "{} uses {} for {} target (candidates: {})",
+            KTS_API, linkTask?.name, targetName, candidates.map { it.name },
         )
     }
+    val linkTasks: Set<KotlinJsIrLink> = setOfNotNull(linkTask)
 
     val targetTsName = targetName.let { n ->
         when {

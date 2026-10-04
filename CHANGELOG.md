@@ -5,6 +5,12 @@
 
 [//]: # (Changed, Added, Removed, Fixed, Updated)
 
+### Changed
+- A target with both `binaries.library()` and `binaries.executable()`
+  now links only the library binary for its `.d.ts` API tasks (both
+  emit the same declarations), instead of linking both and logging a
+  false "ambiguous" error. `binaries.library()` alone is supported too.
+
 ### Updated
 - `java-diff-utils` 4.12 → 4.17, the plugin's only runtime dependency.
   When the external BCV plugin is also applied, Gradle resolves one
@@ -25,6 +31,8 @@
   when the only JVM/Android target had no BCV tasks (e.g. an AGP
   Kotlin Multiplatform Android target, or a target disabled by CI target
   filtering). The baseline layout now follows the committed baselines.
+- When several declaration files were found, the one dumped depended on
+  filesystem order; it is now the first by path on every machine.
 
 
 ## [1.1.0] - 2026-05-18
