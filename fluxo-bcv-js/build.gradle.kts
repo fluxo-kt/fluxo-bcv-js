@@ -339,7 +339,7 @@ dependencies {
 // `kotlinMin` from the version catalog and emit a generated
 // `internal const val KOTLIN_MIN_VERSION` so source code and the
 // matrix can never drift apart.
-val genKotlinMinVersion by tasks.registering {
+val genKotlinMinVersion = tasks.register("genKotlinMinVersion") {
     // Capture script-level Providers into local vals BEFORE doLast so
     // configuration-cache serialisation doesn't try to walk back to
     // the Build_gradle script object (per AGENTS.md gotcha).
