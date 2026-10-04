@@ -14,15 +14,20 @@ plugins {
 kotlin {
     jvm()
     linuxX64()
+    // The build script enables TS generation itself, as real consumers do
+    // (e.g. fluxo). KGP's `generateTypeScriptDefinitions()` is not idempotent,
+    // so this cell covers the plugin's second call on an already-enabled target.
     js {
         nodejs()
         browser()
         binaries.executable()
+        generateTypeScriptDefinitions()
     }
     wasmJs {
         nodejs()
         browser()
         binaries.executable()
+        generateTypeScriptDefinitions()
     }
     wasmWasi {
         nodejs()
@@ -57,3 +62,8 @@ apiValidation {
         enabled = true
     }
 }
+
+// A green `check` must mean the `.d.ts` baselines were compared: name the plugin's
+// tasks explicitly so a silently skipped target fails task-graph resolution
+// ("Task with path '…' not found") instead of passing on nothing.
+tasks.named("check") { dependsOn("tsApiCheck", "wasmTsApiCheck") }

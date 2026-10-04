@@ -25,3 +25,8 @@ develocity {
 dependencyGuard {
     configuration("classpath")
 }
+
+// A green `check` must mean the `.d.ts` baselines were compared: name the plugin's
+// tasks explicitly so a silently skipped target fails task-graph resolution
+// ("Task with path '…' not found") instead of passing on nothing.
+tasks.named("check") { dependsOn("tsApiCheck") }
