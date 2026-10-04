@@ -1,3 +1,5 @@
+import org.gradle.plugin.compatibility.compatibility
+
 plugins {
     alias(libs.plugins.kotlin.jvm)
     // Sigstore keyless signing — applied here so it observes every
@@ -215,6 +217,21 @@ pluginExt.plugins.getByName("fluxo-bcv-ts").id = pluginId
 //    of regression at config-time so `:check` gates it from PRs.
 pluginExt.website.set(projectUrl)
 pluginExt.vcsUrl.set("$projectUrl/tree/v${project.version}")
+
+// Plugin Portal feature-compatibility declaration (DSL from Gradle's
+// compatibility-plugin, applied by plugin-publish 2.2+).
+// - configurationCache: every check cell runs under strict CC
+//   (checks/gradle.properties: problems=fail, max-problems=0).
+// - isolatedProjects: NOT supported; the plugin walks parent projects for the
+//   BCV extension and reads other projects' state.
+pluginExt.plugins.named("fluxo-bcv-ts") {
+    compatibility {
+        features {
+            configurationCache.set(true)
+            isolatedProjects.set(false)
+        }
+    }
+}
 
 // Pre-flight Plugin Portal metadata gate. Sibling-aligned with
 // fluxo-kmp-conf's `VerifyPluginPortalMetadataTask` (its
