@@ -44,6 +44,7 @@ Compatibility tested with:
 
 |  Version   |       BCV[^1]        | Kotlin  | Gradle |
 |:----------:|:--------------------:|:-------:|:------:|
+|  1.2.0[^2] | 0.8 - 0.18.2 OR KGP-embedded[^3] | 1.7.22+ (tested up to 2.5.0-Beta1) | 7.6+ (tested 7.6.6, 8.14.5, 9.8.0) |
 |  1.1.0[^2] | 0.8 - 0.18.1 OR KGP-embedded[^3] | 1.7.22+ |  7.6+  |
 |   1.0.0    |      0.8 - 0.15      | 1.7.22+ |  7.6+  |
 |   0.3.0    |      0.8 - 0.14      | 1.6.20+ |  7.6+  |
@@ -61,7 +62,7 @@ Compatibility tested with:
 ```kotlin
 // in the `build.gradle.kts` of the target module.
 plugins {
-  kotlin("multiplatform") version "2.3.21" // <-- any Kotlin 1.7.22+ (see Compatibility above)
+  kotlin("multiplatform") version "2.4.20" // <-- any Kotlin 1.7.22+ (see Compatibility above)
   id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.18.2" // <-- 0.8 .. 0.18.2
   id("io.github.fluxo-kt.binary-compatibility-validator-js") version "1.1.0" // <-- add here
 }
@@ -81,7 +82,7 @@ kotlin {
 ```kotlin
 // in the `build.gradle.kts` of the target module.
 plugins {
-  kotlin("multiplatform") version "2.3.21" // <-- any Kotlin 1.7.22+ (see Compatibility above)
+  kotlin("multiplatform") version "2.4.20" // <-- any Kotlin 1.7.22+ (see Compatibility above)
   id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.18.2" // <-- 0.8 .. 0.18.2
   id("io.github.fluxo-kt.binary-compatibility-validator-js") // <-- add here, no version needed for jitpack usage
 }
@@ -133,7 +134,7 @@ Switching a project to embedded mode therefore moves its baselines: run `./gradl
 ```kotlin
 // in the `build.gradle.kts` of the target module.
 plugins {
-  kotlin("multiplatform") version "2.3.21"
+  kotlin("multiplatform") version "2.4.20"
   id("io.github.fluxo-kt.binary-compatibility-validator-js") version "1.1.0"
   // NOTE: NO `org.jetbrains.kotlinx.binary-compatibility-validator` —
   // embedded mode replaces the external plugin entirely.
