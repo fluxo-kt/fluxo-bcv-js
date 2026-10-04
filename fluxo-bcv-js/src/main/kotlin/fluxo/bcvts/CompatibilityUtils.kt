@@ -257,7 +257,6 @@ internal val KotlinJsIrLink.modeCompat: KotlinJsBinaryMode?
 // renamed key has shipped in every supported `kotlinLatest`.
 private val ABI_EXT_NAMES = arrayOf("abiValidation", "kotlinAbi")
 
-private enum class AbiLookup { Absent, Detected, Enabled }
 
 private fun Any.findAbiExt(): Any? {
     val ea = this as? ExtensionAware ?: return null
@@ -283,18 +282,25 @@ private fun Any.readAbiEnabled(): Boolean? = safe {
 private const val CHECK_KOTLIN_ABI_TASK = "checkKotlinAbi"
 private const val UPDATE_KOTLIN_ABI_TASK = "updateKotlinAbi"
 
-private fun Project.abiLookup(): AbiLookup {
+/**
+ * `null` = no `abiValidation` extension; `false` = extension present but not
+ * enabled; `true` = enabled. A nullable Boolean rather than an enum: the plugin
+ * runs on Gradle's embedded Kotlin stdlib (1.7.10 on Gradle 7.6), and enum
+ * classes compiled with Kotlin 1.9+ call `kotlin.enums.EnumEntries`, which that
+ * stdlib lacks (`NoClassDefFoundError` at plugin apply).
+ */
+private fun Project.abiLookup(): Boolean? {
     // Task-based primary signal. `tasks.names` is lazy (no task
     // realization), CC-safe, and present in every supported Gradle.
     val taskNames = tasks.names
     if (CHECK_KOTLIN_ABI_TASK in taskNames || UPDATE_KOTLIN_ABI_TASK in taskNames) {
-        return AbiLookup.Enabled
+        return true
     }
     // Extension-based fallback for older KGP that doesn't materialise
     // the tasks (or where naming has drifted further). Preserves the
     // 2.2/2.3 contract where `enabled: Property<Boolean>` is the opt-
     // in signal.
-    val kotlinExt: Any = extensions.findByName("kotlin") ?: return AbiLookup.Absent
+    val kotlinExt: Any = extensions.findByName("kotlin") ?: return null
     // Scopes to probe: the kotlin extension itself (top-level
     // `kotlin { abiValidation { } }`) plus every target (per-target
     // `kotlin { jvm { abiValidation { } } }` — KMP fanout shape).
@@ -311,9 +317,9 @@ private fun Project.abiLookup(): AbiLookup {
     for (scope in scopes) {
         val abi = scope.findAbiExt() ?: continue
         detected = true
-        if (abi.readAbiEnabled() == true) return AbiLookup.Enabled
+        if (abi.readAbiEnabled() == true) return true
     }
-    return if (detected) AbiLookup.Detected else AbiLookup.Absent
+    return if (detected) false else null
 }
 
 /**
@@ -328,7 +334,7 @@ private fun Project.abiLookup(): AbiLookup {
  * @see org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation
  */
 internal val Project.kgpAbiValidationDetectedCompat: Boolean
-    get() = abiLookup() != AbiLookup.Absent
+    get() = abiLookup() != null
 
 /**
  * True iff KGP's embedded ABI validation is detected AND its
@@ -339,7 +345,7 @@ internal val Project.kgpAbiValidationDetectedCompat: Boolean
  * @see org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation
  */
 internal val Project.kgpAbiValidationEnabledCompat: Boolean
-    get() = abiLookup() == AbiLookup.Enabled
+    get() = abiLookup() == true
 
 
 // Reflective compat seams: swallow API-drift exceptions, propagate JVM
