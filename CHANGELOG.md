@@ -5,6 +5,11 @@
 
 [//]: # (Changed, Added, Removed, Fixed, Updated)
 
+### Updated
+- `java-diff-utils` 4.12 → 4.17, the plugin's only runtime dependency.
+  When the external BCV plugin is also applied, Gradle resolves one
+  version for both; BCV 0.14+ uses only APIs unchanged in 4.17.
+
 ### Fixed
 - No `.d.ts` API tasks were registered for JS/Wasm targets whose build
   script already calls `generateTypeScriptDefinitions()`, so `apiCheck`

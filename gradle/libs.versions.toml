@@ -20,16 +20,18 @@ bcvLatest = "0.18.2"
 # classpath boundary. No alias references it, so Dependabot leaves it alone.
 bcvMiddle = "0.16.3"
 
-# Diffutils version — INTENTIONALLY anchored to BCV's transitive pin to
-# avoid classloader split-brain when consumers apply BOTH the external
-# BCV plugin AND this one (`implementation(libs.diffutils)` runs in the
-# plugin's loader; BCV pulls its own copy from the buildscript loader).
-# Latest available is 4.17 (verified 2026-05-18), but BCV 0.18.1 ships 4.12,
-# which is the physical ceiling we will track until upstream BCV moves.
-# `bcv` is frozen at 0.18.1 (project no longer maintained — see §1) so
-# this pin is effectively permanent. DEPENDABOT: do not auto-bump.
-# https://github.com/Kotlin/binary-compatibility-validator/blob/0.18.1/gradle/libs.versions.toml#L5
-diffutils = "4.12"
+# java-diff-utils: the plugin's ONLY runtime dependency (formats the apiCheck
+# failure diff; pass/fail is a plain line comparison). Track the newest.
+# Coexistence: with the external BCV plugin applied, both plugins share one
+# plugin classpath, Gradle resolves ONE version (the highest), so BCV runs on
+# ours. BCV 0.14+ calls only `DiffUtils.diff(List, List)` and
+# `UnifiedDiffUtils.generateUnifiedDiff(String, String, List, Patch, int)`;
+# BCV <= 0.13 uses a different library (`difflib`); KGP-embedded validation
+# loads its tools in an isolated classpath. Re-verify on each bump:
+# `javap -s` both methods in the new jar, `javap -c` BCV's
+# `kotlinx/validation/KotlinApiCompareTask` for the methods it calls, and
+# confirm the jar is still Java 8 bytecode (major 52).
+diffutils = "4.17"
 
 # Java/Kotlin compatibility, aligned with BCV.
 # `kotlinLangVersion` is the lowest source-language version the
