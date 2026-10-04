@@ -41,7 +41,15 @@ fkcSetupGradlePlugin(
     },
 ) {
     githubProject = "fluxo-kt/fluxo-bcv-js"
-    useJdkRelease = false
+    // `-Xjdk-release=1.8`: the compiler rejects JDK 9+ API calls, which would
+    // otherwise compile fine on our JDK 21 and crash on consumers' Java 8-era
+    // runtime paths.
+    // No equivalent compile-time guard exists for the Kotlin stdlib: it comes
+    // from `gradleApi()` (the BUILDING Gradle's embedded stdlib, 2.x), not from
+    // a resolvable dependency, so it cannot be pinned to Gradle 7.6's 1.7.10.
+    // Stdlib APIs newer than 1.7.10 are caught only by `checks/js-only`,
+    // which runs the published jar on Gradle 7.6.
+    useJdkRelease = true
     setupCoroutines = false
     allWarningsAsErrors = false
     // Test-only flag (Pass-8 source-trace of fluxo-kmp-conf

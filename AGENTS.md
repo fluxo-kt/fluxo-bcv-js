@@ -128,9 +128,14 @@ class — `fluxo.bcvts.FluxoBcvTsPlugin`. Plugin ID:
 ## JDKs
 CI matrix runs **JDK 21 (Temurin)** on macOS/Ubuntu/Windows for `build.yml`.
 `release.yml` and `pr-baseline.yml` also use **JDK 21**. JitPack uses
-**openjdk21**. Local dev: 17+ should work; 21 matches all CI surfaces.
-`fkcSetupGradlePlugin` is configured `useJdkRelease = false`; bytecode
-target is `javaLangTarget=1.8` (aligned with BCV).
+**openjdk21**. Local dev: 21 matches all CI surfaces. `checks/js-only` runs
+Gradle 7.6, which needs **JDK 17** (≤ 19): CI sets it up as step `jdk17`;
+`updateBaseline` reads `JDK17_HOME` (macOS: found via `java_home`).
+`useJdkRelease = true` (`-Xjdk-release=1.8`) makes JDK 9+ API calls a compile
+error; bytecode target is `javaLangTarget=1.8` (aligned with BCV). Kotlin
+stdlib calls newer than Gradle 7.6's embedded 1.7.10 have NO compile-time
+guard (the stdlib comes from `gradleApi()`); only `checks/js-only` catches
+them, so never assume a stdlib API exists because it compiles.
 
 ## Compatibility matrix
 Single source of truth: `gradle/libs.versions.toml`. Plugin tested against
