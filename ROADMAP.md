@@ -3,9 +3,31 @@
 <details>
   <summary>Show</summary>
 
+Highest consequence first.
+
+- `kotlinLangVersion = 2.0` warns "deprecated, will be removed" on Kotlin
+  2.4.20, and becomes a build blocker on the Kotlin release that removes it.
+  Raising it changes the Kotlin metadata that Gradle 7.6's embedded Kotlin
+  1.7 must read for the `fluxoBcvTs { }` DSL, so `checks/js-only` (the
+  Gradle 7.6 floor) decides whether a raise keeps the floor.
+- Flip the dual-mode AUTO default to embedded (`preferEmbedded` unset +
+  both validators active) in the first minor after KGP drops the
+  `@ExperimentalAbiValidation` opt-in (KT-71172). External stays the default
+  until then because switching moves every consumer's `.d.ts` baselines.
+- Remove `@Incubating` from `FluxoBcvTsExtension` in 1.3.0 (1.2.0 changed
+  what `preferEmbedded` does, so the stability promise moved one minor).
+- CI guard that `./gradlew check --dry-run` still lists `:plugin:detektMain`
+  and `:plugin:lint`: fluxo-kmp-conf 0.13 once turned both off by default and
+  `check` stayed green for months. New enforcement, so it needs a maintainer
+  decision first.
+- AGP Kotlin Multiplatform Android target lane: a single BCV-platform target
+  without BCV tasks once crashed configuration (`androidApiBuild` not
+  found). Covered only by code today; a lane costs an Android SDK in CI.
 - Integration tests — incl. resolving the *published* plugin end-to-end
-  (Portal `plugins{}` + JitPack `useModule`), the seam `checks/*` skip via
-  `includeBuild` (a wrong JitPack coordinate shipped undetected in 1.1.0)
+  from the Plugin Portal (`plugins{}`) and JitPack (`useModule`).
+  `checks/js-only` resolves the published marker + jar from a local repo,
+  but no lane hits either real repository (a wrong JitPack coordinate
+  shipped undetected in 1.1.0)
 - Pull requests for
   - ★4000 https://github.com/square/wire
   - ★49 https://github.com/DrewCarlson/mobius.kt

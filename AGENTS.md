@@ -90,13 +90,15 @@ class — `fluxo.bcvts.FluxoBcvTsPlugin`. Plugin ID:
   4-space indent, trailing comma allowed.
 
 ## Source files (key ones)
-- `FluxoBcvTsPlugin.kt` — entry. Waits for BCV plugin + (KMP|legacy KJS),
-  defers to `configureTsApiTasks()` in `afterEvaluate`. Logs errors when
-  prerequisites missing.
+- `FluxoBcvTsPlugin.kt` — entry. Waits for KMP or legacy KJS, then in
+  `afterEvaluate` `resolveTrigger` picks the validator (external BCV or
+  KGP-embedded, per `preferEmbedded`, with the BCV < 0.15 safety refusal),
+  prints the lifecycle line and calls `configureTsApiTasks(useEmbedded)`.
+  Logs errors when prerequisites are missing.
 - `ConfigureTsApiTasks.kt` — the brains. Builds task graph, target
-  detection, `DirConfig` selection, BCV `COMMON`-strategy workaround. Top
-  of file has `internal const val DBG`: 0 = silent, 1 = trace logs.
-  **Reset to 0 before commit.** There is a `FIXME` to make target wiring
+  detection, `DirConfig` selection, BCV `COMMON`-strategy workaround.
+  Embedded mode ignores BCV entirely (`bcv = null`, `TARGET_DIR`, baselines
+  in KGP's `referenceDumpDir`). There is a `FIXME` to make target wiring
   lazy (currently uses `afterEvaluate`).
 - `CompatibilityUtils.kt` — reflective compat shims for KGP/BCV API drift.
   All access wrapped in `safe { }`. Add new shims here, not inline.
@@ -347,9 +349,10 @@ Commits, flat `--ff-only` (`CONTRIBUTING.md`).
 
 ## What's NOT in this repo
 - No unit/integration tests for the plugin itself; coverage is the
-  `checks/*` composite builds. They `includeBuild` the source, so no test
-  resolves the *published* coordinate end-to-end (the seam the JitPack-coord
-  bug slipped through). Integration tests: a `ROADMAP.md` item.
+  `checks/*` composite builds. All but `js-only` `includeBuild` the source;
+  `js-only` resolves the published marker + jar from the local `checks-repo`.
+  Nothing resolves the plugin from the Plugin Portal or JitPack (the seam the
+  JitPack-coord bug slipped through). Integration tests: a `ROADMAP.md` item.
 - No published Dokka site. Source-level KDoc only.
 - No release-notes generator; `CHANGELOG.md` is hand-edited, Common
   Changelog *style* with two deliberate house deviations — do NOT
