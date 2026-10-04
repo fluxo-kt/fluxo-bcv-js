@@ -35,8 +35,10 @@ supply-chain fix CLEARS them once it ff-merges to `dev`; no `main` round-trip.
 ## Branch ruleset `protect-integration-branches`
 Protects `dev`+`main`. **NO in-repo file** (GitHub-side config) — query via
 `gh api repos/<owner>/<repo>/rulesets` (don't hardcode the numeric id; it
-changes on recreate). Required contexts = EXACTLY build.yml matrix job names
-`Build and check on {ubuntu,macos,windows}`, each pinned `integration_id: 15368`
+changes on recreate). Required contexts = EXACTLY the names of build.yml's
+`verdict-*` jobs, `Build and check on {ubuntu,macos,windows}`. Each verdict
+`needs:` only its own OS's lane jobs (one job per lane, so wall time is the
+slowest lane), keeping each context true for its OS. Each is pinned `integration_id: 15368`
 (github-actions) so a same-named context from another app can't satisfy the
 gate. Uses the `non_fast_forward` rule (blocks force-push), NOT `pull_request`
 — so the `/ff` bot's legit ff-push of an already-green SHA still merges.
@@ -55,7 +57,7 @@ CodeQL is deliberately NOT required (advisory).
   trigger" step. The `push` trigger has NO `paths-ignore` either (owner
   direct-pushes are its only pushes — `/ff` is GITHUB_TOKEN-suppressed; the
   badge reads dev HEAD's build check-run → a docs-only push must still build).
-  Rename a build.yml matrix job NAME ⇒ update the ruleset's required contexts in
+  Rename a build.yml verdict job NAME ⇒ update the ruleset's required contexts in
   lockstep, or the gate silently stops matching.
 
 ## README build badge = shields.io check-runs badge, NOT the Actions badge
@@ -65,9 +67,9 @@ push suppression) → it froze on a stale RED run while every PR was green. The
 shields badge reads dev HEAD's per-SHA check status (same source the ruleset
 gates on, always fresh, zero compute):
 `…/github/check-runs/<owner>/<repo>/dev?nameFilter=Build%20and%20check%20on%20ubuntu&label=Build`.
-`nameFilter` is EXACT-match → pins ubuntu (the strictest cell — only it runs
-`check-dual`; all 3 OS are ruleset-required on an immutable-between-merges `dev`
-⇒ ubuntu-green ⟺ all-green; EXCLUDES advisory CodeQL). A job rename detaches the
+`nameFilter` is EXACT-match → pins ubuntu (every OS runs the same lanes; all 3
+OS are ruleset-required on an immutable-between-merges `dev` ⇒ ubuntu-green ⟺
+all-green, except owner bypass pushes; EXCLUDES advisory CodeQL). A job rename detaches the
 badge → renders grey "unknown" (NOT red) → update `nameFilter` in lockstep.
 Tracks `dev`, not `main`.
 

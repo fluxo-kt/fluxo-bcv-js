@@ -39,8 +39,8 @@ on:
     # the very pushes that must build to keep the badge truthful.
 
 # Cancel superseded runs on the same ref. Without this, rapid
-# force-pushes during PR iteration spawn parallel matrix runs
-# (3 OS × build + 5 composite-check steps each) that keep
+# force-pushes during PR iteration spawn parallel runs
+# (one job per OS × lane) that keep
 # burning runner minutes even though the user only cares about
 # the latest push. `group` keys on PR number when on a PR
 # (cancels prior runs for the SAME PR) or on the ref otherwise.
@@ -74,29 +74,30 @@ env:
   # dependency-submission.yml now (the inline graph-submit step here
   # was removed alongside the `contents: write` tightening).
 
+# Layout: one job per (OS, lane) so wall time is the slowest lane, not the sum
+# of all lanes (a routine lane must stay under 5 minutes). The ruleset requires
+# the contexts `Build and check on {ubuntu,macos,windows}`, so per-OS `verdict-*`
+# jobs carry those exact names and depend only on their own OS's lanes: each
+# context stays true for its OS. Lane jobs share one anchored strategy and step
+# list (GitHub supports anchors but not `<<:` merge keys, so only `runs-on`
+# differs per OS job).
 jobs:
-  buildAndCheck:
-    strategy:
-      fail-fast: false
-      matrix:
-        java: [ '21' ]
-        os: [ 'macos', 'ubuntu', 'windows' ]
-
-    name: 'Build and check on ${{ matrix.os }}'
-    timeout-minutes: 25
-    runs-on: '${{ matrix.os }}-latest'
+  # Gradle-free repository guards, once per run instead of once per lane.
+  preflight:
+    name: Preflight
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
     if: ${{ !contains(github.event.head_commit.message, 'ci skip') }}
-    env:
-      GRADLE_BUILD_ACTION_CACHE_DEBUG_ENABLED: false
-
     steps:
-      - name: Harden Runner
+      - &harden
+        name: Harden Runner
         uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
         with:
           disable-sudo: true
           egress-policy: audit
 
-      - name: Checkout
+      - &checkout
+        name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Verify wrapper-pin alignment
@@ -158,7 +159,6 @@ jobs:
         # PR, instead of a mystery BLOCKED docs PR. `.["on"]` quotes the
         # key: YAML 1.1 reads bare `on` as a boolean. Path filtering stays
         # on `push` only (post-merge pushes aren't status-gated).
-        if: matrix.os == 'ubuntu'
         shell: bash
         run: |
           set -euo pipefail
@@ -178,7 +178,67 @@ jobs:
               exit 1 ;;
           esac
 
+  lanes-ubuntu:
+    name: 'ubuntu: ${{ matrix.lane }}'
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.head_commit.message, 'ci skip') }}
+    # Bounds a hang only; the lane step's own 5-minute limit is the real budget.
+    timeout-minutes: 10
+    env:
+      GRADLE_BUILD_ACTION_CACHE_DEBUG_ENABLED: false
+      GITHUB_DEPENDENCY_GRAPH_ENABLED: false
+    strategy: &lanes
+      fail-fast: false
+      matrix:
+        include:
+          # Root: the plugin itself (build, Detekt, Lint, own API dump,
+          # dependency-guard). Unqualified `dependencyGuard`: the root project
+          # has no `check` task, so its buildscript-classpath baseline
+          # (dependencies/classpath.txt) is verified only when named here.
+          # No `--warning-mode=fail`: third-party plugins still call Gradle
+          # APIs deprecated for removal (Detekt 1.23: `ReportingExtension.file`;
+          # BCV: `Configuration.setVisible`). Re-check with
+          # `--warning-mode=all` after bumping either.
+          - lane: root
+            dir: .
+            run: ./gradlew build assemble check dependencyGuard --continue --stacktrace --scan
+          # Ceiling: newest Kotlin preview + BCV, Gradle of the root wrapper.
+          - lane: latest
+            dir: checks/latest
+            run: ./gradlew check --continue --stacktrace --scan
+          # Matrix interior: catches drift between floor and ceiling (BCV
+          # 0.14→0.16 worker isolation, Kotlin 2.0→2.4 metadata rename) so a
+          # regression does not first surface on the ceiling.
+          - lane: middle
+            dir: checks/middle
+            run: ./gradlew check --continue --stacktrace --scan
+          # Embedded-only: KGP `abiValidation`, no external BCV; also verifies
+          # KGP's KLIB ABI baseline. `apiDump --dry-run` stores AND reloads
+          # the configuration-cache entry for the dump tasks without writing
+          # baselines: the only no-BCV cell under CC, where a dump task
+          # restored from CC once failed on missing BCV classes.
+          - lane: kgp-only
+            dir: checks/kgp-only
+            run: ./gradlew check checkKotlinAbi --continue --stacktrace --scan && ./gradlew apiDump --dry-run --stacktrace
+          # Both validators: `sweep` runs every preferEmbedded mode and asserts
+          # the lifecycle line and resolved baseline layout. Runs on every OS,
+          # so the `/`-separated layout it asserts is checked on Windows too.
+          - lane: dual
+            dir: checks/dual
+            run: ./sweep
+          # Floor: Gradle 7.6 cannot build the plugin (KGP 2.x, plugin-publish
+          # 2.x), so root Gradle publishes it to fluxo-bcv-js/build/checks-repo
+          # and the cell resolves the published plugin, on JDK 17 (Gradle 7.6
+          # runs on Java <= 19).
+          - lane: js-only
+            dir: checks/js-only
+            run: ../../gradlew -p ../.. :plugin:publishAllPublicationsToChecksRepository --stacktrace && JAVA_HOME="$JDK17" ./gradlew check --continue --stacktrace --scan
+    steps: &lane-steps
+      - *harden
+      - *checkout
+
       - name: 'Set up JDK 17 (checks/js-only: Gradle 7.6 runs on Java <= 19)'
+        if: matrix.lane == 'js-only'
         id: jdk17
         uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
@@ -186,11 +246,11 @@ jobs:
           java-version: '17'
 
       # Set up last so it stays the default JAVA_HOME for every other step.
-      - name: 'Set up JDK ${{ matrix.java }}'
+      - name: 'Set up JDK 21'
         uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
           distribution: temurin
-          java-version: '${{ matrix.java }}'
+          java-version: '21'
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
@@ -202,7 +262,9 @@ jobs:
           # (and current default): prune stale Gradle Home entries only after
           # a successful build, before saving the Actions cache.
           cache-cleanup: on-success
-          cache-disabled: ${{ matrix.os == 'windows' }} # super slow on Windows.
+          # Cached on Windows too: uncached, every Windows step ran cold (the
+          # slowest OS by far). If restore proves slower than a cold build,
+          # measure both before disabling it again.
           cache-encryption-key: "${{ secrets.GRADLE_ENCRYPTION_KEY }}"
           # Writable on every run, deliberately. The canonical "write only on
           # the default branch" pattern assumes the default branch gets build
@@ -222,21 +284,17 @@ jobs:
           add-job-summary-as-pr-comment: on-failure
           artifact-retention-days: 1
 
-      - name: 'Build and check plugin itself'
-        timeout-minutes: 15
-        # Also publishes the plugin to fluxo-bcv-js/build/checks-repo, which
-        # checks/js-only consumes (its Gradle cannot build the plugin).
-        # No `--warning-mode=fail`: third-party plugins still call Gradle APIs
-        # deprecated for removal (Detekt 1.23: `ReportingExtension.file`;
-        # BCV: `Configuration.setVisible`). Re-check with `--warning-mode=all`
-        # after bumping either.
-        # Unqualified `dependencyGuard`: the root project has no `check` task,
-        # so its buildscript-classpath baseline (dependencies/classpath.txt)
-        # is verified only when named here.
-        run: ./gradlew build assemble check dependencyGuard :plugin:publishAllPublicationsToChecksRepository --continue --stacktrace --scan
+      # A routine lane over 5 minutes is a failure, not a slow pass.
+      - name: 'Run ${{ matrix.lane }}'
+        timeout-minutes: 5
+        working-directory: ${{ matrix.dir }}
+        shell: bash
+        env:
+          JDK17: ${{ steps.jdk17.outputs.path }}
+        run: ${{ matrix.run }}
 
       - name: Upload sarif report (Detekt)
-        if: always()
+        if: always() && matrix.lane == 'root'
         uses: github/codeql-action/upload-sarif@87557b9c84dde89fdd9b10e88954ac2f4248e463 # v4.36.1
         continue-on-error: true
         with:
@@ -244,82 +302,18 @@ jobs:
           category: detekt
 
       - name: Upload sarif report (Lint)
-        if: always()
+        if: always() && matrix.lane == 'root'
         uses: github/codeql-action/upload-sarif@87557b9c84dde89fdd9b10e88954ac2f4248e463 # v4.36.1
         continue-on-error: true
         with:
           sarif_file: build/lint-merged.sarif
           category: lint
 
-      - name: Run check-latest
-        if: always()
-        timeout-minutes: 10
-        working-directory: checks/latest
-        run: ./gradlew check --continue --stacktrace --scan
-        env:
-          GITHUB_DEPENDENCY_GRAPH_ENABLED: false
-
-      - name: Run check-js-only
-        if: always()
-        timeout-minutes: 10
-        working-directory: checks/js-only
-        run: ./gradlew check --continue --stacktrace --scan
-        env:
-          GITHUB_DEPENDENCY_GRAPH_ENABLED: false
-          JAVA_HOME: ${{ steps.jdk17.outputs.path }}
-
-      - name: Run check-middle
-        if: always()
-        timeout-minutes: 10
-        working-directory: checks/middle
-        # Matrix-interior smoke: Kotlin 2.2.21 + BCV 0.16.3 + Gradle
-        # 8.14.5. Catches drift between the floor (`checks/js-only`)
-        # and the ceiling (`checks/latest`) — in particular the BCV
-        # 0.14→0.16 worker-isolation boundary and the Kotlin 2.0→2.4
-        # metadata rename. Without this cell, regressions only
-        # surface on the ceiling and bisects span multiple commits.
-        run: ./gradlew check --continue --stacktrace --scan
-        env:
-          GITHUB_DEPENDENCY_GRAPH_ENABLED: false
-
-      - name: Run check-kgp-only
-        if: always()
-        timeout-minutes: 10
-        working-directory: checks/kgp-only
-        # Embedded-only smoke: KGP `abiValidation { }` activated, no
-        # external BCV plugin. Validates the dual-mode trigger, the
-        # task-based detection shim, and the `DirConfig.TARGET_DIR`
-        # short-circuit. Also runs `checkKotlinAbi` so KGP's KLIB ABI
-        # baseline is verified in the same matrix invocation.
-        # `apiDump --dry-run` stores AND reloads the configuration-cache entry
-        # for the dump tasks without writing baselines: the only no-BCV cell
-        # under CC, where a dump task restored from CC once failed on missing
-        # BCV classes. bash, so a failing first command fails the step on
-        # Windows too.
-        shell: bash
-        run: |
-          ./gradlew check checkKotlinAbi --continue --stacktrace --scan
-          ./gradlew apiDump --dry-run --stacktrace
-        env:
-          GITHUB_DEPENDENCY_GRAPH_ENABLED: false
-
-      - name: Run check-dual (path-selection sweep)
-        if: always() && matrix.os == 'ubuntu'
-        timeout-minutes: 12
-        working-directory: checks/dual
-        # Both external BCV AND KGP-embedded `abiValidation` (the migration
-        # cell). `sweep` runs all three preferEmbedded modes and asserts the
-        # lifecycle line and the resolved baseline layout for each.
-        shell: bash
-        run: ./sweep
-        env:
-          GITHUB_DEPENDENCY_GRAPH_ENABLED: false
-
       - name: Upload the build report
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: '${{ matrix.os }}-build-report'
+          name: '${{ runner.os }}-${{ matrix.lane }}-build-report'
           path: |
             **/build/logs/
             **/build/reports/
@@ -327,11 +321,53 @@ jobs:
             build/*-merged.*
           compression-level: 9
 
+  lanes-macos:
+    name: 'macos: ${{ matrix.lane }}'
+    runs-on: macos-latest
+    if: ${{ !contains(github.event.head_commit.message, 'ci skip') }}
+    timeout-minutes: 10
+    env:
+      GRADLE_BUILD_ACTION_CACHE_DEBUG_ENABLED: false
+      GITHUB_DEPENDENCY_GRAPH_ENABLED: false
+    strategy: *lanes
+    steps: *lane-steps
+
+  lanes-windows:
+    name: 'windows: ${{ matrix.lane }}'
+    runs-on: windows-latest
+    if: ${{ !contains(github.event.head_commit.message, 'ci skip') }}
+    timeout-minutes: 10
+    env:
+      GRADLE_BUILD_ACTION_CACHE_DEBUG_ENABLED: false
+      GITHUB_DEPENDENCY_GRAPH_ENABLED: false
+    strategy: *lanes
+    steps: *lane-steps
+
+  # Ruleset-required contexts (exact names, also the README badge filter):
+  # renaming one silently detaches the merge gate. `!cancelled()` instead of
+  # `always()`: a superseded run must not post a failure.
+  verdict-ubuntu:
+    name: Build and check on ubuntu
+    needs: [preflight, lanes-ubuntu]
+    if: ${{ !cancelled() && !contains(github.event.head_commit.message, 'ci skip') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    env:
+      OS: ubuntu
+    steps: &verdict-steps
+      # A matrix job's `result` is `success` only when every leg succeeded.
+      - name: Require preflight and every lane of this OS
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          for r in $RESULTS; do
+            [ "$r" = success ] || { echo "::error::preflight or a $OS lane did not succeed (results: $RESULTS); open the failed job above"; exit 1; }
+          done
+
       - name: "Post result in PR comment"
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         if: github.event_name == 'pull_request' && failure()
         env:
-          OS: ${{ matrix.os }}
           GH_WORKFLOW: ${{ github.workflow }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         with:
@@ -342,3 +378,23 @@ jobs:
               issue_number: context.issue.number, owner: context.repo.owner, repo: context.repo.repo,
               body: `❌ ${GH_WORKFLOW} [failed](${RUN_URL}) on ${OS}.`,
             })
+
+  verdict-macos:
+    name: Build and check on macos
+    needs: [preflight, lanes-macos]
+    if: ${{ !cancelled() && !contains(github.event.head_commit.message, 'ci skip') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    env:
+      OS: macos
+    steps: *verdict-steps
+
+  verdict-windows:
+    name: Build and check on windows
+    needs: [preflight, lanes-windows]
+    if: ${{ !cancelled() && !contains(github.event.head_commit.message, 'ci skip') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    env:
+      OS: windows
+    steps: *verdict-steps
