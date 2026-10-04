@@ -2,7 +2,6 @@
 
 package fluxo.bcvts
 
-import java.lang.reflect.AccessibleObject
 import kotlinx.validation.ApiValidationExtension
 import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
@@ -175,24 +174,20 @@ internal val KotlinJsCompilation.binariesCompat: KotlinJsBinaryContainer?
     get() = safe { KJsCompBinariesCaller(this) }
 
 
-/** @see JsIrBinary.generateTs */
+/**
+ * `generateTs` is a plain Kotlin `var` (public getter, no `@JvmField`)
+ * wherever it exists (`JsBinaries.kt` at KGP v1.8.22, v1.9.x); older KGP
+ * has no such property, so `null` there means "not disabled". No
+ * field-reflection fallback: it could never run, and `setAccessible`
+ * would be the only JDK 9+ API call in a plugin that targets Java 8.
+ *
+ * @see JsIrBinary.generateTs
+ */
 internal val JsIrBinaryGenerateTsCaller: (JsIrBinary.() -> Boolean?) = run {
-    val clazz = JsIrBinary::class.java
     safe<Unit> {
-        // Inheritance-aware: `JsIrBinary` is an interface whose
-        // `generateTs` accessor may live on a parent supertype in some
-        // KGP versions. `getMethod` walks the hierarchy and binds
-        // signature-strictly to the no-arg overload.
-        val method = clazz.getMethod("getGenerateTs")
+        // `getMethod` is inheritance-aware and binds to the no-arg overload.
+        val method = JsIrBinary::class.java.getMethod("getGenerateTs")
         return@run { method.invoke(this) as? Boolean }
-    }
-    safe<Unit> {
-        // Direct-field path: an early KGP exposed `generateTs` as a
-        // plain field rather than a property. Use getDeclaredField
-        // (fields, unlike methods, are NOT inherited via reflection).
-        val field = clazz.getDeclaredField("generateTs")
-        setAccessible(field)
-        return@run { field.get(this) as? Boolean }
     }
     return@run { null }
 }
@@ -342,17 +337,6 @@ internal val Project.kgpAbiValidationDetectedCompat: Boolean
  */
 internal val Project.kgpAbiValidationEnabledCompat: Boolean
     get() = abiLookup() == AbiLookup.Enabled
-
-
-internal fun setAccessible(field: AccessibleObject) {
-    try {
-        @Suppress("Since15")
-        field.trySetAccessible()
-    } catch (_: LinkageError) {
-        // `trySetAccessible` (JDK 9+) absent on JDK 8: NoSuchMethodError.
-        safe { field.isAccessible = true }
-    }
-}
 
 
 // Reflective compat seams: swallow API-drift exceptions, propagate JVM
