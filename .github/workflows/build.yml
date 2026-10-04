@@ -226,6 +226,10 @@ jobs:
         timeout-minutes: 15
         # Also publishes the plugin to fluxo-bcv-js/build/checks-repo, which
         # checks/js-only consumes (its Gradle cannot build the plugin).
+        # No `--warning-mode=fail`: third-party plugins still call Gradle APIs
+        # deprecated for removal (Detekt 1.23: `ReportingExtension.file`;
+        # BCV: `Configuration.setVisible`). Re-check with `--warning-mode=all`
+        # after bumping either.
         run: ./gradlew build assemble check :plugin:publishAllPublicationsToChecksRepository --continue --stacktrace --scan
 
       - name: Upload sarif report (Detekt)
@@ -322,7 +326,9 @@ jobs:
           # flag is what makes every invocation re-run configuration.
           assert_observable() {  # $1=invocation args  $2=expected trigger  $3=expected preferEmbedded label
             local out
-            out=$(./gradlew apiCheck $1 --rerun-tasks --no-configuration-cache 2>&1)
+            # `${1:+"$1"}`: no argument for the AUTO case's "" (a quoted empty
+            # string would reach Gradle as a task name), one word otherwise.
+            out=$(./gradlew apiCheck ${1:+"$1"} --rerun-tasks --no-configuration-cache 2>&1)
             # `grep -Fxq`: Fixed-strings (no regex interpretation) +
             # eXact whole-line match + Quiet. Strictly stronger than
             # the earlier anchored regex — even if a future arg label
