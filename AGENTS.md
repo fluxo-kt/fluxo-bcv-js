@@ -212,8 +212,10 @@ Commits, flat `--ff-only` (`CONTRIBUTING.md`).
   external `org.jetbrains.kotlinx.binary-compatibility-validator` OR
   KGP-embedded `kotlin { abiValidation { } }`. Detection of the
   embedded path is **task-based** (`tasks.names` contains
-  `checkKotlinAbi`/`updateKotlinAbi`) — extension-shape probes break
-  on the Kotlin 2.4-RC `.enabled`-property removal. If a future KGP
+  `checkKotlinAbi`/`updateKotlinAbi`, KGP 2.4+) — extension-shape probes
+  break on the Kotlin 2.4-RC `.enabled`-property removal. KGP 2.2/2.3 fall
+  back to reading `enabled`; never match 2.2's `*LegacyAbi` tasks, which
+  exist in every KMP project whether or not validation is on. If a future KGP
   renames `checkKotlinAbi`, update `CompatibilityUtils.kt`'s
   `CHECK_KOTLIN_ABI_TASK`/`UPDATE_KOTLIN_ABI_TASK` constants.
 - **`safe { }` is narrow** (1.1.0): catches `LinkageError`,

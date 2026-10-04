@@ -271,14 +271,17 @@ private fun Any.readAbiEnabled(): Boolean? = safe {
     (m.invoke(this) as? org.gradle.api.provider.Property<Boolean>)?.orNull
 }
 
-// KGP creates these tasks when (and only when) the user activates
-// `abiValidation` in any of its API shapes — 2.2/2.3's
-// `kotlin { abiValidation { enabled.set(true) } }`, 2.4+'s plain
-// `kotlin { abiValidation { } }` or `abiValidation()`. Task-based
-// detection is reliable across the matrix because it bypasses
+// KGP 2.4+ creates these tasks when (and only when) the user activates
+// `abiValidation` — plain `kotlin { abiValidation { } }` or
+// `abiValidation()`. KGP 2.2.21 creates none of them, even with
+// `abiValidation { enabled.set(true) }`. Task-based detection bypasses
 // the unstable extension-shape API (2.4 removed `.enabled` while
 // keeping the extension reachable, which would otherwise false-
 // positive a presence-based check).
+// Never add KGP 2.2's `checkLegacyAbi`/`updateLegacyAbi`/`dumpLegacyAbi`: 2.2.21
+// registers them in every KMP project, with `abiValidation` absent or disabled,
+// so they would report embedded mode everywhere. On 2.2/2.3 detection falls
+// through to the extension's `enabled` property below.
 private const val CHECK_KOTLIN_ABI_TASK = "checkKotlinAbi"
 private const val UPDATE_KOTLIN_ABI_TASK = "updateKotlinAbi"
 
