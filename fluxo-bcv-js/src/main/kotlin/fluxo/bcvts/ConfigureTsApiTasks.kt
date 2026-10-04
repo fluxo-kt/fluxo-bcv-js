@@ -137,9 +137,22 @@ internal fun Project.configureTsApiTasks() {
         val bcvTargets = targets.filter {
             it.platformType in BCV_PLATFORMS
         }
+        val single = bcvTargets.singleOrNull()?.name
         when {
             bcvTargets.size > 1 -> DirConfig.TARGET_DIR
-            else -> DirConfig.COMMON(bcvTargets.firstOrNull()?.name)
+            single == null -> DirConfig.COMMON(null)
+            // A target object can exist without BCV tasks (e.g. an Android
+            // target disabled by CI target filtering), so the COMMON wiring
+            // to BCV's tasks must be skipped (`tasks.named` would throw). The
+            // layout of the unfiltered build is unknowable from here (filtered
+            // targets are invisible), so follow the committed baselines:
+            // top-level `.d.ts` in the dump dir means COMMON, else TARGET_DIR.
+            apiTaskName(single, SUFFIX_CHECK) !in tasks.names -> {
+                val hasCommonBaseline = layout.projectDirectory.dir(dumpDirectory).asFile
+                    .listFiles { f -> f.name.endsWith(EXT) }?.isNotEmpty() == true
+                if (hasCommonBaseline) DirConfig.COMMON(null) else DirConfig.TARGET_DIR
+            }
+            else -> DirConfig.COMMON(single)
         }
     }
     val state = FluxoBcvTsState(

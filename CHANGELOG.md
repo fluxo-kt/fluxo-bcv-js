@@ -16,6 +16,10 @@
 - `apiDump` failed with `NoClassDefFoundError:
   kotlinx/validation/ApiValidationExtension` under configuration cache
   in projects using only KGP-embedded `abiValidation` (no external BCV).
+- Configuration failed with `Task with name 'androidApiBuild' not found`
+  when the only JVM/Android target had no BCV tasks (e.g. an AGP
+  Kotlin Multiplatform Android target, or a target disabled by CI target
+  filtering). The baseline layout now follows the committed baselines.
 
 
 ## [1.1.0] - 2026-05-18
