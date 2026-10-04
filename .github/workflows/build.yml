@@ -121,7 +121,7 @@ jobs:
           expect checks/kgp-only    '9\.5\.1'
           expect checks/dual        '9\.5\.1'
           expect checks/middle      '8\.14\.5'
-          expect checks/js-only     '8\.6'
+          expect checks/js-only     '7\.6\.6'
 
       - name: Forbid committed Kotlin/JS lockfiles
         # `kotlin-js-store/` is gitignored on purpose: a bare yarn.lock (no
@@ -178,6 +178,14 @@ jobs:
               exit 1 ;;
           esac
 
+      - name: 'Set up JDK 17 (checks/js-only: Gradle 7.6 runs on Java <= 19)'
+        id: jdk17
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # Set up last so it stays the default JAVA_HOME for every other step.
       - name: 'Set up JDK ${{ matrix.java }}'
         uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
@@ -216,7 +224,9 @@ jobs:
 
       - name: 'Build and check plugin itself'
         timeout-minutes: 15
-        run: ./gradlew build assemble check --continue --stacktrace --scan
+        # Also publishes the plugin to fluxo-bcv-js/build/checks-repo, which
+        # checks/js-only consumes (its Gradle cannot build the plugin).
+        run: ./gradlew build assemble check :plugin:publishAllPublicationsToChecksRepository --continue --stacktrace --scan
 
       - name: Upload sarif report (Detekt)
         if: always()
@@ -249,6 +259,7 @@ jobs:
         run: ./gradlew check --continue --stacktrace --scan
         env:
           GITHUB_DEPENDENCY_GRAPH_ENABLED: false
+          JAVA_HOME: ${{ steps.jdk17.outputs.path }}
 
       - name: Run check-middle
         if: always()

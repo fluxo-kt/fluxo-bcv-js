@@ -161,6 +161,17 @@ publishing.publications.withType<MavenPublication>().configureEach {
     }
 }
 
+// Build-local Maven repo that `checks/js-only` resolves this plugin from.
+// The floor cell runs the oldest supported Gradle, which cannot BUILD this
+// plugin (KGP 2.x, plugin-publish 2.x, Develocity 4 need newer Gradle), so
+// it cannot `includeBuild` the sources like the other cells. Consuming the
+// published marker + `.module` + jar instead also tests the published
+// coordinates end to end. Filled by `publishAllPublicationsToChecksRepository`.
+publishing.repositories.maven {
+    name = "checks"
+    url = uri(layout.buildDirectory.dir("checks-repo"))
+}
+
 // Workarounds for fluxo-kmp-conf 0.14.x publication-setup gaps. The
 // same root cause underlies BOTH:
 // fluxo-kmp-conf's `setupPublication` (`SetupPublication.kt:89`)

@@ -74,8 +74,19 @@ echo ""
 echo "=======> checks/js-only"
 cd ../js-only || exit 104
 pwd
+# The floor cell consumes the PUBLISHED plugin (see its settings.gradle.kts),
+# so publish it from the root build first. RELEASE=false: this local publish
+# must not trigger Sigstore's browser-OIDC signing.
+RELEASE=false ../../gradlew -p ../.. :plugin:publishAllPublicationsToChecksRepository || EXIT_CODE=113
+# Gradle 7.6 runs only on Java <= 19. CI passes JDK17_HOME; locally set it,
+# or on macOS it is looked up via java_home (local convenience only).
+JDK17="${JDK17_HOME:-$(/usr/libexec/java_home -v 17 2>/dev/null)}"
+if [ -z "${JDK17}" ]; then
+  echo "checks/js-only: set JDK17_HOME to a JDK 17 home (Gradle 7.6 cannot run on newer Java)"
+  exit 114
+fi
 # js-only also has `dependency-guard` applied (floor-cell baseline).
-./gradlew ${COMMON_TASKS} dependencyGuardBaseline || EXIT_CODE=105
+JAVA_HOME="${JDK17}" ./gradlew ${COMMON_TASKS} dependencyGuardBaseline || EXIT_CODE=105
 
 
 # Go back to root
