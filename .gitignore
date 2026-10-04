@@ -34,3 +34,5 @@ Thumbs.db
 # Other
 *.log
 _/
+# Agent harness state, written into whatever directory the shell is in
+.omc/
