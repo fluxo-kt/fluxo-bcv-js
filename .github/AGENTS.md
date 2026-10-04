@@ -120,9 +120,8 @@ ceiling; `checks/*` are fixtures, not scan targets). Build step needs
 escape tracing) + `--no-build-cache --rerun-tasks` (a cache hit ⇒ empty DB / "no
 source seen"). Action SHA-pinned but `tools:` omitted so the bundle/ceiling
 floats. **Advisory by design: goes red when repo Kotlin crosses the ceiling**
-(currently red — repo at 2.4.0 > extractor ceiling 2.3.30, verbatim `Kotlin
-version 2.4.0 is too recent … supports versions below 2.3.30`), never blocks
-merges.
+(log reads `Kotlin version X is too recent … supports versions below Y`) and
+turns green again once a newer bundle raises the ceiling; never blocks merges.
 
 ## No OSSF Scorecard (added 1.1.0, removed `5d7bff3`)
 Its generic repo-hygiene checklist is structurally N/A for a solo stop-gap:
