@@ -176,6 +176,13 @@ private fun Project.configureTarget(
         .orEmpty()
 
     if (compilations.isEmpty()) {
+        // A TS-capable target with no tasks means the user's `.d.ts` baseline is
+        // silently unenforced, so say it at warn level, never skip quietly.
+        logger.warn(
+            "{} checks are skipped for {} target '{}': no main JS compilation found " +
+                "(compat shim drift? run with --debug)",
+            KTS_API, path, target.name,
+        )
         return
     }
 

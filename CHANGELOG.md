@@ -5,6 +5,12 @@
 
 [//]: # (Changed, Added, Removed, Fixed, Updated)
 
+### Fixed
+- No `.d.ts` API tasks were registered for JS/Wasm targets whose build
+  script already calls `generateTypeScriptDefinitions()`, so `apiCheck`
+  passed without comparing anything. A TS-capable target that still gets
+  no tasks now logs a warning.
+
 
 ## [1.1.0] - 2026-05-18
 

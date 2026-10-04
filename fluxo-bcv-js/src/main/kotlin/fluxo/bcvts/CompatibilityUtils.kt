@@ -57,8 +57,10 @@ internal val Project.kotlinExtensionCompat: KotlinProjectExtension
     get() = extensions.getByName("kotlin") as KotlinProjectExtension
 
 
+/** True iff Kotlin can emit `.d.ts` for this target (so it gets TS API tasks). */
 internal val KotlinTarget.isTsCompat: Boolean
     get() {
+        if (!ALLOW_WASM_WASI && isWasmWasi) return false
         safe { if (name == "js" || name == "wasmJs") return true }
         safe { if (platformType == KotlinPlatformType.js) return true }
         safe { if (this is KotlinJsIrTarget) return true }
@@ -66,6 +68,10 @@ internal val KotlinTarget.isTsCompat: Boolean
         safe { if (platformType == KotlinPlatformType.wasm) return true }
         return false
     }
+
+private val KotlinTarget.isWasmWasi: Boolean
+    get() = name.contains("WASI", ignoreCase = true) ||
+        safe { (this as? KotlinJsIrTarget)?.wasmTargetType == KotlinWasmTargetType.WASI } == true
 
 /**
  * @see KotlinJsIrTarget.binaries
@@ -88,17 +94,14 @@ internal val KotlinTarget.jsCompilationsCompat: NamedDomainObjectContainer<out K
     get() {
         safe {
             if (this is KotlinJsIrTarget) {
-                safe {
-                    if (!ALLOW_WASM_WASI &&
-                        (name.contains("WASI", ignoreCase = true) ||
-                            wasmTargetType == KotlinWasmTargetType.WASI)
-                    ) {
-                        return null
-                    }
-                }
-
+                // Own `safe { }`: KGP's `generateTypeScriptDefinitions()` is not
+                // idempotent — when the build script already called it, a second
+                // call throws `DuplicateTaskException` (its validation task exists).
+                // That failure means "already enabled", so it must never discard
+                // the compilations (sharing one `safe { }` silently dropped every
+                // JS target of such consumers).
                 /** @see KotlinJsTargetDsl.generateTypeScriptDefinitions */
-                generateTypeScriptDefinitionsCaller()
+                safe { generateTypeScriptDefinitionsCaller() }
                 return compilations
             }
         }
