@@ -53,9 +53,9 @@ class — `fluxo.bcvts.FluxoBcvTsPlugin`. Plugin ID:
   Gradle 8.14.5). Catches drift between floor and ceiling.
 - `checks/kgp-only/` — embedded-only path: KGP `abiValidation { }`,
   NO external BCV. Validates dual-mode trigger + `DirConfig.TARGET_DIR`.
-- `checks/dual/` — both validators active; CI sweeps
-  `-PpreferEmbedded={auto,true,false}` and asserts the lifecycle
-  observable contract.
+- `checks/dual/` — both validators active; `checks/dual/sweep` (run by CI
+  and local gates) runs `-PpreferEmbedded={auto,true,false}` and asserts the
+  lifecycle line plus the baseline layout (`api/` external, `api/ts/` embedded).
 - `checks/js-only/` — floor smoke (`bcvMin`, `kotlinMin`,
   legacy `kotlin("js")` plugin, Gradle 8.6).
 - All composite modules `includeBuild("../../")` against the root build.
@@ -215,7 +215,10 @@ Commits, flat `--ff-only` (`CONTRIBUTING.md`).
   `checkKotlinAbi`/`updateKotlinAbi`, KGP 2.4+) — extension-shape probes
   break on the Kotlin 2.4-RC `.enabled`-property removal. KGP 2.2/2.3 fall
   back to reading `enabled`; never match 2.2's `*LegacyAbi` tasks, which
-  exist in every KMP project whether or not validation is on. If a future KGP
+  exist in every KMP project whether or not validation is on. Reading the
+  KGP 2.4.20+ extension itself (e.g. `referenceDumpDir`) needs the
+  `kotlin.getAbiValidation()` getter: it is not in the extension container,
+  so `extensions.findByName("abiValidation")` returns null. If a future KGP
   renames `checkKotlinAbi`, update `CompatibilityUtils.kt`'s
   `CHECK_KOTLIN_ABI_TASK`/`UPDATE_KOTLIN_ABI_TASK` constants.
 - **`safe { }` is narrow** (1.1.0): catches `LinkageError`,
@@ -224,13 +227,13 @@ Commits, flat `--ff-only` (`CONTRIBUTING.md`).
   propagate. Don't widen back to `Throwable`.
 - **Lifecycle observable** is part of the integration-test contract:
   `[fluxo-bcv-ts] trigger=external|embedded preferEmbedded=auto|true|false`
-  is emitted exactly once per build invocation and asserted by
-  `checks/dual`. Keep the format stable; `checks/dual`'s CI step
-  greps for it.
+  is emitted once whenever configuration runs, so a reused
+  configuration-cache entry omits it. Keep the format stable;
+  `checks/dual/sweep` greps for it with `--no-configuration-cache`.
 - **`FluxoBcvTsExtension` is an `@Incubating` `interface`** (1.1.0).
   Managed type with abstract `Property<T>` getters — Gradle's
   ManagedFactory synthesizes the impl. Stability commitment moment
-  is targeted for 1.2.0 (remove `@Incubating`). Until then any 1.x
+  is targeted for 1.3.0 (remove `@Incubating`). Until then any 1.x
   minor may break the extension shape.
 - **Sigstore signing is RELEASE-only** (1.1.0+). `dev.sigstore.sign` auto-wires
   `sigstoreSign*Publication` into **every** `MavenPublication`'s publish chain —

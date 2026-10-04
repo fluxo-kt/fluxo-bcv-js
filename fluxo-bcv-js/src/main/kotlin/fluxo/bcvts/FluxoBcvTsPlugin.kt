@@ -4,16 +4,15 @@ import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 
-// Top-level so other files in the package (notably
-// `ConfigureTsApiTasks.kt`) can branch on `plugins.hasPlugin(PLUGIN_ID_BCV)`
-// without duplicating literals.
+// Top-level so other files in the package (notably `CompatibilityUtils.kt`)
+// reuse the plugin ids without duplicating literals.
 internal const val PLUGIN_ID_KMP = "org.jetbrains.kotlin.multiplatform"
 internal const val PLUGIN_ID_KJS = "org.jetbrains.kotlin.js"
 internal const val PLUGIN_ID_BCV = "org.jetbrains.kotlinx.binary-compatibility-validator"
 
 // Stable, machine-parseable observable for path selection.
-// `checks/dual` greps for these lines to assert that exactly one
-// trigger fires per build invocation; the format is part of the
+// `checks/dual/sweep` greps for these lines to assert that exactly one
+// trigger fires per configuration run; the format is part of the
 // integration-test contract.
 internal const val LIFECYCLE_TAG = "[fluxo-bcv-ts]"
 
@@ -118,26 +117,55 @@ public class FluxoBcvTsPlugin : Plugin<Project> {
 
             val ext = extensions.getByType(FluxoBcvTsExtension::class.java)
             val preference: Boolean? = ext.preferEmbedded.orNull
-            // Decision table:
-            //   preference=true,  embedded → embedded
-            //   preference=false, external → external
-            //   preference=null   (AUTO) or preference unreachable
-            //     → external if available, else embedded.
-            // Any unreachable preference falls back silently to the
-            // available source; AUTO + both-active prefers external for
-            // 1.0.x backward-compat and emits a one-shot recommendation.
-            val trigger = when {
-                preference == true && embedded -> "embedded"
-                preference == false && external -> "external"
-                external -> "external"
-                else -> "embedded"
-            }
-            val preferenceLabel = preference?.toString() ?: "auto"
-            logger.lifecycle("$LIFECYCLE_TAG trigger=$trigger preferEmbedded=$preferenceLabel")
-
-            logTriggerFallbacks(preference, external, embedded)
-            configureTsApiTasks()
+            configureTsApiTasks(useEmbedded = resolveTrigger(preference, external, embedded))
         }
+    }
+
+    /**
+     * Picks the validator that drives the `.d.ts` pipeline, prints the lifecycle
+     * line and explains any fallback. Returns `true` for embedded.
+     */
+    private fun Project.resolveTrigger(
+        preference: Boolean?,
+        external: Boolean,
+        embedded: Boolean,
+    ): Boolean {
+        // The trigger picks the whole pipeline, not only the log line:
+        // embedded = KGP's dump dir, per-target layout, BCV opt-outs ignored;
+        // external = BCV's dump dir, layout and opt-outs (1.0.x behaviour).
+        // Decision table:
+        //   preference=true,  embedded → embedded (unless BCV < 0.15, below)
+        //   preference=false, external → external
+        //   preference=null   (AUTO) or preference unreachable
+        //     → external if available, else embedded.
+        // An unreachable preference falls back to the available source with
+        // an explanation; AUTO + both-active prefers external, so upgrading
+        // the plugin moves nobody's baselines, and recommends the switch.
+        // Embedded mode keeps `.d.ts` baselines in `<dump dir>/<target>/`, which a
+        // directory-syncing BCV would delete on its next `apiDump`. Reachable:
+        // BCV 0.14 builds Kotlin 2.2 output with `languageVersion` <= 1.9.
+        val unsafeForEmbedded = preference == true && embedded && external &&
+            externalBcvSyncsWholeDumpDir()
+        val useEmbedded = when {
+            unsafeForEmbedded -> false
+            preference == true && embedded -> true
+            preference == false && external -> false
+            else -> !external
+        }
+        val trigger = if (useEmbedded) "embedded" else "external"
+        val preferenceLabel = preference?.toString() ?: "auto"
+        logger.lifecycle("$LIFECYCLE_TAG trigger=$trigger preferEmbedded=$preferenceLabel")
+
+        if (unsafeForEmbedded) {
+            logger.warn(
+                "$LIFECYCLE_TAG preferEmbedded=true ignored: the external BCV plugin " +
+                    "is older than 0.15 and its apiDump syncs the whole API dir, which " +
+                    "would delete the .d.ts baselines. Upgrade BCV to 0.15+.",
+            )
+        } else {
+            logTriggerFallbacks(preference, external, embedded)
+        }
+        return useEmbedded
     }
 
     /** Explains why the resolved trigger differs from, or may soon differ from, the preference. */

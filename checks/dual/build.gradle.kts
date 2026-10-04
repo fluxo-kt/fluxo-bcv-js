@@ -5,11 +5,11 @@
 //
 // Exercises the path-selection contract by reading
 // `-PpreferEmbedded={true|false|auto}` from the command line and
-// forwarding it into `fluxoBcvTs { preferEmbedded.set(...) }`. CI
-// invokes apiCheck three times (once per preference) and greps the
-// lifecycle observable. Baseline `.d.ts` byte content is identical
-// across all three sub-cases — the *path* is observable, the *output*
-// is not.
+// forwarding it into `fluxoBcvTs { preferEmbedded.set(...) }`. `sweep`
+// runs apiCheck once per preference and asserts the lifecycle line and
+// the baseline dir: `api/` (external, BCV's COMMON layout) or
+// `api/ts/` + `api/wasmTs/` (embedded, per-target). Both sets hold
+// byte-identical baselines; only their location differs.
 
 // Newest STABLE Kotlin (`kotlin`, the build-side version): latest/kgp-only
 // already cover the preview, so this keeps a consumer cell on the release

@@ -10,6 +10,12 @@
   now links only the library binary for its `.d.ts` API tasks (both
   emit the same declarations), instead of linking both and logging a
   false "ambiguous" error. `binaries.library()` alone is supported too.
+- `preferEmbedded = true` now switches the whole `.d.ts` pipeline, not
+  just the lifecycle line: baselines move to KGP's dump directory in the
+  per-target layout (`api/ts/`, `api/wasmTs/`) and BCV's opt-outs no
+  longer apply. Run `apiDump` once after switching and commit the files.
+- The `fluxoBcvTs` extension stays `@Incubating`; its stability target
+  moves to 1.3.0.
 
 ### Updated
 - `java-diff-utils` 4.12 → 4.17, the plugin's only runtime dependency.
@@ -33,6 +39,14 @@
   filtering). The baseline layout now follows the committed baselines.
 - When several declaration files were found, the one dumped depended on
   filesystem order; it is now the first by path on every machine.
+- Embedded mode ignored a custom `abiValidation { referenceDumpDir }`
+  and always used `api/`; it now keeps the `.d.ts` baselines there.
+- `preferEmbedded = true` is ignored, with a warning, when an external
+  BCV older than 0.15 is also applied: its `apiDump` syncs the whole
+  dump directory and would delete the embedded-mode baselines.
+- The lifecycle line is printed whenever configuration runs, so a build
+  that reuses a configuration-cache entry prints none; the docs claimed
+  every build invocation.
 
 
 ## [1.1.0] - 2026-05-18

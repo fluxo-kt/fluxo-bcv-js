@@ -121,7 +121,14 @@ The external [KotlinX BCV][bcv] plugin is [in maintenance mode](https://github.c
 - **external mode** — the external `org.jetbrains.kotlinx.binary-compatibility-validator` plugin is applied (the 1.0.x behaviour).
 - **embedded mode** — KGP-native `kotlin { abiValidation { } }` is configured (Kotlin 2.2+, opt-in via `@OptIn(ExperimentalAbiValidation::class)`).
 
-When **both** are present, by default the external plugin is preferred for backward-compatibility; a one-shot lifecycle hint recommends opting into embedded mode. The path is selectable via the `fluxoBcvTs` extension:
+When **both** are present, by default the external plugin is preferred for backward-compatibility; a one-shot lifecycle hint recommends opting into embedded mode. The path is selectable via the `fluxoBcvTs` extension.
+
+The selected mode decides where `.d.ts` baselines live and which opt-outs apply:
+
+- **external** — BCV's `apiDumpDirectory` and layout (`api/` for a single JVM target, else per target), and BCV's `ignoredProjects` / `validationDisabled`.
+- **embedded** — KGP's `abiValidation { referenceDumpDir }` (default `api/`), always per target (`api/ts/`, `api/wasmTs/`); BCV's opt-outs do not apply.
+
+Switching a project to embedded mode therefore moves its baselines: run `./gradlew apiDump` once and commit the new files. With an external BCV older than 0.15, `preferEmbedded = true` is ignored with a warning, because that BCV's `apiDump` syncs the whole dump directory and would delete them.
 
 ```kotlin
 // in the `build.gradle.kts` of the target module.
@@ -150,13 +157,13 @@ fluxoBcvTs {
 }
 ```
 
-The plugin emits a single machine-parseable lifecycle line per build invocation indicating the resolved path:
+The plugin emits a single machine-parseable lifecycle line whenever configuration runs (none when Gradle reuses a configuration-cache entry), indicating the resolved path:
 
 ```
 [fluxo-bcv-ts] trigger=external|embedded preferEmbedded=auto|true|false
 ```
 
-The `fluxoBcvTs` extension is marked `@Incubating`. It may change in any 1.x minor release; the stability commitment moment is targeted for 1.2.0. The KGP-side `abiValidation` extension is itself `@OptIn(ExperimentalAbiValidation::class)` — that ceremony is consumer-side and is independent of `fluxoBcvTs`.
+The `fluxoBcvTs` extension is marked `@Incubating`. It may change in any 1.x minor release; the stability commitment moment is targeted for 1.3.0. The KGP-side `abiValidation` extension is itself `@OptIn(ExperimentalAbiValidation::class)` — that ceremony is consumer-side and is independent of `fluxoBcvTs`.
 
 
 ### Versioning

@@ -12,6 +12,7 @@ import org.gradle.api.provider.Provider
 internal class TargetConfig(
     project: Project,
     private val apiDumpDirectory: String,
+    referenceDumpDir: Provider<Directory>,
     val targetTsName: String?,
     val targetName: String,
     val dirConfig: Provider<DirConfig>?,
@@ -25,7 +26,15 @@ internal class TargetConfig(
         }
     } ?: project.provider { apiDumpDirectory }
 
-    val apiDir: Provider<Directory> = project.layout.projectDirectory.dir(apiDirName)
+    // Baseline dir: the dump base itself in COMMON layout, else its per-target
+    // subdir. Built from `referenceDumpDir`, not `apiDirName`, because embedded
+    // mode may keep baselines outside the project-relative default.
+    val apiDir: Provider<Directory> = when (dirConfig) {
+        null -> referenceDumpDir
+        else -> referenceDumpDir.zip(dirConfig) { base, layout ->
+            if (layout is DirConfig.COMMON) base else base.dir(targetTsName.orEmpty())
+        }
+    }
 }
 
 internal fun apiTaskName(targetName: String?, suffix: String) = when (targetName) {

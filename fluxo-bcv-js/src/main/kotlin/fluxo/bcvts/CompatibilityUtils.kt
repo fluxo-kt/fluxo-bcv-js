@@ -5,6 +5,7 @@ package fluxo.bcvts
 import kotlinx.validation.ApiValidationExtension
 import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
+import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.plugins.ExtensionAware
 import org.jetbrains.kotlin.gradle.dsl.KotlinProjectExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
@@ -254,7 +255,8 @@ internal val KotlinJsIrLink.modeCompat: KotlinJsBinaryMode?
 //
 // Known names KGP has used (or may use) for the extension. Add new
 // keys here when KGP renames — and remove the old one only after the
-// renamed key has shipped in every supported `kotlinLatest`.
+// renamed key has shipped in every supported `kotlinLatest`. KGP 2.4.20+
+// registers none of them (only the `kotlin.abiValidation` getter exists).
 private val ABI_EXT_NAMES = arrayOf("abiValidation", "kotlinAbi")
 
 
@@ -262,6 +264,48 @@ private fun Any.findAbiExt(): Any? {
     val ea = this as? ExtensionAware ?: return null
     return ABI_EXT_NAMES.firstNotNullOfOrNull { ea.extensions.findByName(it) }
 }
+
+/**
+ * The baseline directory of KGP-embedded ABI validation
+ * (`kotlin { abiValidation { referenceDumpDir } }`), so embedded-mode `.d.ts`
+ * baselines live next to KGP's own. Top-level since KGP 2.4; on `legacyDump`
+ * only in 2.2/2.3 (still present, deprecated, in 2.4+). `null` = unreadable,
+ * and the caller falls back to `api/`, KGP's default.
+ *
+ * KGP 2.4.20+ exposes `abiValidation` only as a getter on the `kotlin` extension,
+ * not in its extension container, so a by-name lookup alone finds nothing there.
+ *
+ * @see org.jetbrains.kotlin.gradle.dsl.abi.AbiValidationExtension.referenceDumpDir
+ * @see org.jetbrains.kotlin.gradle.dsl.abi.AbiValidationLegacyDumpExtension.referenceDumpDir
+ */
+internal val Project.kgpReferenceDumpDirCompat: DirectoryProperty?
+    get() {
+        val kotlin = extensions.findByName("kotlin") ?: return null
+        val abi = kotlin.findAbiExt()
+            ?: safe { kotlin.javaClass.getMethod("getAbiValidation").invoke(kotlin) }
+            ?: return null
+        return abi.referenceDumpDirOrNull()
+            ?: safe { abi.javaClass.getMethod("getLegacyDump").invoke(abi) }
+                ?.referenceDumpDirOrNull()
+    }
+
+private fun Any.referenceDumpDirOrNull(): DirectoryProperty? =
+    safe { javaClass.getMethod("getReferenceDumpDir").invoke(this) as? DirectoryProperty }
+
+/**
+ * Whether the applied external BCV dumps with a directory `Sync` that deletes
+ * every file in the dump dir it did not produce, which would erase `.d.ts`
+ * baselines kept in their own subdirectories. BCV 0.14 does (it references
+ * `org.gradle.api.tasks.Sync`); 0.16+ copies single files with
+ * `kotlinx.validation.SyncFile`. Probing that class tests the behaviour itself,
+ * with no version parsing. Unknown counts as `true`: refusing embedded mode
+ * costs a layout switch, deleting baselines costs user data.
+ */
+internal fun Project.externalBcvSyncsWholeDumpDir(): Boolean = safe {
+    plugins.getPlugin(PLUGIN_ID_BCV).javaClass.classLoader
+        .loadClass("kotlinx.validation.SyncFile")
+    false
+} ?: true
 
 private fun Any.readAbiEnabled(): Boolean? = safe {
     val m = javaClass.methods.firstOrNull {

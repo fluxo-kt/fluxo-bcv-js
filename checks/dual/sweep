@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Runs checks/dual once per preferEmbedded mode (auto, true, false) and asserts,
+# for each, the two observables a regression would change:
+#  - the lifecycle line `[fluxo-bcv-ts] trigger=<x> preferEmbedded=<y>`, a public
+#    contract (format must stay byte-stable);
+#  - the baseline dir the `.d.ts` tasks resolve: external mode keeps BCV's COMMON
+#    layout (`api/`), embedded mode the per-target layout (`api/ts/`). Both
+#    layouts hold byte-identical baselines, so apiCheck alone passes either way
+#    and cannot tell whether preferEmbedded switched the layout.
+# Used by CI (build.yml) and local gates, so both run the same assertions.
+set -euo pipefail
+cd "$(dirname "$0")"
+
+assert_mode() {  # $1=gradle args  $2=trigger  $3=preferEmbedded label  $4=js baseline dir
+  local out
+  # `--no-configuration-cache`: the lifecycle line is printed at configuration
+  # time, so a reused CC entry would skip it and grep the previous run's state.
+  # `${1:+"$1"}`: no argument for AUTO's "" (a quoted empty string would reach
+  # Gradle as a task name), one word otherwise.
+  if ! out=$(./gradlew apiCheck help --task tsApiDump ${1:+"$1"} \
+    --rerun-tasks --no-configuration-cache 2>&1); then
+    echo "::error::checks/dual failed for '$1'"; echo "$out"; exit 1
+  fi
+  # -F: fixed string, -x: whole line — labels are matched literally.
+  echo "$out" | grep -Fxq "[fluxo-bcv-ts] trigger=$2 preferEmbedded=$3" || {
+    echo "::error::wrong lifecycle line for '$1' (expected trigger=$2 preferEmbedded=$3)"
+    echo "$out"; exit 1
+  }
+  echo "$out" | grep -Fq "Syncs API from build dir to $4 dir for" || {
+    echo "::error::wrong baseline dir for '$1' (expected $4)"; echo "$out"; exit 1
+  }
+  echo "ok: '$1' -> trigger=$2, baselines in $4"
+}
+
+assert_mode "" external auto api
+assert_mode "-PpreferEmbedded=true" embedded true api/ts
+assert_mode "-PpreferEmbedded=false" external false api

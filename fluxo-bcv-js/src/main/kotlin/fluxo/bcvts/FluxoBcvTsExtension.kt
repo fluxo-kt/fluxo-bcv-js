@@ -20,8 +20,9 @@ import org.gradle.api.provider.Property
  *
  * ### Lifecycle observable (integration-test contract)
  *
- * Every build invocation that activates the pipeline emits exactly
- * one machine-parseable line to Gradle's lifecycle log:
+ * Each configuration run that activates the pipeline emits exactly one
+ * machine-parseable line to Gradle's lifecycle log (a build that reuses a
+ * configuration-cache entry skips configuration, so it prints none):
  *
  * ```
  * [fluxo-bcv-ts] trigger=<external|embedded> preferEmbedded=<auto|true|false>
@@ -36,34 +37,41 @@ import org.gradle.api.provider.Property
  * recommendation line follows (asking the consumer to migrate to
  * `preferEmbedded=true` once external BCV is removed); when a forced
  * preference cannot be satisfied, a fallback-notice line follows.
- * Format is stable across 1.x minor releases — `checks/dual` asserts
- * exact whole-line equality via `grep -Fxq`. External CI integrations
- * can rely on the same shape.
+ * Format is stable across 1.x minor releases — `checks/dual/sweep`
+ * asserts exact whole-line equality via `grep -Fxq`. External CI
+ * integrations can rely on the same shape.
  *
- * Marked `@Incubating` while the dual-mode contract beds in; the
- * stability commitment moment (removal of `@Incubating`) is targeted
- * for 1.2.0.
+ * Marked `@Incubating` while the dual-mode contract beds in: 1.2.0
+ * changed what `preferEmbedded` does, so removal of `@Incubating` is
+ * targeted for 1.3.0.
  */
 @Incubating
 public interface FluxoBcvTsExtension {
     /**
-     * Decides which trigger path runs the `.d.ts` pipeline when both
-     * the external KotlinX BCV plugin AND KGP-embedded `abiValidation`
-     * are observable on the project:
+     * Decides which validator drives the `.d.ts` pipeline when both the
+     * external KotlinX BCV plugin AND KGP-embedded `abiValidation` are
+     * active. The choice sets where baselines live and which opt-outs apply:
      *
-     * - **unset / `null`** (AUTO, the default): if only one validator
-     *   source is active, that one is used; if both are active, the
-     *   external plugin is preferred (1.0.x backward-compat) and a
-     *   one-shot recommendation is logged.
-     * - **`true`**: force the KGP-embedded path even when external BCV
-     *   is applied. Falls back to external silently if embedded turns
-     *   out not to be enabled.
-     * - **`false`**: force the external-BCV path. Falls back to
-     *   embedded silently if external is absent.
+     * - **external**: BCV's `apiDumpDirectory`, BCV's layout (`api/` for a
+     *   single JVM target, `api/<target>/` otherwise), and BCV's
+     *   `ignoredProjects` / `validationDisabled`.
+     * - **embedded**: KGP's `abiValidation { referenceDumpDir }` (default
+     *   `api/`), always per target (`api/ts/`, `api/wasmTs/`), and no BCV
+     *   opt-outs.
      *
-     * In all cases the trigger emits a `[fluxo-bcv-ts] trigger=…
-     * preferEmbedded=…` lifecycle line so the resolved choice is
-     * machine-observable in CI / build scans.
+     * Values:
+     * - **unset / `null`** (AUTO, the default): the only active validator,
+     *   or external when both are active, plus a logged recommendation.
+     * - **`true`**: embedded even when external BCV is applied. Switching
+     *   moves the `.d.ts` baselines, so run `apiDump` once and commit them.
+     *   Falls back to external, with a logged reason, if embedded validation
+     *   is not enabled, or if the external BCV is older than 0.15 (its
+     *   `apiDump` syncs the whole dump dir and would delete the baselines).
+     * - **`false`**: external; falls back to embedded, with a logged
+     *   reason, if the external plugin is absent.
+     *
+     * The resolved choice is printed as the
+     * `[fluxo-bcv-ts] trigger=… preferEmbedded=…` lifecycle line.
      */
     @get:Incubating
     public val preferEmbedded: Property<Boolean>

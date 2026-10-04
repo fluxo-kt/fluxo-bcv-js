@@ -13,6 +13,7 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.DomainObjectCollection
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.api.file.Directory
 import org.gradle.api.file.RegularFile
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.TaskProvider
@@ -64,12 +65,14 @@ private fun apiCheckEnabled(projectName: String, bcv: ApiValidationExtension?): 
  *
  * @see kotlinx.validation.BinaryCompatibilityValidatorPlugin.configureMultiplatformPlugin
  */
-internal fun Project.configureTsApiTasks() {
+internal fun Project.configureTsApiTasks(useEmbedded: Boolean) {
     if (!validateKotlinVersion()) {
         return
     }
 
-    val bcv: ApiValidationExtension? = apiValidationExtensionOrNull
+    // Embedded mode must not read BCV at all: its dump dir, layout and opt-outs
+    // belong to the validator the user chose to leave.
+    val bcv: ApiValidationExtension? = if (useEmbedded) null else apiValidationExtensionOrNull
     if (!apiCheckEnabled(name, bcv)) {
         logger.info("{} API checks are disabled for {}", KTS_API, path)
         return
@@ -92,7 +95,16 @@ internal fun Project.configureTsApiTasks() {
         )
     }
 
+    // `dumpDirectory` (relative) also names the build output dir, which COMMON
+    // mode shares with BCV. Baselines are read and written in `referenceDumpDir`:
+    // embedded mode follows KGP's `referenceDumpDir`, so `.d.ts` baselines sit
+    // next to KGP's own ABI dumps wherever the user moved them.
     val dumpDirectory = bcv.apiDumpDirectoryCompat
+    val defaultDumpDir = layout.projectDirectory.dir(dumpDirectory)
+    val referenceDumpDir: Provider<Directory> = when {
+        useEmbedded -> kgpReferenceDumpDirCompat?.orElse(defaultDumpDir)
+        else -> null
+    } ?: provider { defaultDumpDir }
 
     // Common BCV tasks for multiplatform
     // Create the own ones (for the raw Kotlin/JS module)
@@ -125,12 +137,11 @@ internal fun Project.configureTsApiTasks() {
     // API isn't overrided in any way as an extension is different.
     // The `COMMON` strategy wires `bcvCheckCleaner` tasks against BCV's
     // `${target}ApiCheck`; that task only exists when the external BCV
-    // plugin is applied. In embedded-only mode (KGP `abiValidation`
-    // without external BCV), fall through to `TARGET_DIR` so the
-    // cleaner branch is never reached — independent of `preferEmbedded`
-    // and of how many BCV-platform targets the project declares.
+    // plugin is applied, and only matters when BCV drives. Embedded mode
+    // (no BCV, or `preferEmbedded = true`) is always `TARGET_DIR`, so the
+    // cleaner branch is never reached, whatever BCV-platform targets exist.
     val dirConfig = provider {
-        if (!plugins.hasPlugin(PLUGIN_ID_BCV)) {
+        if (useEmbedded) {
             return@provider DirConfig.TARGET_DIR
         }
         val bcvTargets = targets.filter {
@@ -156,7 +167,7 @@ internal fun Project.configureTsApiTasks() {
     }
     val state = FluxoBcvTsState(
         singleTarget = singleTarget,
-        apiDumpDir = dumpDirectory,
+        referenceDumpDir = referenceDumpDir,
         dirConfig = dirConfig,
         commonApiDump = apiDump,
         commonApiCheck = apiCheck,
@@ -264,6 +275,7 @@ private fun Project.configureTarget(
     val targetConfig = TargetConfig(
         project = target.project,
         apiDumpDirectory = state.apiDumpDir,
+        referenceDumpDir = state.referenceDumpDir,
         targetTsName = targetTsName,
         targetName = targetName,
         dirConfig = state.dirConfig,
@@ -348,7 +360,10 @@ private fun Project.configureCheckTasks(
             apiBuildTask.map { it.enabled }.getOrElse(true)
         group = OTHER_GROUP
 
-        val dirName = config.apiDirName.get()
+        // Reports the RESOLVED baseline dir (checks/dual's sweep asserts it per
+        // trigger). `/` on every OS; absolute when outside the project.
+        val dirName = config.apiDir.get().asFile
+            .relativeToOrSelf(project.projectDir).invariantSeparatorsPath
         description = "Syncs API from build dir to $dirName dir for :${project.name}"
 
         dependsOn(apiBuildTask)

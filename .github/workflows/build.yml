@@ -307,46 +307,11 @@ jobs:
         if: always() && matrix.os == 'ubuntu'
         timeout-minutes: 12
         working-directory: checks/dual
-        # Both external BCV AND KGP-embedded `abiValidation` applied —
-        # the migration-window cell. Sweeps `preferEmbedded={auto,true,
-        # false}` and asserts the lifecycle observable's contract:
-        #   AUTO    → trigger=external + migrate-to-embedded recommendation
-        #   true    → trigger=embedded (no recommendation)
-        #   false   → trigger=external (no recommendation)
-        # The baseline `.d.ts` byte content is identical across all
-        # three (path is observable, output isn't) — that property is
-        # preserved implicitly by all three runs passing apiCheck
-        # against the same committed baselines.
+        # Both external BCV AND KGP-embedded `abiValidation` (the migration
+        # cell). `sweep` runs all three preferEmbedded modes and asserts the
+        # lifecycle line and the resolved baseline layout for each.
         shell: bash
-        run: |
-          set -euo pipefail
-          # `--no-configuration-cache` is load-bearing: the lifecycle log
-          # fires in `afterEvaluate` (config-time). With CC enabled and a
-          # warm cache, the second invocation would skip configuration and
-          # the assertion would silently pass on the CACHED log, not the
-          # current trigger decision. checks/dual runs with CC ON (its
-          # gradle.properties links to checks/gradle.properties), so this
-          # flag is what makes every invocation re-run configuration.
-          assert_observable() {  # $1=invocation args  $2=expected trigger  $3=expected preferEmbedded label
-            local out
-            # `${1:+"$1"}`: no argument for the AUTO case's "" (a quoted empty
-            # string would reach Gradle as a task name), one word otherwise.
-            out=$(./gradlew apiCheck ${1:+"$1"} --rerun-tasks --no-configuration-cache 2>&1)
-            # `grep -Fxq`: Fixed-strings (no regex interpretation) +
-            # eXact whole-line match + Quiet. Strictly stronger than
-            # the earlier anchored regex — even if a future arg label
-            # carries `.`/`+`/`*`/`?` (e.g. a new `preferEmbedded`
-            # mode label or alternate trigger keyword), `-F` treats
-            # those as literal bytes, eliminating the silent
-            # false-positive class entirely. No future maintainer
-            # adding a 4th `assert_observable` call needs to remember
-            # which characters to escape.
-            echo "$out" | grep -Fxq "[fluxo-bcv-ts] trigger=$2 preferEmbedded=$3" \
-              || { echo "::error::missing/wrong lifecycle observable for $1 (expected trigger=$2 preferEmbedded=$3)"; echo "$out"; exit 1; }
-          }
-          assert_observable "" external auto
-          assert_observable "-PpreferEmbedded=true"  embedded true
-          assert_observable "-PpreferEmbedded=false" external false
+        run: ./sweep
         env:
           GITHUB_DEPENDENCY_GRAPH_ENABLED: false
 
