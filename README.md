@@ -64,7 +64,7 @@ Compatibility tested with:
 plugins {
   kotlin("multiplatform") version "2.4.20" // <-- any Kotlin 1.7.22+ (see Compatibility above)
   id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.18.2" // <-- 0.8 .. 0.18.2
-  id("io.github.fluxo-kt.binary-compatibility-validator-js") version "1.1.0" // <-- add here
+  id("io.github.fluxo-kt.binary-compatibility-validator-js") version "1.2.0" // <-- add here
 }
 kotlin {
   js(IR) {
@@ -102,7 +102,7 @@ pluginManagement {
   }
   resolutionStrategy.eachPlugin {
     if (requested.id.toString() == "io.github.fluxo-kt.binary-compatibility-validator-js")
-      useModule("com.github.fluxo-kt.fluxo-bcv-js:fluxo-bcv-ts:1.1.0") // <-- specify a release tag or a commit.
+      useModule("com.github.fluxo-kt.fluxo-bcv-js:fluxo-bcv-ts:1.2.0") // <-- specify a release tag or a commit.
   }
 }
 ```
@@ -135,7 +135,7 @@ Switching a project to embedded mode therefore moves its baselines: run `./gradl
 // in the `build.gradle.kts` of the target module.
 plugins {
   kotlin("multiplatform") version "2.4.20"
-  id("io.github.fluxo-kt.binary-compatibility-validator-js") version "1.1.0"
+  id("io.github.fluxo-kt.binary-compatibility-validator-js") version "1.2.0"
   // NOTE: NO `org.jetbrains.kotlinx.binary-compatibility-validator` —
   // embedded mode replaces the external plugin entirely.
 }

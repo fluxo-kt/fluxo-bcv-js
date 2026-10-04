@@ -5,6 +5,9 @@
 
 [//]: # (Changed, Added, Removed, Fixed, Updated)
 
+
+## [1.2.0] - 2026-10-04
+
 ### Changed
 - A target with both `binaries.library()` and `binaries.executable()`
   now links only the library binary for its `.d.ts` API tasks (both
@@ -18,6 +21,8 @@
   moves to 1.3.0.
 
 ### Updated
+- Tested with Kotlin up to 2.5.0-Beta1, BCV up to 0.18.2, and Gradle
+  7.6.6, 8.14.5 and 9.8.0.
 - `java-diff-utils` 4.12 → 4.17, the plugin's only runtime dependency.
   When the external BCV plugin is also applied, Gradle resolves one
   version for both; BCV 0.14+ uses only APIs unchanged in 4.17.
@@ -312,6 +317,7 @@ _Minor update release._
 
 ## Notes
 
+[1.2.0]: https://github.com/fluxo-kt/fluxo-bcv-js/releases/tag/v1.2.0
 [1.1.0]: https://github.com/fluxo-kt/fluxo-bcv-js/releases/tag/v1.1.0
 [1.0.0]: https://github.com/fluxo-kt/fluxo-bcv-js/releases/tag/v1.0.0
 [0.3.0]: https://github.com/fluxo-kt/fluxo-bcv-js/releases/tag/v0.3.0
