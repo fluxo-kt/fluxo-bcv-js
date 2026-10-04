@@ -230,7 +230,10 @@ jobs:
         # deprecated for removal (Detekt 1.23: `ReportingExtension.file`;
         # BCV: `Configuration.setVisible`). Re-check with `--warning-mode=all`
         # after bumping either.
-        run: ./gradlew build assemble check :plugin:publishAllPublicationsToChecksRepository --continue --stacktrace --scan
+        # Unqualified `dependencyGuard`: the root project has no `check` task,
+        # so its buildscript-classpath baseline (dependencies/classpath.txt)
+        # is verified only when named here.
+        run: ./gradlew build assemble check dependencyGuard :plugin:publishAllPublicationsToChecksRepository --continue --stacktrace --scan
 
       - name: Upload sarif report (Detekt)
         if: always()
