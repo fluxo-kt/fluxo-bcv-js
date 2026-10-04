@@ -12,6 +12,11 @@ the user.**
   check; concurrency group de-dupes. **NEVER re-add `pull_request:
   branches-ignore`** — it matches the PR *base*, so ignoring `dev` (default
   branch) silently disables builds for every feature PR.
+- **Before committing any workflow edit, run `actionlint` with NO arguments** from
+  the repo root: that is the scope `actionlint.yml` checks on every PR (all
+  workflows). A file argument checks only that file, so a broken sibling you
+  also touched stays invisible. YAML parse errors (e.g. an unquoted `: ` in a
+  step `name:`) make GitHub reject the whole workflow.
 - `codeql.yml`: SAST, advisory, NOT required; builds ONLY `:plugin` (see below).
 - `release.yml`: `v*` tags. `pr-fast-forward.yml`: `/ff` merge via PR comment.
   `pr-baseline.yml`: baseline regen via comment. `dependency-submission.yml`:
