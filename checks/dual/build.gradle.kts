@@ -11,8 +11,11 @@
 // across all three sub-cases — the *path* is observable, the *output*
 // is not.
 
+// Newest STABLE Kotlin (`kotlin`, the build-side version): latest/kgp-only
+// already cover the preview, so this keeps a consumer cell on the release
+// most users actually run.
 plugins {
-    kotlin("multiplatform") version libs.versions.kotlinLatest
+    kotlin("multiplatform") version libs.versions.kotlin
     id("org.jetbrains.kotlinx.binary-compatibility-validator") version libs.versions.bcvLatest
     id("io.github.fluxo-kt.binary-compatibility-validator-js")
 }
