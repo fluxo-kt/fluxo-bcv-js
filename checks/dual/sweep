@@ -17,8 +17,13 @@ assert_mode() {  # $1=gradle args  $2=trigger  $3=preferEmbedded label  $4=js ba
   # time, so a reused CC entry would skip it and grep the previous run's state.
   # `${1:+"$1"}`: no argument for AUTO's "" (a quoted empty string would reach
   # Gradle as a task name), one word otherwise.
+  # `tr -d '\r'`: Gradle on Windows ends lines with CRLF, and a trailing CR
+  # would make every whole-line match below fail.
+  # No `--rerun-tasks`: the `.d.ts` compare tasks declare no outputs, so they
+  # run every time, and drift in either baseline layout still fails its mode;
+  # forcing a rebuild of everything only tripled the cost.
   if ! out=$(./gradlew apiCheck help --task tsApiDump ${1:+"$1"} \
-    --rerun-tasks --no-configuration-cache 2>&1); then
+    --no-configuration-cache 2>&1 | tr -d '\r'); then
     echo "::error::checks/dual failed for '$1'"; echo "$out"; exit 1
   fi
   # -F: fixed string, -x: whole line — labels are matched literally.
