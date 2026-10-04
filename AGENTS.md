@@ -281,6 +281,15 @@ Commits, flat `--ff-only` (`CONTRIBUTING.md`).
   pushed (how 1.1.0 release attempt #1 failed). The upstream fix is
   TODO at fluxo-kmp-conf — `setupPublication` should fail loud
   (throw) when its configured publish backend isn't loadable.
+- **Detekt and Android Lint run only because `fluxo-bcv-js/build.gradle.kts`
+  sets `setupVerification = true` and `enableGenericAndroidLint = true`.**
+  fluxo-kmp-conf 0.13+ defaults both to false and says nothing, so dropping
+  either line makes the `detekt*`/`lint*` tasks vanish while `check` stays
+  green. After a fluxo-kmp-conf bump, confirm
+  `./gradlew check --dry-run` still lists `:plugin:detektMain` and
+  `:plugin:lint`. Detekt 1.23.x reports false `UnreachableCode` right after
+  `methods.firstOrNull { … } ?: return@safe` in `CompatibilityUtils.kt`; Kotlin
+  compiles those lines warning-free, so they live in `detekt-baseline.xml`.
 - **POM metadata audits MUST cover the `gradlePlugin` extension too,
   not just POM XML.** plugin-publish 2.x validates
   `gradlePlugin.{website,vcsUrl}` independently of any POM `<url>` /

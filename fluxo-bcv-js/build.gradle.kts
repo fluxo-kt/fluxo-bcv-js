@@ -52,6 +52,11 @@ fkcSetupGradlePlugin(
     // Stdlib APIs newer than 1.7.10 are caught only by `checks/js-only`,
     // which runs the published jar on Gradle 7.6.
     useJdkRelease = true
+    // fluxo-kmp-conf 0.13+ defaults both to false: without them `check` runs
+    // neither Detekt (`detekt.yml`, `detekt-baseline.xml`) nor Android Lint
+    // for JVM modules, and the CI SARIF uploads stay empty.
+    setupVerification = true
+    enableGenericAndroidLint = true
     setupCoroutines = false
     allWarningsAsErrors = false
     // Test-only flag (Pass-8 source-trace of fluxo-kmp-conf

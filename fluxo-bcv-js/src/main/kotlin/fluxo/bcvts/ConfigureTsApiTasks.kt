@@ -13,7 +13,6 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.DomainObjectCollection
 import org.gradle.api.Project
 import org.gradle.api.Task
-import org.gradle.api.file.Directory
 import org.gradle.api.file.RegularFile
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.TaskProvider
@@ -298,7 +297,6 @@ private fun configureKotlinCompilation(
     }
 
     project.configureCheckTasks(
-        buildDir,
         buildFile,
         apiBuildTask,
         state,
@@ -307,7 +305,6 @@ private fun configureKotlinCompilation(
 }
 
 private fun Project.configureCheckTasks(
-    buildDir: Provider<Directory>,
     buildFile: Provider<RegularFile>,
     apiBuildTask: TaskProvider<out Task>,
     state: FluxoBcvTsState,

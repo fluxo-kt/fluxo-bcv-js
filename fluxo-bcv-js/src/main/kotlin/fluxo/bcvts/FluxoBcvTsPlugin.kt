@@ -135,29 +135,38 @@ public class FluxoBcvTsPlugin : Plugin<Project> {
             val preferenceLabel = preference?.toString() ?: "auto"
             logger.lifecycle("$LIFECYCLE_TAG trigger=$trigger preferEmbedded=$preferenceLabel")
 
-            if (preference == null && external && embedded) {
-                logger.lifecycle(
-                    "$LIFECYCLE_TAG both external BCV and KGP-embedded abiValidation " +
-                        "are active; using external (AUTO). Consider " +
-                        "`fluxoBcvTs { preferEmbedded.set(true) }` to migrate once " +
-                        "external BCV is removed (it is in maintenance mode upstream).",
-                )
-            }
-            if (preference == true && !embedded) {
-                logger.lifecycle(
-                    "$LIFECYCLE_TAG preferEmbedded=true but KGP-embedded abiValidation " +
-                        "is not enabled — falling back to external BCV. " +
-                        "Set `kotlin { abiValidation { enabled.set(true) } }` " +
-                        "(requires @OptIn(ExperimentalAbiValidation::class)).",
-                )
-            }
-            if (preference == false && !external) {
-                logger.lifecycle(
-                    "$LIFECYCLE_TAG preferEmbedded=false but external BCV plugin is " +
-                        "not applied — falling back to KGP-embedded abiValidation.",
-                )
-            }
+            logTriggerFallbacks(preference, external, embedded)
             configureTsApiTasks()
+        }
+    }
+
+    /** Explains why the resolved trigger differs from, or may soon differ from, the preference. */
+    private fun Project.logTriggerFallbacks(
+        preference: Boolean?,
+        external: Boolean,
+        embedded: Boolean,
+    ) {
+        if (preference == null && external && embedded) {
+            logger.lifecycle(
+                "$LIFECYCLE_TAG both external BCV and KGP-embedded abiValidation " +
+                    "are active; using external (AUTO). Consider " +
+                    "`fluxoBcvTs { preferEmbedded.set(true) }` to migrate once " +
+                    "external BCV is removed (it is in maintenance mode upstream).",
+            )
+        }
+        if (preference == true && !embedded) {
+            logger.lifecycle(
+                "$LIFECYCLE_TAG preferEmbedded=true but KGP-embedded abiValidation " +
+                    "is not enabled — falling back to external BCV. " +
+                    "Set `kotlin { abiValidation { enabled.set(true) } }` " +
+                    "(requires @OptIn(ExperimentalAbiValidation::class)).",
+            )
+        }
+        if (preference == false && !external) {
+            logger.lifecycle(
+                "$LIFECYCLE_TAG preferEmbedded=false but external BCV plugin is " +
+                    "not applied — falling back to KGP-embedded abiValidation.",
+            )
         }
     }
 }

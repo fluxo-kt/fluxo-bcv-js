@@ -36,12 +36,11 @@ echo "===================================="
 # npm-toolchain-independent). Kotlin regenerates the store per build.
 # See .gitignore + AGENTS.md "Surprises & gotchas".
 
-# Root plugin module — has dependencyGuardBaseline. `detekt`-baseline
-# and Android-lint-baseline tasks DO NOT exist in this build (pure
-# JVM-Kotlin plugin, no `detekt --baseline` task wiring, no AGP). Do
-# not reintroduce `detektBaselineMerge` / `updateLintBaseline` unless
-# the underlying plugins are wired in (and then update this comment).
-./gradlew ${COMMON_TASKS} dependencyGuardBaseline || EXIT_CODE=101
+# Root plugin module — has dependencyGuardBaseline, plus the Detekt and
+# Android Lint baseline tasks, which exist only while
+# `fluxo-bcv-js/build.gradle.kts` sets `setupVerification` and
+# `enableGenericAndroidLint` (fluxo-kmp-conf 0.13+ defaults both off).
+./gradlew ${COMMON_TASKS} dependencyGuardBaseline detektBaselineMerge updateLintBaseline || EXIT_CODE=101
 
 echo ""
 echo "=======> checks/latest"

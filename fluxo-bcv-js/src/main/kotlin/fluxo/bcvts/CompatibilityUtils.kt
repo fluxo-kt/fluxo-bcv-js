@@ -300,11 +300,20 @@ private fun Project.abiLookup(): Boolean? {
     // the tasks (or where naming has drifted further). Preserves the
     // 2.2/2.3 contract where `enabled: Property<Boolean>` is the opt-
     // in signal.
-    val kotlinExt: Any = extensions.findByName("kotlin") ?: return null
-    // Scopes to probe: the kotlin extension itself (top-level
-    // `kotlin { abiValidation { } }`) plus every target (per-target
-    // `kotlin { jvm { abiValidation { } } }` — KMP fanout shape).
-    val scopes = mutableListOf<Any>(kotlinExt)
+    val abiExts = extensions.findByName("kotlin")?.abiScopes()
+        ?.mapNotNull { it.findAbiExt() }
+        .orEmpty()
+    return if (abiExts.isEmpty()) null else abiExts.any { it.readAbiEnabled() == true }
+}
+
+/**
+ * Scopes to probe for an ABI extension: the kotlin extension itself (top-level
+ * `kotlin { abiValidation { } }`) plus every target (per-target
+ * `kotlin { jvm { abiValidation { } } }` — KMP fanout shape).
+ */
+private fun Any.abiScopes(): List<Any> {
+    val kotlinExt = this
+    val scopes = mutableListOf(kotlinExt)
     safe<Unit> {
         val getTargets = kotlinExt.javaClass.methods.firstOrNull {
             it.name == "getTargets" && it.parameterCount == 0
@@ -313,13 +322,7 @@ private fun Project.abiLookup(): Boolean? {
             if (tgt != null) scopes.add(tgt)
         }
     }
-    var detected = false
-    for (scope in scopes) {
-        val abi = scope.findAbiExt() ?: continue
-        detected = true
-        if (abi.readAbiEnabled() == true) return true
-    }
-    return if (detected) false else null
+    return scopes
 }
 
 /**
