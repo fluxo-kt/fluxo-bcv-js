@@ -67,7 +67,7 @@ fkcSetupGradlePlugin(
         developerName = "Artyom Shendrik"
         developerEmail = "artyom.shendrik@gmail.com"
         // NB: `projectUrl`/`publicationUrl` are deliberately NOT set
-        // here. fluxo-kmp-conf 0.14.x propagates those into
+        // here. fluxo-kmp-conf 0.14+ propagates those into
         // `gradlePlugin.{website,vcsUrl}` ONLY when the Vanniktech
         // maven-publish plugin is applied (`SetupVanniktechPublication
         // .kt:136-146`). We don't apply Vanniktech (no Maven Central
@@ -88,7 +88,7 @@ fkcSetupGradlePlugin(
 }
 
 // Project-level `version` MUST be set AFTER `fkcSetupGradlePlugin`:
-// fluxo-kmp-conf 0.14.x configures its own `publicationConfig.version`
+// fluxo-kmp-conf 0.14+ configures its own `publicationConfig.version`
 // (which targets only the main `PluginMavenPublication`) but does NOT
 // propagate the value back to `project.version`. The
 // `com.gradle.plugin-publish` plugin then auto-generates a SECOND
@@ -108,7 +108,7 @@ version = pluginVersion
 
 // Restore the 1.0.x main-publication artifactId AND the POM metadata
 // (name/description/url/licenses/developers/scm) that fluxo-kmp-conf
-// 0.14.x stopped wiring into the `PluginMavenPublication`. Two
+// 0.14+ stopped wiring into the `PluginMavenPublication`. Two
 // related regressions from the same upstream surface change:
 //
 // 1. artifactId — fluxo-kmp-conf's `SetupPublication.kt:559` rewrites
@@ -120,7 +120,7 @@ version = pluginVersion
 // 2. POM metadata — 1.0.x's published POM at
 //    plugins.gradle.org/m2/io/github/fluxo-kt/fluxo-bcv-ts/1.0.0/
 //    has full <name>/<description>/<url>/<licenses>/<developers>/<scm>;
-//    fluxo-kmp-conf 0.14.x's PluginMavenPublication ships them as
+//    fluxo-kmp-conf 0.14+'s PluginMavenPublication ships them as
 //    empty (the marker POM has them because `com.gradle.plugin-publish`
 //    populates the marker itself from `displayName`/`description`).
 //    Plugin Portal accepts incomplete POMs but Maven Central / OSSRH
@@ -180,7 +180,7 @@ publishing.repositories.maven {
     url = uri(layout.buildDirectory.dir("checks-repo"))
 }
 
-// Workarounds for fluxo-kmp-conf 0.14.x publication-setup gaps. The
+// Workarounds for fluxo-kmp-conf 0.14+ publication-setup gaps. The
 // same root cause underlies BOTH:
 // fluxo-kmp-conf's `setupPublication` (`SetupPublication.kt:89`)
 // reads `useVanniktechPublish` (default `true`) and routes to either
@@ -222,7 +222,7 @@ pluginExt.vcsUrl.set("$projectUrl/tree/v${project.version}")
 // where a fluxo-kmp-conf API gap or upstream surface change leaves
 // a publish-time required field blank — historically (1.1.0 release
 // attempt #1) `gradlePlugin.{website,vcsUrl}` were left null by
-// fluxo-kmp-conf 0.14.x, surfacing only inside `release.yml`'s
+// fluxo-kmp-conf 0.14+, surfacing only inside `release.yml`'s
 // `publishPlugins` execution AFTER the signed tag had been pushed.
 // All fields here correspond either to plugin-publish 2.x's runtime
 // validation OR to manual workarounds wired above (project.version,
@@ -289,7 +289,7 @@ val verifyPluginPortalMetadata = tasks.register("verifyPluginPortalMetadata") {
                     errors.joinToString("\n") { "  - $it" } +
                     "\nFix in fluxo-bcv-js/build.gradle.kts or upstream " +
                     "fluxo-kmp-conf integration; see AGENTS.md > " +
-                    "\"Surprises & gotchas\" for fluxo-kmp-conf 0.14.x gaps.",
+                    "\"Surprises & gotchas\" for fluxo-kmp-conf 0.14+ gaps.",
             )
         }
     }

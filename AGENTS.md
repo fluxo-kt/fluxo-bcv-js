@@ -238,7 +238,7 @@ Commits, flat `--ff-only` (`CONTRIBUTING.md`).
   `.github/AGENTS.md`.
 - **`project.version` MUST be assigned AFTER `fkcSetupGradlePlugin`**
   (`fluxo-bcv-js/build.gradle.kts`, near `version = pluginVersion`).
-  fluxo-kmp-conf 0.14.x configures `publicationConfig.version`
+  fluxo-kmp-conf 0.14+ configures `publicationConfig.version`
   (which only flows to the main `PluginMavenPublication`) but does
   NOT propagate the value back to `project.version`. The
   `com.gradle.plugin-publish` plugin then auto-generates a SECOND
@@ -253,7 +253,7 @@ Commits, flat `--ff-only` (`CONTRIBUTING.md`).
   (e.g. next to `group =`) is silently overwritten by
   `fkcSetupGradlePlugin`'s internal configuration. Upstream fix is
   TODO at fluxo-kmp-conf.
-- **fluxo-kmp-conf 0.14.x silently no-ops publication setup when
+- **fluxo-kmp-conf 0.14+ silently no-ops publication setup when
   Vanniktech isn't applied.** `setupPublication` defaults
   `useVanniktechPublish = true`. With no Vanniktech maven-publish
   plugin in our `plugins {}` block, fluxo-kmp-conf takes the Vanniktech
