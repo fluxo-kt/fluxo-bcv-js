@@ -116,10 +116,10 @@ jobs:
               exit 1
             }
           }
-          expect .                  '9\.5\.1'
-          expect checks/latest      '9\.5\.1'
-          expect checks/kgp-only    '9\.5\.1'
-          expect checks/dual        '9\.5\.1'
+          expect .                  '9\.8\.0'
+          expect checks/latest      '9\.8\.0'
+          expect checks/kgp-only    '9\.8\.0'
+          expect checks/dual        '9\.8\.0'
           expect checks/middle      '8\.14\.5'
           expect checks/js-only     '7\.6\.6'
 
