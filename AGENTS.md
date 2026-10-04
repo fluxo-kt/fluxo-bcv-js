@@ -113,9 +113,13 @@ class — `fluxo.bcvts.FluxoBcvTsPlugin`. Plugin ID:
 ./gradlew :plugin:apiCheck       # plugin's own JVM API baseline
 ./gradlew :plugin:apiDump        # refresh plugin.api after API change
 
-# Composite-build smoke tests — must cd in
+# Check cells: run each with ITS OWN wrapper (cells pin different Gradle
+# versions). Root `./gradlew -p checks/<cell>` runs ROOT's Gradle on the cell.
 (cd checks/latest && ./gradlew apiCheck)
-(cd checks/js-only && ./gradlew apiCheck)
+checks/middle/gradlew -p checks/middle apiCheck
+# js-only = Gradle 7.6: needs JDK 17 and the plugin published first
+./gradlew :plugin:publishAllPublicationsToChecksRepository
+(cd checks/js-only && JAVA_HOME=<jdk17> ./gradlew apiCheck)
 
 ./updateBaseline                 # refresh ALL baselines (root + checks/*)
                                  # api dumps + dependency-guard
