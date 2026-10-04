@@ -229,13 +229,17 @@ Commits, flat `--ff-only` (`CONTRIBUTING.md`).
 - **Sigstore signing is RELEASE-only** (1.1.0+). `dev.sigstore.sign` auto-wires
   `sigstoreSign*Publication` into **every** `MavenPublication`'s publish chain —
   incl. `publishToMavenLocal`, so without a gate the canonical local-consumer
-  smoke test blocks on a browser-OIDC prompt. `build.gradle.kts` gates with
-  `onlyIf { providers.environmentVariable("RELEASE").orNull == "true" }` AND
-  `notCompatibleWithConfigurationCache(...)` (Sigstore 2.0.x
-  `SigstoreSignFilesTask` captures a `DefaultProject` ref → fatal under our
-  strict CC `problems=fail max-problems=0`). Force-test: `RELEASE=true ./gradlew
+  smoke test blocks on a browser-OIDC prompt. `build.gradle.kts` gates it with
+  an `onlyIf` on `RELEASE=true`. Force-test: `RELEASE=true ./gradlew
   :plugin:publishToMavenLocal`. Release-side bundle attach/naming/verification →
   `.github/AGENTS.md`.
+- **A CC "cannot serialize DefaultProject / script object" error on a
+  third-party task may be OUR lambda.** In `build.gradle.kts`, an `onlyIf`/
+  `doLast` that reads `providers`, `project` or any script-level `val`
+  captures the script object (and the Project). Capture into a val declared
+  INSIDE the configuring block. The Sigstore tasks were wrongly marked
+  `notCompatibleWithConfigurationCache` because of exactly this; before
+  opting a task out of CC, retry with a block-local capture.
 - **`project.version` MUST be assigned AFTER `fkcSetupGradlePlugin`**
   (`fluxo-bcv-js/build.gradle.kts`, near `version = pluginVersion`).
   fluxo-kmp-conf 0.14+ configures `publicationConfig.version`

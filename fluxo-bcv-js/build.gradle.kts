@@ -333,21 +333,16 @@ tasks.named("check") { dependsOn(verifyPluginPortalMetadata) }
 // the Sigstore path locally, run with `RELEASE=true ./gradlew ...`
 // (opt-in; the developer accepts the OIDC ceremony).
 //
-// `notCompatibleWithConfigurationCache` is also required:
-// `dev.sigstore.sign 2.0.x–2.1.x` (`SigstoreSignFilesTask`) captures a
-// `DefaultProject` reference, which Gradle's configuration cache
-// refuses to serialize. With `org.gradle.configuration-cache.problems=fail`
-// + `max-problems=0` (gradle.properties), a fresh local
-// `publishToMavenLocal` would CC-fail at config-store time — BEFORE
-// `onlyIf` is even evaluated. Marking the task CC-incompatible bypasses
-// CC for just these tasks; the rest of the build still benefits from
-// CC. release.yml already passes `--no-configuration-cache`, so CI is
-// unaffected either way.
+// CC: the provider is captured in a block-local val. A lambda here that
+// reads `providers` (or any script-level val) captures the build-script
+// object and, through it, the Project, so strict CC refuses to store the
+// sign tasks. That failure was once blamed on `dev.sigstore.sign` and hidden
+// behind `notCompatibleWithConfigurationCache`; with the local capture both
+// 2.1.0 and 2.3.0 store cleanly (`RELEASE=true ./gradlew
+// :plugin:publishAllPublicationsToChecksRepository --dry-run`).
 tasks.matching { it.name.startsWith("sigstoreSign") }.configureEach {
-    onlyIf { providers.environmentVariable("RELEASE").orNull == "true" }
-    notCompatibleWithConfigurationCache(
-        "dev.sigstore.sign 2.0.x–2.1.x captures Project reference — upstream CC violation",
-    )
+    val release = providers.environmentVariable("RELEASE")
+    onlyIf { release.orNull == "true" }
 }
 
 configurations.implementation {
