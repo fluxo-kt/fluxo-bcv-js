@@ -16,6 +16,9 @@ fluxoBcvJs = "1.1.0"
 bcv = "0.18.1"
 bcvMin = "0.8.0"
 bcvLatest = "0.18.1"
+# `checks/middle` matrix interior: first BCV with the worker-isolation
+# classpath boundary. No alias references it, so Dependabot leaves it alone.
+bcvMiddle = "0.16.3"
 
 # Diffutils version — INTENTIONALLY anchored to BCV's transitive pin to
 # avoid classloader split-brain when consumers apply BOTH the external
@@ -57,6 +60,8 @@ kotlinMin = "1.7.22"
 # `checks/latest`, pin back to the build-side `kotlin` above, citing the
 # failing GH issue in a comment.
 kotlinLatest = "2.4.0"
+# `checks/middle` matrix interior: a 2.x stable line below the ceiling.
+kotlinMiddle = "2.2.21"
 
 # Dokka is a documentation engine for Kotlin/Java
 # https://github.com/Kotlin/dokka/releases

@@ -9,8 +9,8 @@
 // which point a bisect would have to cross multiple commits.
 
 plugins {
-    kotlin("multiplatform") version "2.2.21"
-    id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.16.3"
+    kotlin("multiplatform") version libs.versions.kotlinMiddle
+    id("org.jetbrains.kotlinx.binary-compatibility-validator") version libs.versions.bcvMiddle
     id("io.github.fluxo-kt.binary-compatibility-validator-js")
 }
 
