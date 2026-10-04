@@ -140,7 +140,7 @@ public class FluxoBcvTsPlugin : Plugin<Project> {
                     "$LIFECYCLE_TAG both external BCV and KGP-embedded abiValidation " +
                         "are active; using external (AUTO). Consider " +
                         "`fluxoBcvTs { preferEmbedded.set(true) }` to migrate once " +
-                        "external BCV is removed (it is frozen upstream).",
+                        "external BCV is removed (it is in maintenance mode upstream).",
                 )
             }
             if (preference == true && !embedded) {

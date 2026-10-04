@@ -8,8 +8,8 @@ class — `fluxo.bcvts.FluxoBcvTsPlugin`. Plugin ID:
 `io.github.fluxo-kt.binary-compatibility-validator-js`.
 
 ## Vibe & principles
-- **Compatibility is the product.** Must work across BCV 0.8–0.18.1
-  (upstream frozen at 0.18.1) × Kotlin 1.7.22–2.4 (`kotlinLatest` is
+- **Compatibility is the product.** Must work across BCV 0.8–0.18.x
+  (upstream in maintenance mode) × Kotlin 1.7.22–2.4 (`kotlinLatest` is
   bleeding-edge in `checks/latest`) × Gradle 7.6+. Plus the embedded
   KGP `abiValidation { }` path since 1.1.0 (Kotlin 2.2+).
   Reflection + `safe { }` shims in
@@ -147,8 +147,8 @@ verify **all** smoke modules still build: `checks/js-only` (floor),
 
 1.1.0 added the dual-mode contract: the plugin activates on EITHER the
 external BCV plugin (1.0.x behaviour) OR KGP-embedded `abiValidation { }`
-(Kotlin 2.2+). External BCV is **frozen** upstream at 0.18.1 — the
-matrix ceiling is the physical upstream ceiling, not an arbitrary pin.
+(Kotlin 2.2+). External BCV is in **maintenance mode** upstream (bug-fix
+releases only); new ABI features land in KGP-embedded validation.
 
 **Bumping build-side `kotlin` (the published-JAR compiler) is
 consumer-invisible — but FALSIFY across four independent channels, never

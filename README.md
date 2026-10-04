@@ -6,7 +6,7 @@
 [![Build](https://img.shields.io/github/check-runs/fluxo-kt/fluxo-bcv-js/dev?nameFilter=Build%20and%20check%20on%20ubuntu&label=Build)](../../actions/workflows/build.yml)
 [![Common Changelog](https://common-changelog.org/badge.svg)](CHANGELOG.md)
 
-[![KotlinX BCV Compatibility](http://img.shields.io/badge/KotlinX%20BCV-0.8%20--%200.18.1-7F52FF?logo=kotlin&logoWidth=10&logoColor=7F52FF&labelColor=2B2B2B)][bcv]
+[![KotlinX BCV Compatibility](http://img.shields.io/badge/KotlinX%20BCV-0.8%20--%200.18.2-7F52FF?logo=kotlin&logoWidth=10&logoColor=7F52FF&labelColor=2B2B2B)][bcv]
 [![Kotlin Compatibility](http://img.shields.io/badge/Kotlin-1.7.22+-7F52FF?logo=kotlin&logoWidth=10&logoColor=7F52FF&labelColor=2B2B2B)](https://github.com/JetBrains/Kotlin)
 [![Gradle Compatibility](http://img.shields.io/badge/Gradle-7.6+-f68244?logo=gradle&labelColor=2B2B2B)](https://gradle.org/releases/)
 
@@ -50,7 +50,7 @@ Compatibility tested with:
 |   0.2.0    |      0.8 - 0.13      | 1.6.20+ |  7.4+  |
 
 [^1]: "BCV" denotes the ABI-validation source — until 1.0.x only the external [KotlinX Binary Compatibility Validator][bcv]; in 1.1.0 also KGP-embedded `abiValidation { }` (Kotlin 2.2+).
-[^2]: External KotlinX BCV is [frozen at 0.18.1](https://github.com/Kotlin/binary-compatibility-validator/tree/0.18.1) — `0.18.1` is the physical ceiling, not an arbitrary pin.
+[^2]: External KotlinX BCV is [in maintenance mode](https://github.com/Kotlin/binary-compatibility-validator#readme): bug-fix releases only; new features go to KGP-embedded `abiValidation`.
 [^3]: KGP-embedded `abiValidation { }` activates the embedded mode without applying the external BCV plugin. Requires Kotlin 2.2+ and the consumer-side `@OptIn(ExperimentalAbiValidation::class)` ceremony. See [Dual-mode usage](#dual-mode-usage-110) below.
 
 
@@ -62,7 +62,7 @@ Compatibility tested with:
 // in the `build.gradle.kts` of the target module.
 plugins {
   kotlin("multiplatform") version "2.3.21" // <-- any Kotlin 1.7.22+ (see Compatibility above)
-  id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.18.1" // <-- 0.8 .. 0.18.1
+  id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.18.2" // <-- 0.8 .. 0.18.2
   id("io.github.fluxo-kt.binary-compatibility-validator-js") version "1.1.0" // <-- add here
 }
 kotlin {
@@ -82,7 +82,7 @@ kotlin {
 // in the `build.gradle.kts` of the target module.
 plugins {
   kotlin("multiplatform") version "2.3.21" // <-- any Kotlin 1.7.22+ (see Compatibility above)
-  id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.18.1" // <-- 0.8 .. 0.18.1
+  id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.18.2" // <-- 0.8 .. 0.18.2
   id("io.github.fluxo-kt.binary-compatibility-validator-js") // <-- add here, no version needed for jitpack usage
 }
 kotlin {
@@ -116,7 +116,7 @@ Module examples for:
 
 ### Dual-mode usage (1.1.0+)
 
-The external [KotlinX BCV][bcv] plugin is [frozen since 0.18.1](https://github.com/Kotlin/binary-compatibility-validator/tree/0.18.1). To survive the transition to KGP-embedded `abiValidation { }`, the plugin now activates on **either** trigger source:
+The external [KotlinX BCV][bcv] plugin is [in maintenance mode](https://github.com/Kotlin/binary-compatibility-validator#readme). To survive the transition to KGP-embedded `abiValidation { }`, the plugin now activates on **either** trigger source:
 
 - **external mode** — the external `org.jetbrains.kotlinx.binary-compatibility-validator` plugin is applied (the 1.0.x behaviour).
 - **embedded mode** — KGP-native `kotlin { abiValidation { } }` is configured (Kotlin 2.2+, opt-in via `@OptIn(ExperimentalAbiValidation::class)`).

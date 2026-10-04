@@ -13,9 +13,9 @@ fluxoBcvJs = "1.1.0"
 # Public API management tool
 # https://github.com/Kotlin/binary-compatibility-validator/releases
 # 0.13+ uses Kotlin metadata 0.6.0 (may conflict with AtomicFU!)
-bcv = "0.18.1"
+bcv = "0.18.2"
 bcvMin = "0.8.0"
-bcvLatest = "0.18.1"
+bcvLatest = "0.18.2"
 # `checks/middle` matrix interior: first BCV with the worker-isolation
 # classpath boundary. No alias references it, so Dependabot leaves it alone.
 bcvMiddle = "0.16.3"

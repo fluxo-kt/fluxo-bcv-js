@@ -3,7 +3,7 @@
 // the worker-isolation classpath boundary at #208/#256/#258). Catches
 // drift between the matrix endpoints — between the floor
 // (`checks/js-only`: Kotlin 1.7.22 + BCV 0.8.0) and the ceiling
-// (`checks/latest`: newest Kotlin + BCV 0.18.1). Without this cell,
+// (`checks/latest`: newest Kotlin + BCV). Without this cell,
 // regressions in the Kotlin 2.0→2.4 metadata rename or the BCV 0.14→0.16
 // reflective task-surface change would only surface on the ceiling, by
 // which point a bisect would have to cross multiple commits.
