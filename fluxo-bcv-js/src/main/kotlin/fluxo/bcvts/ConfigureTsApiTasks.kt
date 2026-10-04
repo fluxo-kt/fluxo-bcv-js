@@ -328,7 +328,7 @@ private fun Project.configureCheckTasks(
         )
     }
 
-    val apiDump = task<DefaultTask>(apiDumpTaskName) {
+    val apiDump = task<KotlinTsApiDumpTask>(apiDumpTaskName) {
         isEnabled = apiCheckEnabled(project.name, state.bcv) &&
             apiBuildTask.map { it.enabled }.getOrElse(true)
         group = OTHER_GROUP
@@ -337,17 +337,8 @@ private fun Project.configureCheckTasks(
         description = "Syncs API from build dir to $dirName dir for :${project.name}"
 
         dependsOn(apiBuildTask)
-
-        inputs.file(buildFile)
-        outputs.file(referenceFile)
-        doLast {
-            val source = buildFile.get().asFile
-            val target = referenceFile.get().asFile
-            source.copyTo(target, overwrite = true)
-            if (logger.isDebugEnabled) {
-                logger.debug(" >> Copied API file: {}", target)
-            }
-        }
+        builtFile.set(buildFile)
+        this.referenceFile.set(referenceFile)
     }
 
     // Special case
@@ -367,6 +358,8 @@ private fun Project.configureCheckTasks(
 
         // Avoid conflicts with bcvCheck task.
         // It doesn't like extra files in the build directory.
+        // A `doLast` lambda is CC-safe here only because COMMON implies the
+        // external BCV plugin (and its classes) is present; see KotlinTsApiDumpTask.
         val bcvCheckCleaner = tasks.maybeRegister(bcvCheckTaskName + "TsCompatCleaner") {
             group = OTHER_GROUP
             doLast {

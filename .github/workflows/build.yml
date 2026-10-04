@@ -284,7 +284,15 @@ jobs:
         # task-based detection shim, and the `DirConfig.TARGET_DIR`
         # short-circuit. Also runs `checkKotlinAbi` so KGP's KLIB ABI
         # baseline is verified in the same matrix invocation.
-        run: ./gradlew check checkKotlinAbi --continue --stacktrace --scan
+        # `apiDump --dry-run` stores AND reloads the configuration-cache entry
+        # for the dump tasks without writing baselines: the only no-BCV cell
+        # under CC, where a dump task restored from CC once failed on missing
+        # BCV classes. bash, so a failing first command fails the step on
+        # Windows too.
+        shell: bash
+        run: |
+          ./gradlew check checkKotlinAbi --continue --stacktrace --scan
+          ./gradlew apiDump --dry-run --stacktrace
         env:
           GITHUB_DEPENDENCY_GRAPH_ENABLED: false
 

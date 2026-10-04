@@ -13,6 +13,9 @@
 - Crash (`NoClassDefFoundError: kotlin/enums/EnumEntriesKt`) on Gradle
   7.6–8.1, whose embedded Kotlin stdlib predates `kotlin.enums`. The
   supported Gradle 7.6+ floor is now tested on Gradle 7.6.6.
+- `apiDump` failed with `NoClassDefFoundError:
+  kotlinx/validation/ApiValidationExtension` under configuration cache
+  in projects using only KGP-embedded `abiValidation` (no external BCV).
 
 
 ## [1.1.0] - 2026-05-18
