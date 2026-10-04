@@ -298,9 +298,9 @@ jobs:
           # fires in `afterEvaluate` (config-time). With CC enabled and a
           # warm cache, the second invocation would skip configuration and
           # the assertion would silently pass on the CACHED log, not the
-          # current trigger decision. checks/dual deliberately has no
-          # `gradle.properties` so CC is OFF by default today, but this
-          # flag makes the assertion robust against any future opt-in.
+          # current trigger decision. checks/dual runs with CC ON (its
+          # gradle.properties links to checks/gradle.properties), so this
+          # flag is what makes every invocation re-run configuration.
           assert_observable() {  # $1=invocation args  $2=expected trigger  $3=expected preferEmbedded label
             local out
             out=$(./gradlew apiCheck $1 --rerun-tasks --no-configuration-cache 2>&1)
