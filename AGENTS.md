@@ -51,7 +51,7 @@ class — `fluxo.bcvts.FluxoBcvTsPlugin`. Plugin ID:
 - `fluxo-bcv-js/src/main/kotlin/fluxo/bcvts/` — all sources, single package.
 - `fluxo-bcv-js/api/plugin.api` — JVM API baseline of the plugin itself.
 - `checks/latest/` — composite-build smoke, newest Kotlin+BCV, KMP
-  (`jvm + linuxX64 + js + wasmJs + wasmWasi`), root's Gradle.
+  (`jvm + js + wasmJs + wasmWasi`; no native target, see its build script), root's Gradle.
 - `checks/middle/` — matrix interior (`kotlinMiddle` + `bcvMiddle`, its own
   Gradle wrapper). Catches drift between floor and ceiling.
 - `checks/kgp-only/` — embedded-only path: KGP `abiValidation { }`,

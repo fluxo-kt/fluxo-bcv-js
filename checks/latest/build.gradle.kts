@@ -13,7 +13,10 @@ plugins {
 @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
 kotlin {
     jvm()
-    linuxX64()
+    // No native target: the plugin skips non-JS/Wasm targets (jvm and wasmWasi cover
+    // that), and BCV's KLIB dump already spans js/wasmJs/wasmWasi. A native target only
+    // made every CI run download the Kotlin/Native toolchain (~/.konan is not cached),
+    // up to a minute and a half per lane on Windows.
     // The build script enables TS generation itself, as real consumers do
     // (e.g. fluxo). KGP's `generateTypeScriptDefinitions()` is not idempotent,
     // so this cell covers the plugin's second call on an already-enabled target.
