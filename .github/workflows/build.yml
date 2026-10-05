@@ -237,10 +237,12 @@ jobs:
           # Floor: Gradle 7.6 cannot build the plugin (KGP 2.x, plugin-publish
           # 2.x), so root Gradle publishes it to fluxo-bcv-js/build/checks-repo
           # and the cell resolves the published plugin, on JDK 17 (Gradle 7.6
-          # runs on Java <= 19).
+          # runs on Java <= 19). No `--scan` on the 7.6 build: Gradle 7.6 does
+          # not know the `com.gradle.develocity` id, so `--scan` also applies
+          # the old Gradle Enterprise plugin and configuration fails on the pair.
           - lane: js-only
             dir: checks/js-only
-            run: ../../gradlew -p ../.. :plugin:publishAllPublicationsToChecksRepository --stacktrace && JAVA_HOME="$JDK17" ./gradlew check --continue --stacktrace --scan
+            run: ../../gradlew -p ../.. :plugin:publishAllPublicationsToChecksRepository --stacktrace && JAVA_HOME="$JDK17" ./gradlew check --continue --stacktrace
     steps: &lane-steps
       - *harden
       - *checkout
