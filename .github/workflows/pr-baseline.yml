@@ -58,7 +58,7 @@ jobs:
 
       - name: 'Set up JDK 17 (checks/js-only: Gradle 7.6 runs on Java <= 19)'
         id: jdk17
-        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: temurin
           java-version: '17'
