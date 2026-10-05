@@ -67,8 +67,10 @@ CodeQL is deliberately NOT required (advisory).
 
 ## README build badge = shields.io check-runs badge, NOT the Actions badge
 The workflow badge (`build.yml/badge.svg`) shows the latest *run on the branch*;
-under bot-`/ff` no build.yml run ever lands on protected `dev` (GITHUB_TOKEN
-push suppression) → it froze on a stale RED run while every PR was green. The
+bot-`/ff` merges trigger no build.yml run on `dev` (GITHUB_TOKEN push
+suppression; only the `schedule` and owner pushes build it) → it froze on a
+stale RED run while every PR was green. A scheduled run adds check runs to dev
+HEAD, so upstream drift on an unchanged `dev` can turn the shields badge red. The
 shields badge reads dev HEAD's per-SHA check status (same source the ruleset
 gates on, always fresh, zero compute):
 `…/github/check-runs/<owner>/<repo>/dev?nameFilter=Build%20and%20check%20on%20ubuntu&label=Build`.
