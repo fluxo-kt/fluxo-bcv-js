@@ -60,13 +60,15 @@ develocity {
 // ("Task with path '…' not found") instead of passing on nothing.
 tasks.named("check") { dependsOn("tsApiCheck", "wasmTsApiCheck") }
 
-// The Kotlin/JS npm toolchain tasks are off. The yarn installs (`KotlinNpmInstallTask`)
-// and the wasm tooling install (`KotlinToolingSetupTask`) feed only the JS/Wasm test
-// tasks, and these cells have no tests; the plugin's `.d.ts` tasks need only the link
-// tasks. On, the installs were most of every warm CI lane: yarn re-downloads its packages
-// on each fresh runner, and two installs serialise on yarn's machine-wide mutex.
-// The yarn-lock copy tasks (`LockCopyTask`: restore/store/upgrade) go with them: the locks
-// are never committed (AGENTS.md: kotlin-js-store), the store task would read a
+// These cells run no npm: the plugin's `.d.ts` tasks need only the link tasks, and the
+// npm toolchain feeds only JS/Wasm test tasks, which these cells lack. Left on, the yarn
+// installs (`KotlinNpmInstallTask`, the wasm `KotlinToolingSetupTask`) were most of every
+// warm CI lane: yarn re-downloads its packages on each fresh runner, and two installs
+// serialise on yarn's machine-wide mutex. `download = false` on the Node.js/Yarn specs
+// stops KGP fetching both distributions while configuring (disabling their setup tasks
+// does not), which kept ~100 MB per lane in the size-capped CI cache. Binaryen stays on:
+// wasm executable linking runs it. The yarn-lock copy tasks (`LockCopyTask`) go too: the
+// locks are never committed (AGENTS.md: kotlin-js-store), the store task would read a
 // `yarn.lock` no install wrote, and they failed `check` with "Lock file was changed"
 // after every Kotlin bump.
 tasks.withType<org.jetbrains.kotlin.gradle.targets.js.npm.LockCopyTask>()
@@ -75,3 +77,12 @@ tasks.withType<org.jetbrains.kotlin.gradle.targets.js.npm.tasks.KotlinNpmInstall
     .configureEach { enabled = false }
 tasks.withType<org.jetbrains.kotlin.gradle.targets.js.npm.tasks.KotlinToolingSetupTask>()
     .configureEach { enabled = false }
+for (schema in extensions.extensionsSchema) {
+    val spec = extensions.getByName(schema.name)
+    if (spec is org.jetbrains.kotlin.gradle.targets.web.nodejs.BaseNodeJsEnvSpec) {
+        spec.download.set(false)
+    }
+    if (spec is org.jetbrains.kotlin.gradle.targets.web.yarn.BaseYarnRootEnvSpec) {
+        spec.download.set(false)
+    }
+}

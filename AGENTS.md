@@ -341,9 +341,11 @@ Commits, flat `--ff-only` (`CONTRIBUTING.md`).
   the checks assert. So the KMP cells run no npm at all: their build scripts
   disable the yarn installs (`KotlinNpmInstallTask`, `KotlinToolingSetupTask`),
   which feed only test tasks these cells lack and were most of each warm CI
-  lane, plus the lock copy tasks (`LockCopyTask`), which failed `check` with
-  "Lock file was changed" after each Kotlin bump. A cell that gains JS/Wasm
-  tests must re-enable the installs; if it then needs pinned npm versions,
+  lane, set `download = false` on the Node.js/Yarn specs (KGP fetches both
+  while configuring even with their setup tasks off), and disable the lock
+  copy tasks (`LockCopyTask`), which failed `check` with "Lock file was
+  changed" after each Kotlin bump. A cell that gains JS/Wasm tests must undo
+  all of that; if it then needs pinned npm versions,
   rename the lock via `YarnRootExtension.lockFileName` (unindexed name).
 - ⚠ **Hit something else surprising? Add it here and tell the user.**
 
