@@ -48,10 +48,18 @@ develocity {
 // ("Task with path '…' not found") instead of passing on nothing.
 tasks.named("check") { dependsOn("tsApiCheck", "wasmTsApiCheck") }
 
-// Kotlin/JS yarn-lock copy tasks (restore/store/upgrade) are off: the locks are never
-// committed (AGENTS.md: kotlin-js-store), and the `.d.ts` baselines do not depend on
-// npm package versions, so the tasks guard nothing here. On, they failed `check` with
-// "Lock file was changed" after every Kotlin bump, and on Windows with Kotlin
-// 2.5.0-Beta1 the wasm store task failed because yarn wrote no `build/wasm/yarn.lock`.
+// The Kotlin/JS npm toolchain tasks are off. The yarn installs (`KotlinNpmInstallTask`)
+// and the wasm tooling install (`KotlinToolingSetupTask`) feed only the JS/Wasm test
+// tasks, and these cells have no tests; the plugin's `.d.ts` tasks need only the link
+// tasks. On, the installs were most of every warm CI lane: yarn re-downloads its packages
+// on each fresh runner, and two installs serialise on yarn's machine-wide mutex.
+// The yarn-lock copy tasks (`LockCopyTask`: restore/store/upgrade) go with them: the locks
+// are never committed (AGENTS.md: kotlin-js-store), the store task would read a
+// `yarn.lock` no install wrote, and they failed `check` with "Lock file was changed"
+// after every Kotlin bump.
 tasks.withType<org.jetbrains.kotlin.gradle.targets.js.npm.LockCopyTask>()
+    .configureEach { enabled = false }
+tasks.withType<org.jetbrains.kotlin.gradle.targets.js.npm.tasks.KotlinNpmInstallTask>()
+    .configureEach { enabled = false }
+tasks.withType<org.jetbrains.kotlin.gradle.targets.js.npm.tasks.KotlinToolingSetupTask>()
     .configureEach { enabled = false }

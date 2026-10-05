@@ -338,13 +338,13 @@ Commits, flat `--ff-only` (`CONTRIBUTING.md`).
   Kotlin/JS dev-toolchain transitives that are NEVER shipped (plugin runtime
   = java-diff-utils) + aborts security-update runs. The `.d.ts` baselines are
   compiler-derived (npm-toolchain-independent), so pinning protects nothing
-  the checks assert. So the KMP cells disable KGP's lock copy tasks
-  (`LockCopyTask`: restore/store/upgrade) and npm resolves fresh on every
-  install. Left on, they failed `check` with "Lock file was changed" after
-  each Kotlin bump and, on Windows with Kotlin 2.5.0-Beta1, on a missing
-  `build/wasm/yarn.lock`. Escape hatch if a floating npm transitive breaks a
-  check: re-enable them in that cell, rename via
-  `YarnRootExtension.lockFileName` (unindexed name) and commit the lock.
+  the checks assert. So the KMP cells run no npm at all: their build scripts
+  disable the yarn installs (`KotlinNpmInstallTask`, `KotlinToolingSetupTask`),
+  which feed only test tasks these cells lack and were most of each warm CI
+  lane, plus the lock copy tasks (`LockCopyTask`), which failed `check` with
+  "Lock file was changed" after each Kotlin bump. A cell that gains JS/Wasm
+  tests must re-enable the installs; if it then needs pinned npm versions,
+  rename the lock via `YarnRootExtension.lockFileName` (unindexed name).
 - ⚠ **Hit something else surprising? Add it here and tell the user.**
 
 ## What's NOT in this repo
