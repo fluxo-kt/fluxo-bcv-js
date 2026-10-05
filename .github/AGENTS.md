@@ -94,7 +94,8 @@ push, so:
   every PR's first run downloads all dependencies cold, which costs several
   times the lane's own work. PRs stay read-only (setup-gradle's
   default), so caches never pile up per PR and no cleanup workflow is needed.
-  Required checks still come from the PR run, attached to the merged SHA.
+  Required checks still come from the PR run, attached to the merged SHA. After
+  a dependency-changing merge, seed now: `gh workflow run build.yml --ref dev`.
 
 ## `${{ !env.X }}` / bare `env.X` in a boolean position = constant, not condition
 GitHub coerces a non-empty string → `true`, and an `env:` value is ALWAYS a

@@ -45,6 +45,10 @@ on:
   # failure here also flags upstream drift on an unchanged `dev`.
   schedule:
     - cron: '17 3 * * 1,4'
+  # Re-seed right after a merge that changes dependencies, instead of waiting for
+  # the schedule: `gh workflow run build.yml --ref dev` (a user token, so not
+  # suppressed like the `/ff` bot's push).
+  workflow_dispatch:
 
 # Cancel superseded runs on the same ref. Without this, rapid
 # force-pushes during PR iteration spawn parallel runs
