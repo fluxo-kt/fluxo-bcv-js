@@ -87,17 +87,12 @@ push, so:
   late Dependabot alerts. After a dep-changing merge, refresh now: `gh workflow
   run dependency-submission.yml --ref dev` (your token, not suppressed); the
   weekly `schedule` is the hands-off backstop.
-- **`pr-clean-cache.yml` only reaps MANUALLY-closed PRs**, never `/ff` merges
-  (bot push doesn't fire `pull_request:closed`). `/ff`-merged `refs/pull/N/merge`
-  caches are reaped by GitHub's 7-day eviction instead — sufficient & intentional
-  (storage-only hygiene, well under the 10 GB cap; LRU evicts
-  least-recently-*accessed*, so the hot `dev` baseline is the last victim, not
-  the first). Do NOT "fix" by adding `gh cache delete` to pr-fast-forward.yml
-  (marginal gain) or pushing `/ff` via a PAT (long-lived credential liability).
-  Uses native `gh cache delete` (the old `actions/gh-actions-cache` extension's
-  binary is egress-blocked at `release-assets.githubusercontent.com`).
-- build.yml needs no dispatch/schedule — required checks read the PR-run contexts
-  already attached to the merged SHA.
+- **`build.yml` MUST keep its `schedule`**: it is the only routine `dev` build,
+  and PRs can read Actions caches only from their own ref and `dev`. Without it
+  every PR's first run downloads all dependencies cold, which costs several
+  times the lane's own work. PRs stay read-only (setup-gradle's
+  default), so caches never pile up per PR and no cleanup workflow is needed.
+  Required checks still come from the PR run, attached to the merged SHA.
 
 ## `${{ !env.X }}` / bare `env.X` in a boolean position = constant, not condition
 GitHub coerces a non-empty string → `true`, and an `env:` value is ALWAYS a

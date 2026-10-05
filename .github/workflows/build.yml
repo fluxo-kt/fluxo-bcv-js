@@ -37,6 +37,14 @@ on:
     # runs". This trigger only ever sees owner direct-pushes anyway (`/ff` bot
     # merges are GITHUB_TOKEN-suppressed), so the old filter merely suppressed
     # the very pushes that must build to keep the badge truthful.
+  # Seeds the Gradle caches every PR restores. A PR can read caches only from
+  # its own ref and the default branch (`dev`), and `/ff` merges never build
+  # `dev` (GITHUB_TOKEN pushes trigger nothing), so without this every PR's
+  # first run starts cold. Schedules always run on the default branch. Twice a
+  # week keeps the gap under GitHub's 7-day eviction of unused entries; a
+  # failure here also flags upstream drift on an unchanged `dev`.
+  schedule:
+    - cron: '17 3 * * 1,4'
 
 # Cancel superseded runs on the same ref. Without this, rapid
 # force-pushes during PR iteration spawn parallel runs
@@ -266,16 +274,11 @@ jobs:
           # slowest OS by far). If restore proves slower than a cold build,
           # measure both before disabling it again.
           cache-encryption-key: "${{ secrets.GRADLE_ENCRYPTION_KEY }}"
-          # Writable on every run, deliberately. The canonical "write only on
-          # the default branch" pattern assumes the default branch gets build
-          # runs — but bot-`/ff` merges push via GITHUB_TOKEN, which GitHub's
-          # recursion guard stops from triggering this workflow, so a `dev`
-          # build run effectively never happens. Gating writes to it would
-          # leave the cache permanently cold. Instead each PR self-warms its
-          # own cache; pr-clean-cache.yml reaps the `refs/pull/N/merge` entries
-          # when the PR closes (and GitHub's 7-day unused-cache eviction is the
-          # backstop if that ever fails), so writable PRs don't accumulate.
-          cache-read-only: false
+          # `cache-read-only` stays at its default: writable on `dev` (the
+          # `schedule` and owner pushes), read-only on PRs. PRs restore `dev`'s
+          # entries, so even a PR's first run is warm, and one entry per lane
+          # job stays under the 10 GB repo cap. Per-PR writes would add one
+          # entry per lane job for every open PR.
           # Dependency-graph submission moved to its own workflow
           # (dependency-submission.yml) so build.yml can run with
           # `contents: read`. The split also decouples graph-submit
