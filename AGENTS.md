@@ -338,13 +338,13 @@ Commits, flat `--ff-only` (`CONTRIBUTING.md`).
   Kotlin/JS dev-toolchain transitives that are NEVER shipped (plugin runtime
   = java-diff-utils) + aborts security-update runs. The `.d.ts` baselines are
   compiler-derived (npm-toolchain-independent), so pinning protects nothing
-  the checks assert. The local store is still compared on every npm install,
-  so after a Kotlin bump a KMP cell fails with "Lock file was changed": run
-  `./gradlew kotlinUpgradeYarnLock` in that cell as a SEPARATE invocation
-  first (in the same invocation the store check runs before the upgrade).
-  `updateBaseline` does this for every KMP cell. Escape hatch
-  if a floating npm transitive breaks a check: rename via
-  `YarnRootExtension.lockFileName` (unindexed name) and re-commit.
+  the checks assert. So the KMP cells disable KGP's lock copy tasks
+  (`LockCopyTask`: restore/store/upgrade) and npm resolves fresh on every
+  install. Left on, they failed `check` with "Lock file was changed" after
+  each Kotlin bump and, on Windows with Kotlin 2.5.0-Beta1, on a missing
+  `build/wasm/yarn.lock`. Escape hatch if a floating npm transitive breaks a
+  check: re-enable them in that cell, rename via
+  `YarnRootExtension.lockFileName` (unindexed name) and commit the lock.
 - ⚠ **Hit something else surprising? Add it here and tell the user.**
 
 ## What's NOT in this repo

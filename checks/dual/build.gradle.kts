@@ -69,3 +69,11 @@ develocity {
 // tasks explicitly so a silently skipped target fails task-graph resolution
 // ("Task with path '…' not found") instead of passing on nothing.
 tasks.named("check") { dependsOn("tsApiCheck", "wasmTsApiCheck") }
+
+// Kotlin/JS yarn-lock copy tasks (restore/store/upgrade) are off: the locks are never
+// committed (AGENTS.md: kotlin-js-store), and the `.d.ts` baselines do not depend on
+// npm package versions, so the tasks guard nothing here. On, they failed `check` with
+// "Lock file was changed" after every Kotlin bump, and on Windows with Kotlin
+// 2.5.0-Beta1 the wasm store task failed because yarn wrote no `build/wasm/yarn.lock`.
+tasks.withType<org.jetbrains.kotlin.gradle.targets.js.npm.LockCopyTask>()
+    .configureEach { enabled = false }

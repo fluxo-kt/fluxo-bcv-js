@@ -28,18 +28,6 @@ echo "===================================="
 # -U: Refresh dependencies
 #COMMON_TASKS="${COMMON_TASKS} --rerun-tasks -U"
 
-# The `checks/*/kotlin-js-store/yarn.lock` files are gitignored, not
-# committed: bare lockfiles (no package.json) triggered npm Dependabot
-# alerts + aborting security-update runs, while protecting nothing the
-# checks assert (the `.d.ts` baselines are compiler-derived). A fresh
-# checkout writes the store on first build, but a store left by an earlier
-# local build is compared on every npm install, so after a Kotlin bump
-# `kotlinStoreYarnLock` fails with "Lock file was changed". The KMP cells
-# below therefore run `kotlinUpgradeYarnLock` first, as its OWN invocation:
-# in the same invocation the store check runs before the upgrade and still
-# fails. js-only's legacy `kotlin("js")` plugin has no upgrade task, and
-# its Kotlin is the pinned floor. See .gitignore + AGENTS.md.
-
 # Root plugin module — has dependencyGuardBaseline, plus the Detekt and
 # Android Lint baseline tasks, which exist only while
 # `fluxo-bcv-js/build.gradle.kts` sets `setupVerification` and
@@ -51,14 +39,12 @@ echo "=======> checks/latest"
 cd checks/latest || exit 102
 pwd
 # Latest cell has `dependency-guard` applied (matrix-top baseline).
-./gradlew kotlinUpgradeYarnLock -q || EXIT_CODE=103
 ./gradlew ${COMMON_TASKS} dependencyGuardBaseline || EXIT_CODE=103
 
 echo ""
 echo "=======> checks/middle"
 cd ../middle || exit 107
 pwd
-./gradlew kotlinUpgradeYarnLock -q || EXIT_CODE=108
 ./gradlew ${COMMON_TASKS} || EXIT_CODE=108
 
 echo ""
@@ -67,14 +53,12 @@ cd ../kgp-only || exit 109
 pwd
 # Embedded-only path. Also refresh KGP's KLIB ABI baseline via
 # updateKotlinAbi — distinct from this plugin's apiDump.
-./gradlew kotlinUpgradeYarnLock -q || EXIT_CODE=110
 ./gradlew ${COMMON_TASKS} updateKotlinAbi || EXIT_CODE=110
 
 echo ""
 echo "=======> checks/dual"
 cd ../dual || exit 111
 pwd
-./gradlew kotlinUpgradeYarnLock -q || EXIT_CODE=112
 ./gradlew ${COMMON_TASKS} || EXIT_CODE=112
 
 echo ""
