@@ -10,6 +10,11 @@ Highest consequence first.
   Raising it changes the Kotlin metadata that Gradle 7.6's embedded Kotlin
   1.7 must read for the `fluxoBcvTs { }` DSL, so `checks/js-only` (the
   Gradle 7.6 floor) decides whether a raise keeps the floor.
+- When Kotlin 2.5.0 goes GA: move build-side `kotlin` onto it and
+  `kotlinLatest` to the next preview, then run `./updateBaseline`
+  (Dependabot's bump PR cannot refresh baselines; procedure in AGENTS.md
+  "Compatibility matrix"). Check that CodeQL's bundled Kotlin ceiling
+  covers 2.5 first: CodeQL builds the plugin at build-side Kotlin.
 - Flip the dual-mode AUTO default to embedded (`preferEmbedded` unset +
   both validators active) in the first minor after KGP drops the
   `@ExperimentalAbiValidation` opt-in (KT-71172). External stays the default
