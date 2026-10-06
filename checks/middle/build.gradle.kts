@@ -32,6 +32,18 @@ kotlin {
     }
 }
 
+// The `-PbcvVersion=0.14.0` lane row tests the `jvmApiCheckTsCompatCleaner`: BCV ≤ 0.14
+// fails its check when `build/api` holds anything but the `.api` file, and a `.d.ts`
+// left there by an earlier `tsApiBuild` survives an UP-TO-DATE `jvmApiBuild`. That
+// BCV's kotlinx-metadata cannot read Kotlin 2 class metadata, hence 1.9 output; Kotlin
+// 2.3+ no longer accepts language version 1.9, so the row lives in this 2.2 cell.
+if (hasProperty("bcvVersion")) {
+    kotlin.compilerOptions {
+        languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_9)
+        apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_9)
+    }
+}
+
 // See `checks/latest/build.gradle.kts` for the `publishing.onlyIf { false }`
 // rationale — Develocity 4.x otherwise auto-publishes every build's scan
 // to public URLs.

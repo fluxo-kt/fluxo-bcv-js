@@ -23,11 +23,6 @@ Highest consequence first.
 - AGP Kotlin Multiplatform Android target lane: a single BCV-platform target
   without BCV tasks must not fail configuration (`androidApiBuild` not
   found). Covered only by code today; a lane costs an Android SDK in CI.
-- Lane for an external BCV older than 0.15 with a JVM target next to JS (Kotlin
-  ≤ 1.9, KMP): `checks/js-only` (BCV 0.8) has no JVM target, so BCV registers
-  no JVM check there and the `TsCompatCleaner` wiring for it runs only on BCV
-  0.16+ (`checks/middle`, `checks/latest`). A new cell costs lane time and
-  Actions cache space on every OS.
 - Support BCV applied only to the root project (BCV's documented layout):
   today the plugin sees BCV only where it is applied, so such subprojects get
   embedded mode or nothing. Supporting it means detecting BCV through the

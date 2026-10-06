@@ -53,7 +53,9 @@ class — `fluxo.bcvts.FluxoBcvTsPlugin`. Plugin ID:
 - `checks/latest/` — composite-build smoke, newest Kotlin+BCV, KMP
   (`jvm + js + wasmJs + wasmWasi`; no native target, see its build script), root's Gradle.
 - `checks/middle/` — matrix interior (`kotlinMiddle` + `bcvMiddle`, its own
-  Gradle wrapper). Catches drift between floor and ceiling.
+  Gradle wrapper). Catches drift between floor and ceiling. Its CI lane adds a
+  `-PbcvVersion=0.14.0` row, the only test of the COMMON cleaner on a BCV that
+  needs it.
 - `checks/kgp-only/` — embedded-only path: KGP `abiValidation { }`,
   NO external BCV. Validates dual-mode trigger + `DirConfig.TARGET_DIR`.
 - `checks/dual/` — both validators active; `checks/dual/sweep` (CI's dual
@@ -227,8 +229,9 @@ Commits, flat `--ff-only` (`CONTRIBUTING.md`).
 - **`DBG` constant is gone** (1.1.0). Diagnostics route through Gradle's
   logger — `./gradlew apiCheck --debug` surfaces compat-shim drift.
 - **`DirConfig.COMMON` cleaner ordering** is load-bearing — preserve
-  `mustRunAfter(bcvCheckCleaner/bcvBuild/bcvCheck)` or BCV's `apiCheck`
-  fails with "extra files in buildDir". In embedded-only mode (no
+  `mustRunAfter(bcvCheckCleaner/bcvBuild/bcvCheck)` or BCV ≤ 0.14's
+  `jvmApiCheck` fails with "Expected a single file …" once a `.d.ts` sits
+  in `build/api` (BCV 0.18 tolerates it). In embedded-only mode (no
   external BCV plugin applied) the dirConfig provider short-circuits
   to `DirConfig.TARGET_DIR`, so the cleaner branch is unreachable —
   this is intentional, do NOT remove the gate at `ConfigureTsApiTasks.kt`.

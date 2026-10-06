@@ -219,10 +219,12 @@ jobs:
             run: ./gradlew check --continue --stacktrace --scan
           # Matrix interior: catches drift between floor and ceiling (BCV
           # 0.14→0.16 worker isolation, Kotlin 2.0→2.4 metadata rename) so a
-          # regression does not first surface on the ceiling.
+          # regression does not first surface on the ceiling. The BCV 0.14 row
+          # leaves a `.d.ts` in `build/api`, then checks that the plugin's
+          # cleaner removes it before that BCV's `jvmApiCheck` (see its build).
           - lane: middle
             dir: checks/middle
-            run: ./gradlew check --continue --stacktrace --scan
+            run: ./gradlew check --continue --stacktrace --scan && ./gradlew jvmApiBuild tsApiBuild -PbcvVersion=0.14.0 --stacktrace && ./gradlew jvmApiCheck -PbcvVersion=0.14.0 --stacktrace
           # Embedded-only: KGP `abiValidation`, no external BCV; also verifies
           # KGP's KLIB ABI baseline. `apiDump --dry-run` stores AND reloads
           # the configuration-cache entry for the dump tasks without writing
