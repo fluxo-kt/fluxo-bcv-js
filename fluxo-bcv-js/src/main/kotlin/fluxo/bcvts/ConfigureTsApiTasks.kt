@@ -199,10 +199,14 @@ private fun Project.configureTarget(
     if (compilations.isEmpty()) {
         // A TS-capable target with no tasks means the user's `.d.ts` baseline is
         // silently unenforced, so say it at warn level, never skip quietly.
+        val reason = if (target.isLegacyJsCompat) {
+            "the legacy (non-IR) JS compiler emits no TypeScript definitions"
+        } else {
+            "no main JS compilation found (compat shim drift? run with --debug)"
+        }
         logger.warn(
-            "{} checks are skipped for {} target '{}': no main JS compilation found " +
-                "(compat shim drift? run with --debug)",
-            KTS_API, path, target.name,
+            "{} checks are skipped for {} target '{}': {}",
+            KTS_API, path, target.name, reason,
         )
         return
     }

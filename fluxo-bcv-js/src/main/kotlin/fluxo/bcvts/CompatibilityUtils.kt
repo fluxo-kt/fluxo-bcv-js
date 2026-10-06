@@ -70,6 +70,16 @@ internal val KotlinTarget.isTsCompat: Boolean
         return false
     }
 
+/**
+ * True for a target of the legacy (pre-IR) JS compiler, e.g. `jsLegacy` of `js(BOTH)`
+ * on Kotlin < 1.9, which emits no `.d.ts`. Only reports the reason a target got no
+ * tasks: it never decides whether one gets them, so a wrong answer cannot hide one.
+ *
+ * @see org.jetbrains.kotlin.gradle.targets.js.KotlinJsTarget
+ */
+internal val KotlinTarget.isLegacyJsCompat: Boolean
+    get() = safe { this is KotlinJsTargetDsl && this !is KotlinJsIrTarget } == true
+
 private val KotlinTarget.isWasmWasi: Boolean
     get() = name.contains("WASI", ignoreCase = true) ||
         safe { (this as? KotlinJsIrTarget)?.wasmTargetType == KotlinWasmTargetType.WASI } == true
