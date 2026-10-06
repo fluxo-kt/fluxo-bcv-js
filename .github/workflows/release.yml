@@ -52,16 +52,16 @@ jobs:
 
       - name: GitHub Release
         # https://github.com/anton-yurchenko/git-release#readme
-        # Pinned by digest (v6.0.0) — `:latest` is an immutable tag in
-        # Docker Hub semantics but the underlying SHA is rewriteable.
-        # Pinning to the digest prevents silent supply-chain rewrites
-        # and Dependabot can still propose digest bumps.
-        uses: docker://antonyurchenko/git-release@sha256:b3a7d6a87981f8ed455e6b44c702e55afd95b3e628c324d7fd4f6f85728f792b
+        # Pinned by digest (v7.0.0): a Docker tag can be re-pointed, a digest
+        # cannot. Nothing bumps it (Dependabot has no docker ecosystem here,
+        # actions-up skips docker:// refs); update it by hand from the
+        # release notes. v7 fails on v6's RELEASE_NAME* variables.
+        uses: docker://antonyurchenko/git-release@sha256:71289f84eee8ff122c45b84a43bc976d2be01b179649698e5a9b6f4073cfdb08
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DRAFT_RELEASE: "true"
           PRE_RELEASE: "${{ env.RELEASE_PRE }}"
-          RELEASE_NAME_SUFFIX: "${{ env.RELEASE_SUFFIX }}"
+          NAME_TEMPLATE: "{{ .Tag }}${{ env.RELEASE_SUFFIX }}"
           CHANGELOG_FILE: "CHANGELOG.md"
           ALLOW_EMPTY_CHANGELOG: "false"
 
