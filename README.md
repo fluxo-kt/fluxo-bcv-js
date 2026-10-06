@@ -52,7 +52,7 @@ Compatibility tested with:
 
 [^1]: "BCV" denotes the ABI-validation source — until 1.0.x only the external [KotlinX Binary Compatibility Validator][bcv]; in 1.1.0 also KGP-embedded `abiValidation { }` (Kotlin 2.2+).
 [^2]: External KotlinX BCV is [in maintenance mode](https://github.com/Kotlin/binary-compatibility-validator#readme): bug-fix releases only; new features go to KGP-embedded `abiValidation`.
-[^3]: KGP-embedded `abiValidation { }` activates the embedded mode without applying the external BCV plugin. Requires Kotlin 2.2+ and the consumer-side `@OptIn(ExperimentalAbiValidation::class)` ceremony; the full pipeline is tested on 2.4.20 and 2.5.0-Beta1, embedded detection also on 2.3.21. See [Dual-mode usage](#dual-mode-usage-110) below.
+[^3]: KGP-embedded `abiValidation { }` activates the embedded mode without applying the external BCV plugin. Requires Kotlin 2.2+ and the consumer-side `@OptIn(ExperimentalAbiValidation::class)` ceremony; the full pipeline is tested on 2.4.20 and 2.5.0-Beta1, embedded detection and baseline location also on 2.2.21, detection on 2.3.21. See [Dual-mode usage](#dual-mode-usage-110) below.
 [^4]: Configure `fluxoBcvTs { }` from build scripts there. On Gradle older than 8.3 (embedded Kotlin before 1.9; reproduced on 7.6.6), a `kotlin-dsl` convention plugin (buildSrc or an included build) that references `FluxoBcvTsExtension` fails to compile against the plugin's Kotlin metadata 2.0 unless it adds `-Xskip-metadata-version-check`.
 
 

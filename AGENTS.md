@@ -53,9 +53,10 @@ class — `fluxo.bcvts.FluxoBcvTsPlugin`. Plugin ID:
 - `checks/latest/` — composite-build smoke, newest Kotlin+BCV, KMP
   (`jvm + js + wasmJs + wasmWasi`; no native target, see its build script), root's Gradle.
 - `checks/middle/` — matrix interior (`kotlinMiddle` + `bcvMiddle`, its own
-  Gradle wrapper). Catches drift between floor and ceiling. Its CI lane adds a
-  `-PbcvVersion=0.14.0` row, the only test of the COMMON cleaner on a BCV that
-  needs it.
+  Gradle wrapper). Catches drift between floor and ceiling. Its CI lane adds
+  two rows (build script explains): `-PbcvVersion=0.14.0`, the only test of the
+  COMMON cleaner on a BCV that needs it, and `-PembeddedRow`, the only test of
+  KGP 2.2/2.3 embedded mode's `legacyDump.referenceDumpDir`.
 - `checks/kgp-only/` — embedded-only path: KGP `abiValidation { }`,
   NO external BCV. Validates dual-mode trigger + `DirConfig.TARGET_DIR`.
 - `checks/dual/` — both validators active; `checks/dual/sweep` (CI's dual

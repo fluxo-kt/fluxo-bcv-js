@@ -44,6 +44,21 @@ if (hasProperty("bcvVersion")) {
     }
 }
 
+// The `-PembeddedRow` lane row tests embedded mode on KGP 2.2/2.3, where validation is
+// switched on by `enabled` and `referenceDumpDir` lives under `legacyDump` (2.4 moved
+// both). Only embedded mode puts `.d.ts` baselines in `abi/ts`, so the row asserts that
+// path in the `tsApiDump` description.
+val embeddedRow = hasProperty("embeddedRow")
+val embeddedDumpDir = layout.projectDirectory.dir("abi")
+if (embeddedRow) {
+    @OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class)
+    kotlin.abiValidation {
+        enabled.set(true)
+        legacyDump { referenceDumpDir.set(embeddedDumpDir) }
+    }
+    fluxoBcvTs { preferEmbedded.set(true) }
+}
+
 // See `checks/latest/build.gradle.kts` for the `publishing.onlyIf { false }`
 // rationale — Develocity 4.x otherwise auto-publishes every build's scan
 // to public URLs.
