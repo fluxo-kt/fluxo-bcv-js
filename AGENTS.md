@@ -41,8 +41,8 @@ class — `fluxo.bcvts.FluxoBcvTsPlugin`. Plugin ID:
   `project(":fluxo-bcv-js").name = "plugin"`, so **Gradle path is
   `:plugin`** (verified via `./gradlew projects`). The dir is still
   `fluxo-bcv-js/`; local build outputs are `plugin.api` / `plugin-*.jar`.
-  **The *published* Maven artifactId is `fluxo-bcv-ts`** (`build.gradle.kts`
-  `artifactId = publishedArtifactId`), so the JitPack coordinate is
+  **The *published* Maven artifactId is `fluxo-bcv-ts`** (fluxo-kmp-conf
+  derives it from the plugin name), so the JitPack coordinate is
   `…fluxo-bcv-js:fluxo-bcv-ts:<ver>`, NOT `:plugin:` (that's the Gradle *task*
   path / local jar name). README's JitPack `useModule` must use the published
   artifactId — `:plugin:` 404s on JitPack (shipped broken in 1.1.0). The Portal
