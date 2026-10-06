@@ -319,7 +319,9 @@ Commits, flat `--ff-only` (`CONTRIBUTING.md`).
   either line makes the `detekt*`/`lint*` tasks vanish while `check` stays
   green. After a fluxo-kmp-conf bump, confirm
   `./gradlew check --dry-run` still lists `:plugin:detektMain` and
-  `:plugin:lint`. Detekt 1.23.x reports false `UnreachableCode` right after
+  `:plugin:lint`, then run a real `check`: a dry run executes no task, so
+  it cannot catch one that exists but fails (e.g. a newer Detekt that
+  fluxo-kmp-conf selects rejecting a key in `detekt.yml`). Detekt 1.23.x reports false `UnreachableCode` right after
   `methods.firstOrNull { … } ?: return@safe` in `CompatibilityUtils.kt`; Kotlin
   compiles those lines warning-free, so they live in `detekt-baseline.xml`.
 - **POM metadata audits MUST cover the `gradlePlugin` extension too,
