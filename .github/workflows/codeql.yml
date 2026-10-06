@@ -6,7 +6,7 @@ name: CodeQL
 #   compiled extractor per Kotlin release via `versions.bzl`; there is no
 #   skip-not-fail switch (the gate lives in the closed extractor agent).
 #   While CodeQL ran inside build.yml it traced the composite `checks/*`
-#   smoke builds, which compile `kotlinLatest` (currently a 2.x-RC) past
+#   smoke builds, which compile `kotlinLatest` (a Kotlin preview) past
 #   that ceiling — so analysis killed the entire build matrix.
 #
 #   The shipped product is the plugin source only; `checks/*` are throwaway
@@ -25,8 +25,10 @@ name: CodeQL
 
 on:
   pull_request:
-    # Mirror build.yml: skip doc/CI-only PRs (paths-ignore is an exclude
-    # list of non-code, far lower maintenance than a positive allow-list).
+    # Skip doc/CI-only PRs (paths-ignore is an exclude list of non-code, far
+    # lower maintenance than a positive allow-list). Allowed here only because
+    # CodeQL is advisory: build.yml, whose checks the ruleset requires, must
+    # never filter paths.
     paths-ignore:
       - '**.*ignore'
       - '**.md'

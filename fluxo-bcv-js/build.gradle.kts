@@ -59,8 +59,7 @@ fkcSetupGradlePlugin(
     enableGenericAndroidLint = true
     setupCoroutines = false
     allWarningsAsErrors = false
-    // Test-only flag (Pass-8 source-trace of fluxo-kmp-conf
-    // `KotlinConfigSetup.kt:91-93`): gates the
+    // Test-only flag (fluxo-kmp-conf `KotlinConfigSetup.kt`): gates the
     // `LATEST_KOTLIN_LANG_VERSION` overlay for `compileTestKotlin`,
     // NOT main compilation of the published JAR. Plugin has no tests
     // today, so the flag is a no-op now; disabled to defang the trap
@@ -178,7 +177,7 @@ publishing.publications.withType<MavenPublication>().configureEach {
 
 // Build-local Maven repo that `checks/js-only` resolves this plugin from.
 // The floor cell runs the oldest supported Gradle, which cannot BUILD this
-// plugin (KGP 2.x, plugin-publish 2.x, Develocity 4 need newer Gradle), so
+// plugin (KGP 2.x and plugin-publish 2.x need newer Gradle), so
 // it cannot `includeBuild` the sources like the other cells. Consuming the
 // published marker + `.module` + jar instead also tests the published
 // coordinates end to end. Filled by `publishAllPublicationsToChecksRepository`.
@@ -341,10 +340,9 @@ tasks.named("check") { dependsOn(verifyPluginPortalMetadata) }
 // CC: the provider is captured in a block-local val. A lambda here that
 // reads `providers` (or any script-level val) captures the build-script
 // object and, through it, the Project, so strict CC refuses to store the
-// sign tasks. That failure was once blamed on `dev.sigstore.sign` and hidden
-// behind `notCompatibleWithConfigurationCache`; with the local capture both
-// 2.1.0 and 2.3.0 store cleanly (`RELEASE=true ./gradlew
-// :plugin:publishAllPublicationsToChecksRepository --dry-run`).
+// sign tasks; do not hide that behind `notCompatibleWithConfigurationCache`.
+// Verify with `RELEASE=true ./gradlew
+// :plugin:publishAllPublicationsToChecksRepository --dry-run`.
 tasks.matching { it.name.startsWith("sigstoreSign") }.configureEach {
     val release = providers.environmentVariable("RELEASE")
     onlyIf { release.orNull == "true" }

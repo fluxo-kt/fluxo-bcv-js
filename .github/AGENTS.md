@@ -100,18 +100,19 @@ push, so:
   Dependabot PR (`gh workflow run build.yml --ref <head branch>`, needs
   `actions: write`). Its push starts no workflow, so without the dispatch the
   new head never gets the ruleset's required contexts and the PR cannot merge.
-- **The caches one `dev` run restores must fit GitHub's free 10 GB repo limit.**
-  Every lane job saves its own Gradle-home entries (about 0.4 GB of
-  dependencies each), so a new lane, target or toolchain download grows the
-  total. Past the limit GitHub evicts least-recently-used entries, including
-  ones the same run needs, and setup-gradle does not re-save an evicted entry
-  while its job key still matches, so the loss lasts until the next `dev`
-  commit. After such a change, compare `gh api repos/{owner}/{repo}/actions/cache/usage`
-  with the sizes of entries the latest `dev` run accessed (`gh cache list
-  --json key,lastAccessedAt,sizeInBytes`). The KMP check cells run no npm and
+- **The caches on `dev` must fit GitHub's free 10 GB repo limit.** Only `dev`
+  writes caches (setup-gradle is read-only on every other ref): each
+  build.yml lane job saves its own Gradle-home entries, and CodeQL saves its
+  own, so a new lane, target or toolchain download grows the total. Past the
+  limit GitHub evicts least-recently-used entries, including ones the same run
+  needs, and setup-gradle does not re-save an evicted entry while its job key
+  still matches, so the loss lasts until the next `dev` commit. After such a
+  change, compare `gh api repos/{owner}/{repo}/actions/cache/usage` with the
+  sizes of entries the latest `dev` run accessed (`gh cache list --json
+  key,lastAccessedAt,sizeInBytes`). The KMP check cells run no npm and
   download no Node.js partly for this reason (see their build scripts).
   Wrapper zips stay cached: downloading Gradle in every lane costs more lane
-  time than their ~1.2 GB saves.
+  time than the cache space they save.
 
 ## `${{ !env.X }}` / bare `env.X` in a boolean position = constant, not condition
 GitHub coerces a non-empty string → `true`, and an `env:` value is ALWAYS a

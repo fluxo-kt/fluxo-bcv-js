@@ -16,10 +16,9 @@ pluginManagement {
 
 plugins {
     // Gradle Enterprise was renamed to Develocity; the legacy id
-    // `com.gradle.enterprise` still works on Gradle 9.5.1 but emits a
-    // "incompatible with Gradle 10" deprecation. v4.x is the canonical
-    // line going forward; minimum Gradle is 5.x so our floor (Gradle
-    // 8.6 in checks/js-only) is unaffected.
+    // `com.gradle.enterprise` emits an "incompatible with Gradle 10"
+    // deprecation on Gradle 9. v4.x is the canonical line going forward;
+    // its minimum Gradle is 5.x, so the checks/js-only floor is unaffected.
     id("com.gradle.develocity") version "4.6.0"
 }
 

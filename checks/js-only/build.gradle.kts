@@ -13,8 +13,10 @@ kotlin {
     }
 }
 
-// Proves consumer Kotlin DSL compiles against the plugin's extension on the
-// Gradle floor (7.6 embeds Kotlin 1.7 and reads Kotlin metadata 1.x only).
+// Proves a consumer build script compiles against the plugin's extension on the
+// Gradle floor. Only build scripts: Gradle 7.6 compiles them without the Kotlin
+// metadata version check, while a `kotlin-dsl` convention plugin on Gradle < 8.4
+// rejects the extension's metadata 2.0 (see README "Compatibility").
 fluxoBcvTs {
     wireToKgpAbi.set(false)
 }

@@ -266,9 +266,8 @@ Commits, flat `--ff-only` (`CONTRIBUTING.md`).
   third-party task may be OUR lambda.** In `build.gradle.kts`, an `onlyIf`/
   `doLast` that reads `providers`, `project` or any script-level `val`
   captures the script object (and the Project). Capture into a val declared
-  INSIDE the configuring block. The Sigstore tasks were wrongly marked
-  `notCompatibleWithConfigurationCache` because of exactly this; before
-  opting a task out of CC, retry with a block-local capture.
+  INSIDE the configuring block, and retry with that before opting any task
+  out of CC with `notCompatibleWithConfigurationCache`.
 - **`project.version` MUST be assigned AFTER `fkcSetupGradlePlugin`**
   (`fluxo-bcv-js/build.gradle.kts`, near `version = pluginVersion`).
   fluxo-kmp-conf 0.14+ configures `publicationConfig.version`

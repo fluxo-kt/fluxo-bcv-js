@@ -16,8 +16,8 @@ name: Dependency Submission
 
 on:
   push:
-    # Mirror build.yml's paths-ignore so doc-only pushes don't
-    # trigger a graph submission.
+    # Doc-only pushes don't change the dependency graph. Fine here because no
+    # required check comes from this workflow (build.yml must never filter).
     paths-ignore:
       - '**.*ignore'
       - '**.md'

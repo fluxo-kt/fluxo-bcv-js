@@ -85,17 +85,7 @@ develocity {
 // ("Task with path '…' not found") instead of passing on nothing.
 tasks.named("check") { dependsOn("tsApiCheck", "wasmTsApiCheck") }
 
-// These cells run no npm: the plugin's `.d.ts` tasks need only the link tasks, and the
-// npm toolchain feeds only JS/Wasm test tasks, which these cells lack. Left on, the yarn
-// installs (`KotlinNpmInstallTask`, the wasm `KotlinToolingSetupTask`) were most of every
-// warm CI lane: yarn re-downloads its packages on each fresh runner, and two installs
-// serialise on yarn's machine-wide mutex. `download = false` on the Node.js/Yarn specs
-// stops KGP fetching both distributions while configuring (disabling their setup tasks
-// does not), which kept ~100 MB per lane in the size-capped CI cache. Binaryen stays on:
-// wasm executable linking runs it. The yarn-lock copy tasks (`LockCopyTask`) go too: the
-// locks are never committed (AGENTS.md: kotlin-js-store), the store task would read a
-// `yarn.lock` no install wrote, and they failed `check` with "Lock file was changed"
-// after every Kotlin bump.
+// No npm in this cell: see `checks/latest/build.gradle.kts` for why each switch is off.
 tasks.withType<org.jetbrains.kotlin.gradle.targets.js.npm.LockCopyTask>()
     .configureEach { enabled = false }
 tasks.withType<org.jetbrains.kotlin.gradle.targets.js.npm.tasks.KotlinNpmInstallTask>()

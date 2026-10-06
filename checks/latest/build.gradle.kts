@@ -16,7 +16,7 @@ kotlin {
     // No native target: the plugin skips non-JS/Wasm targets (jvm and wasmWasi cover
     // that), and BCV's KLIB dump already spans js/wasmJs/wasmWasi. A native target only
     // made every CI run download the Kotlin/Native toolchain (~/.konan is not cached),
-    // up to a minute and a half per lane on Windows.
+    // most slowly on Windows.
     // The build script enables TS generation itself, as real consumers do
     // (e.g. fluxo). KGP's `generateTypeScriptDefinitions()` is not idempotent,
     // so this cell covers the plugin's second call on an already-enabled target.
@@ -90,11 +90,11 @@ gradle.taskGraph.whenReady {
 
 // These cells run no npm: the plugin's `.d.ts` tasks need only the link tasks, and the
 // npm toolchain feeds only JS/Wasm test tasks, which these cells lack. Left on, the yarn
-// installs (`KotlinNpmInstallTask`, the wasm `KotlinToolingSetupTask`) were most of every
-// warm CI lane: yarn re-downloads its packages on each fresh runner, and two installs
-// serialise on yarn's machine-wide mutex. `download = false` on the Node.js/Yarn specs
-// stops KGP fetching both distributions while configuring (disabling their setup tasks
-// does not), which kept ~100 MB per lane in the size-capped CI cache. Binaryen stays on:
+// installs (`KotlinNpmInstallTask`, the wasm `KotlinToolingSetupTask`) dominated warm CI
+// lanes: yarn re-downloads its packages on each fresh runner, and two installs serialise
+// on yarn's machine-wide mutex. `download = false` on the Node.js/Yarn specs stops KGP
+// fetching both distributions while configuring (disabling their setup tasks does not),
+// which keeps them out of the size-capped CI cache. Binaryen stays on:
 // wasm executable linking runs it. The yarn-lock copy tasks (`LockCopyTask`) go too: the
 // locks are never committed (AGENTS.md: kotlin-js-store), the store task would read a
 // `yarn.lock` no install wrote, and they failed `check` with "Lock file was changed"

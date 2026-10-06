@@ -74,7 +74,7 @@ jobs:
     # cannot mint an OIDC token to exchange for a Fulcio cert, and the
     # bundle production silently degrades to no-op (or hard-fails,
     # depending on `dev.sigstore.sign` v2.x behaviour). `contents: write`
-    # is needed for `gh release upload` (attaching `.sigstore.bundle`
+    # is needed for `gh release upload` (attaching the Sigstore bundle
     # files to the draft release created by `gh_release`); release
     # NOTES / tags / draft-creation themselves are still owned by
     # `gh_release`.
