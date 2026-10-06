@@ -1,42 +1,99 @@
 #!/usr/bin/env bash
 # Runs checks/dual once per preferEmbedded mode (auto, true, false) and asserts,
-# for each, the two observables a regression would change:
+# for each, the observables a regression would change:
 #  - the lifecycle line `[fluxo-bcv-ts] trigger=<x> preferEmbedded=<y>`, a public
-#    contract (format must stay byte-stable);
-#  - the baseline dir the `.d.ts` tasks resolve: external mode keeps BCV's COMMON
-#    layout (`api/`), embedded mode the per-target layout (`api/ts/`). Both
-#    layouts hold byte-identical baselines, so apiCheck alone passes either way
-#    and cannot tell whether preferEmbedded switched the layout.
-# Used by CI (build.yml) and local gates, so both run the same assertions.
+#    contract (format must stay byte-stable), printed exactly once;
+#  - the baseline dirs the `.d.ts` tasks resolve: external mode keeps BCV's COMMON
+#    layout (`api/`), embedded mode the per-target layout (`api/ts/`,
+#    `api/wasmTs/`). Both layouts hold byte-identical baselines, so apiCheck alone
+#    passes either way and cannot tell whether preferEmbedded switched the layout.
+# Then it proves the checks can FAIL (every other lane only sees matching
+# baselines), and covers two setups no cell builds: an old BCV whose apiDump would
+# delete embedded baselines, and Kotlin 2.3, whose ABI tasks exist in every project.
+# Used by CI (build.yml), so CI and local runs share the same assertions.
 set -euo pipefail
 cd "$(dirname "$0")"
+DIR=$PWD
 
-assert_mode() {  # $1=gradle args  $2=trigger  $3=preferEmbedded label  $4=js baseline dir
-  local out
-  # `--no-configuration-cache`: the lifecycle line is printed at configuration
-  # time, so a reused CC entry would skip it and grep the previous run's state.
-  # `${1:+"$1"}`: no argument for AUTO's "" (a quoted empty string would reach
-  # Gradle as a task name), one word otherwise.
-  # `tr -d '\r'`: Gradle on Windows ends lines with CRLF, and a trailing CR
-  # would make every whole-line match below fail.
-  # No `--rerun-tasks`: the `.d.ts` compare tasks declare no outputs, so they
-  # run every time, and drift in either baseline layout still fails its mode;
-  # forcing a rebuild of everything only tripled the cost.
-  if ! out=$(./gradlew apiCheck help --task tsApiDump ${1:+"$1"} \
-    --no-configuration-cache 2>&1 | tr -d '\r'); then
-    echo "::error::checks/dual failed for '$1'"; echo "$out"; exit 1
-  fi
-  # -F: fixed string, -x: whole line — labels are matched literally.
-  echo "$out" | grep -Fxq "[fluxo-bcv-ts] trigger=$2 preferEmbedded=$3" || {
-    echo "::error::wrong lifecycle line for '$1' (expected trigger=$2 preferEmbedded=$3)"
-    echo "$out"; exit 1
-  }
-  echo "$out" | grep -Fq "Syncs API from build dir to $4 dir for" || {
-    echo "::error::wrong baseline dir for '$1' (expected $4)"; echo "$out"; exit 1
-  }
-  echo "ok: '$1' -> trigger=$2, baselines in $4"
+# Runs Gradle without the configuration cache: the lifecycle line is printed at
+# configuration time, so a reused CC entry would skip it and grep the previous
+# run's state. `tr -d '\r'`: Gradle on Windows ends lines with CRLF, and a trailing
+# CR would make every whole-line match below fail. Sets OUT and returns Gradle's
+# exit status.
+gradle() {
+  local status=0
+  OUT=$(./gradlew "$@" --no-configuration-cache 2>&1 | tr -d '\r') || status=$?
+  return $status
 }
 
-assert_mode "" external auto api
-assert_mode "-PpreferEmbedded=true" embedded true api/ts
-assert_mode "-PpreferEmbedded=false" external false api
+fail() { echo "::error::$1"; echo "$OUT"; exit 1; }
+
+# Here-strings, not `echo | grep -q`: grep -q exits at its first match, and under
+# pipefail the writer's SIGPIPE would turn a match into a failure on long output.
+has() { grep -Fq -- "$1" <<<"$OUT"; }
+
+# $1 = args, $2 = trigger, $3 = preferEmbedded label.
+assert_line_once() {
+  local n
+  n=$(grep -Fxc "[fluxo-bcv-ts] trigger=$2 preferEmbedded=$3" <<<"$OUT" || true)
+  [ "$n" = 1 ] || fail "'$1': expected one 'trigger=$2 preferEmbedded=$3' line, got $n"
+}
+
+assert_mode() {  # $1=gradle args  $2=trigger  $3=preferEmbedded label  $4=js dir  $5=wasm dir
+  # `${1:+"$1"}`: no argument for AUTO's "" (a quoted empty string would reach
+  # Gradle as a task name), one word otherwise. No `--rerun-tasks`: each
+  # baseline is an input of the cacheable compare task, so drift in either
+  # layout reruns it; forcing a rebuild of everything only multiplied the cost.
+  gradle apiCheck tasks --all ${1:+"$1"} || fail "checks/dual failed for '$1'"
+  assert_line_once "$1" "$2" "$3"
+  # A missing line can also mean the `.d.ts` tasks were never registered, e.g.
+  # embedded mode wrongly obeying BCV's `validationDisabled` (build.gradle.kts).
+  has "tsApiDump - Syncs API from build dir to $4 dir for" ||
+    fail "'$1': tsApiDump does not sync to $4"
+  has "wasmTsApiDump - Syncs API from build dir to $5 dir for" ||
+    fail "'$1': wasmTsApiDump does not sync to $5"
+  echo "ok: '$1' -> trigger=$2, baselines in $4 and $5"
+}
+
+assert_mode "" external auto api api
+assert_mode "-PpreferEmbedded=true" embedded true api/ts api/wasmTs
+assert_mode "-PpreferEmbedded=false" external false api api
+
+# Drift must fail both checks, rendering a diff: one line planted in a `.d.ts`
+# baseline and in BCV's JVM dump. That runs java-diff-utils in the plugin and
+# in BCV, which share one resolved version. Restored from copies by absolute
+# path, whatever the outcome.
+TS_BASELINE=$DIR/api/check-dual.js.d.ts
+JVM_BASELINE=$DIR/api/check-dual.api
+BACKUP=$(mktemp -d)
+trap 'cp "$BACKUP/ts" "$TS_BASELINE"; cp "$BACKUP/jvm" "$JVM_BASELINE"; rm -rf "$BACKUP"' EXIT
+cp "$TS_BASELINE" "$BACKUP/ts"
+cp "$JVM_BASELINE" "$BACKUP/jvm"
+echo "export declare const SWEEP_TS_DRIFT: number;" >>"$TS_BASELINE"
+echo "public final class SweepJvmDrift {}" >>"$JVM_BASELINE"
+if gradle apiCheck --continue; then fail "apiCheck passed with drifted baselines"; fi
+has "SWEEP_TS_DRIFT" || fail "the .d.ts check did not report the planted line"
+has "SweepJvmDrift" || fail "BCV's check did not report the planted line"
+cp "$BACKUP/ts" "$TS_BASELINE"
+cp "$BACKUP/jvm" "$JVM_BASELINE"
+echo "ok: drifted .d.ts and JVM baselines both fail apiCheck with a diff"
+
+# BCV 0.14, the last whose apiDump syncs the whole dump dir: preferEmbedded=true
+# must be refused (configuration only; this BCV cannot read Kotlin 2.x output).
+gradle help -PbcvVersion=0.14.0 -PpreferEmbedded=true || fail "BCV 0.14 run failed"
+assert_line_once "BCV 0.14" external true
+has "preferEmbedded=true ignored: the external BCV plugin is older than 0.15" ||
+  fail "BCV 0.14: no warning for the refused preferEmbedded=true"
+echo "ok: BCV 0.14 refuses embedded mode with a warning"
+
+# Kotlin 2.3 registers checkKotlinAbi in every project, so its embedded state
+# must come from the `enabled` flag: off by default, on with -PabiEnabledFlag.
+gradle help -PkotlinVersion=2.3.21 || fail "Kotlin 2.3 run failed"
+assert_line_once "Kotlin 2.3" external auto
+if has "KGP-embedded abiValidation are active"; then
+  fail "Kotlin 2.3: embedded validation reported active while switched off"
+fi
+gradle help -PkotlinVersion=2.3.21 -PabiEnabledFlag -PpreferEmbedded=true ||
+  fail "Kotlin 2.3 (enabled) run failed"
+assert_line_once "Kotlin 2.3 enabled" embedded true
+echo "ok: Kotlin 2.3 embedded detection follows the enabled flag"

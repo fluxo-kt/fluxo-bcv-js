@@ -22,11 +22,20 @@ plugins {
 
 // On Kotlin 2.4+ an empty `abiValidation { }` block switches validation on
 // (2.4 removed `.enabled`); KGP then creates `:checkKotlinAbi`, which is what
-// the plugin's embedded detection sees.
+// the plugin's embedded detection sees. Kotlin 2.2/2.3 need the `enabled` flag,
+// set only by the sweep's Kotlin 2.3 run (`-PabiEnabledFlag`); on 2.4+ its
+// getter throws.
+val abiEnabledFlag = hasProperty("abiEnabledFlag")
+
 @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
 kotlin {
     @OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class)
-    abiValidation { }
+    abiValidation {
+        if (abiEnabledFlag) {
+            @Suppress("DEPRECATION_ERROR")
+            enabled.set(true)
+        }
+    }
 
     jvm()
     js {
@@ -44,6 +53,13 @@ kotlin {
 // Path-selection knob — defaults to AUTO (Property unset = null = AUTO
 // branch in the trigger). CI overrides via `-PpreferEmbedded=true|false`
 // to exercise the explicit branches.
+// Embedded mode must ignore BCV's opt-outs. BCV is switched off exactly when
+// embedded mode is asked for, so the `.d.ts` tasks vanish (and the sweep
+// fails) if the plugin still obeyed BCV there.
+apiValidation {
+    validationDisabled = project.findProperty("preferEmbedded")?.toString() == "true"
+}
+
 fluxoBcvTs {
     when (project.findProperty("preferEmbedded")?.toString()) {
         "true" -> preferEmbedded.set(true)
