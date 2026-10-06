@@ -1,9 +1,8 @@
 // Embedded-mode smoke test: KGP-only ABI validation, NO external BCV.
-// Exercises the new dual-mode trigger from the embedded side. The
+// Exercises the dual-mode trigger from the embedded side. The
 // composite includeBuild("../../") wires this against the plugin
-// sources, so a regression in the embedded trigger fails the floor
-// of the dual-mode contract (commit 21 reflective shim, commit 23
-// DirConfig short-circuit).
+// sources, so a regression in embedded detection or in its per-target
+// layout fails here.
 
 plugins {
     kotlin("multiplatform") version libs.versions.kotlinLatest
@@ -18,16 +17,21 @@ plugins {
 // to stability. The opt-in is consumer-side — applied at the call
 // site, not inherited from our plugin's metadata.
 //
-// Kotlin 2.4-RC API drift: the `enabled: Property<Boolean>` property
-// was deprecated and removed; calling `abiValidation { }` itself now
-// activates validation. This block intentionally passes no body —
-// activation is the call itself. The reflective shim in
-// `CompatibilityUtils.kt` bridges both shapes (2.2/2.3 reads
-// `.enabled`; 2.4+ treats reachable extension as enabled).
+// Kotlin 2.4 removed the `enabled` property: calling `abiValidation { }`
+// itself activates validation. `CompatibilityUtils.kt` reads `enabled` on
+// 2.2/2.3 and KGP's ABI tasks on 2.4+.
+//
+// The dump dir is moved off KGP's default `api/` because the plugin's own
+// fallback is also `api/`: only a moved dir shows that embedded mode keeps
+// its `.d.ts` baselines in KGP's `referenceDumpDir`.
+val abiDumpDir = layout.projectDirectory.dir("abi")
+
 @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
 kotlin {
     @OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class)
-    abiValidation { }
+    abiValidation {
+        referenceDumpDir.set(abiDumpDir)
+    }
 
     jvm()
     // Library-only binaries: the npm-library setup gets its own lane (middle and
