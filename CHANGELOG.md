@@ -6,7 +6,7 @@
 [//]: # (Changed, Added, Removed, Fixed, Updated)
 
 
-## [1.2.0] - 2026-10-04
+## [1.2.0] - 2026-10-06
 
 ### Changed
 - A target with both `binaries.library()` and `binaries.executable()`
