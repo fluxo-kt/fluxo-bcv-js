@@ -32,6 +32,8 @@
 ### Added
 - The Plugin Portal listing declares configuration-cache support;
   isolated projects are declared unsupported.
+- Published artefacts carry PGP signatures (`.asc`) next to the Sigstore
+  bundles.
 
 ### Updated
 - Tested with Kotlin up to 2.5.0-Beta1, BCV up to 0.18.2, and Gradle

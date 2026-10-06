@@ -9,7 +9,7 @@ import org.gradle.api.provider.Provider
  * @see kotlinx.validation.TargetConfig
  */
 internal class TargetConfig(
-    private val apiDumpDirectory: String,
+    apiDumpDirectory: String,
     referenceDumpDir: Provider<Directory>,
     val targetTsName: String?,
     val targetName: String,

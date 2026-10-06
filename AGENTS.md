@@ -276,43 +276,23 @@ Commits, flat `--ff-only` (`CONTRIBUTING.md`).
   captures the script object (and the Project). Capture into a val declared
   INSIDE the configuring block, and retry with that before opting any task
   out of CC with `notCompatibleWithConfigurationCache`.
-- **`project.version` MUST be assigned AFTER `fkcSetupGradlePlugin`**
-  (`fluxo-bcv-js/build.gradle.kts`, near `version = pluginVersion`).
-  fluxo-kmp-conf 0.14+ configures `publicationConfig.version`
-  (which only flows to the main `PluginMavenPublication`) but does
-  NOT propagate the value back to `project.version`. The
-  `com.gradle.plugin-publish` plugin then auto-generates a SECOND
-  publication — the plugin MARKER POM that Plugin Portal uses to
-  resolve `plugins { id("...") }` requests — and that one reads
-  `project.version` directly. Without the post-hoc assignment the
-  marker ships as `<version>unspecified</version>` (Gradle's
-  default), breaking the Plugin Portal contract. Reproducer: remove
-  the line, run `./gradlew :plugin:publishToMavenLocal`, and inspect
-  `~/.m2/.../io.github.fluxo-kt.binary-compatibility-validator-js.gradle.plugin/`
-  — the only subdirectory will be `unspecified/`. Assigning earlier
-  (e.g. next to `group =`) is silently overwritten by
-  `fkcSetupGradlePlugin`'s internal configuration. Upstream fix is
-  TODO at fluxo-kmp-conf.
-- **fluxo-kmp-conf 0.14+ silently no-ops publication setup when
-  Vanniktech isn't applied.** `setupPublication` defaults
-  `useVanniktechPublish = true`. With no Vanniktech maven-publish
-  plugin in our `plugins {}` block, fluxo-kmp-conf takes the Vanniktech
-  branch, calls `loadPluginStaticallyError` (just `logger.e(…)`, **does
-  NOT throw**), and the entire publication-setup path silently exits
-  — `gradlePlugin.{website,vcsUrl}`, POM metadata, artifactId, all
-  unwired. That's why our `build.gradle.kts` carries direct extension-
-  level workarounds for ALL of these (`pom { … }` block,
-  `pluginExt.website.set(…)`, `artifactId = "fluxo-bcv-ts"`,
-  `version = pluginVersion`). Reproducer: comment out
-  `pluginExt.website.set(projectUrl)`, run
-  `./gradlew :plugin:verifyPluginPortalMetadata` — that gate now
-  catches it locally (sibling-aligned defense-in-depth task; runs as
-  a `:check` dep so PR/push CI gates it). Without the verify task,
-  the next regression class would only surface inside
-  `release.yml`'s `publishPlugins` execution, AFTER a signed tag is
-  pushed (how 1.1.0 release attempt #1 failed). The upstream fix is
-  TODO at fluxo-kmp-conf — `setupPublication` should fail loud
-  (throw) when its configured publish backend isn't loadable.
+- **fluxo-kmp-conf (0.16+) owns the whole publication setup; the module's
+  `publicationConfig { }` block is what turns it on.** It derives the
+  artifactId (`fluxo-bcv-ts`, the plugin name), `project.version` (the
+  marker POM reads it), POM url/licence/developer/scm and
+  `gradlePlugin.{website,vcsUrl}` from `githubProject` and that block. Never
+  reintroduce manual `version =`/`artifactId`/`pom { }`/`website` wiring: it
+  duplicates POM entries. The only override is the POM `<name>`, because
+  fluxo-kmp-conf sets it to `projectName`, which also renames the artifact.
+  Any non-`file:` publish, `publishPlugins` included, fails without the
+  `SIGNING_KEY` PGP key (`release.yml` passes it), and with the key the
+  release signs with PGP as well as Sigstore. After a fluxo-kmp-conf bump,
+  diff the published POM, `.module` and marker in `build/checks-repo`
+  against the previous revision.
+- **`:plugin:verifyPluginPortalMetadata` (a `:check` dependency) fails
+  the build when a field `publishPlugins` requires is blank.** Without it
+  such a gap surfaces only inside `release.yml`, after the signed tag is
+  pushed (how 1.1.0 release attempt #1 failed).
 - **Detekt and Android Lint run only because `fluxo-bcv-js/build.gradle.kts`
   sets `setupVerification = true` and `enableGenericAndroidLint = true`.**
   fluxo-kmp-conf 0.13+ defaults both to false and says nothing, so dropping
@@ -321,9 +301,12 @@ Commits, flat `--ff-only` (`CONTRIBUTING.md`).
   `./gradlew check --dry-run` still lists `:plugin:detektMain` and
   `:plugin:lint`, then run a real `check`: a dry run executes no task, so
   it cannot catch one that exists but fails (e.g. a newer Detekt that
-  fluxo-kmp-conf selects rejecting a key in `detekt.yml`). Detekt 1.23.x reports false `UnreachableCode` right after
-  `methods.firstOrNull { … } ?: return@safe` in `CompatibilityUtils.kt`; Kotlin
-  compiles those lines warning-free, so they live in `detekt-baseline.xml`.
+  fluxo-kmp-conf selects rejecting a key in `detekt.yml`). fluxo-kmp-conf
+  runs Detekt 2 here (Kotlin stdlib 2.2+), so `detekt.yml` takes Detekt 2
+  keys only. Its type resolution does not get the SAM-with-receiver compiler
+  plugin, so `Action` lambdas (`register(…) { dependsOn(…) }`) count as
+  "compiler errors during analysis" and type-resolved rules are blind inside
+  them; a green `detektMain` does not cover that code.
 - **POM metadata audits MUST cover the `gradlePlugin` extension too,
   not just POM XML.** plugin-publish 2.x validates
   `gradlePlugin.{website,vcsUrl}` independently of any POM `<url>` /
