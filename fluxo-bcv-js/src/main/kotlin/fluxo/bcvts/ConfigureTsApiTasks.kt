@@ -451,6 +451,11 @@ private fun Project.configureCheckTasks(
         apiCheck = registerCustomApiCheckTask()
     }
 
+    // The check reads the baseline the dump writes: without an order, Gradle rejects
+    // `./gradlew apiDump apiCheck` (an output used without a declared dependency).
+    apiCheck.configure {
+        mustRunAfter(apiDump)
+    }
     state.commonApiDump.configure {
         dependsOn(apiDump)
     }
