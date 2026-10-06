@@ -191,9 +191,9 @@ pre-bump revision: (1) `:plugin:apiCheck` (JVM ABI — signatures only);
 (2) `:plugin:generatePomFileForPluginMavenPublication` (POM dep contract);
 (3) `:plugin:generateMetadataFileForPluginMavenPublication` (`.module` —
 the *primary* contract for Gradle consumers; the POM defers to it); and
-(4) the emitted **bytecode major version** (`javap -v` on
-`build/classes/kotlin/main`, must stay `52`/Java 8 — the basis of the
-Gradle-7.6+/old-runtime compat claim). `apiCheck` alone is insufficient:
+(4) the emitted **bytecode major version** (must stay `52`/Java 8 — the
+basis of the Gradle-7.6+/old-runtime compat claim; `:plugin:compileKotlin`
+fails on any other major, so a green build covers it). `apiCheck` alone is insufficient:
 it sees neither the POM/metadata dep declarations nor the bytecode target.
 A new Kotlin minor can trip a `[fluxo-kmp-conf] … JVM target may be
 silently capped … extend the table` warning — benign **only** because we

@@ -328,6 +328,24 @@ tasks.matching { it.name.startsWith("sigstoreSign") }.configureEach {
 }
 tasks.named("check") { dependsOn(verifyPluginPortalMetadata) }
 
+// The shipped classes must stay class-file major 52 (Java 8): Gradle 7.6, the supported
+// floor, still runs on Java 8, and no lane does. fluxo-kmp-conf applies `javaLangTarget`
+// (version catalog) and has changed defaults silently before; `useJdkRelease` does not
+// stop a raised target (`javaLangTarget = "11"` compiles cleanly with it on).
+// A build-cache hit skips this action, but a changed target changes the cache key.
+tasks.named<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>("compileKotlin") {
+    val classesDir = destinationDirectory
+    doLast {
+        val raised = classesDir.get().asFileTree.matching { include("**/*.class") }.filter { f ->
+            f.inputStream().use { it.skip(6); (it.read() shl 8) or it.read() } != 52
+        }.files
+        check(raised.isEmpty()) {
+            "Class files above Java 8 (major 52): $raised. " +
+                "Keep `javaLangTarget = 1.8` in gradle/libs.versions.toml."
+        }
+    }
+}
+
 // Gate Sigstore signing on the `RELEASE` env var so it fires ONLY in
 // `release.yml` (which already sets `RELEASE: true`). The Sigstore
 // plugin auto-wires its `sigstoreSign*Publication` tasks into every
