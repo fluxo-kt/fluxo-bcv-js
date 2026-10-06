@@ -306,7 +306,9 @@ Commits, flat `--ff-only` (`CONTRIBUTING.md`).
   keys only. Its type resolution does not get the SAM-with-receiver compiler
   plugin, so `Action` lambdas (`register(…) { dependsOn(…) }`) count as
   "compiler errors during analysis" and type-resolved rules are blind inside
-  them; a green `detektMain` does not cover that code.
+  them; a green `detektMain` does not cover that code. Upstream:
+  detekt-core never loads compiler plugins (detekt/detekt#7531); neither
+  this build nor fluxo-kmp-conf can fix it.
 - **POM metadata audits MUST cover the `gradlePlugin` extension too,
   not just POM XML.** plugin-publish 2.x validates
   `gradlePlugin.{website,vcsUrl}` independently of any POM `<url>` /
