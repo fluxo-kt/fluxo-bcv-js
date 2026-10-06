@@ -153,7 +153,10 @@ checks/middle/gradlew -p checks/middle apiCheck
 ## JDKs
 CI matrix runs **JDK 21 (Temurin)** on macOS/Ubuntu/Windows for `build.yml`.
 `release.yml` and `pr-baseline.yml` also use **JDK 21**. JitPack uses
-**openjdk21**. Local dev: 21 matches all CI surfaces. `checks/js-only` runs
+**openjdk21**. Local dev: 21 matches all CI surfaces. Stay on 21 while
+`checks/middle` pins Gradle 8.14.x: running Gradle on JDK 25 needs Gradle 9.1+
+(Gradle's compatibility matrix), so a newer default splits the lanes across
+JDKs. `checks/js-only` runs
 Gradle 7.6, which needs **JDK 17** (≤ 19): CI sets it up as step `jdk17`;
 `updateBaseline` reads `JDK17_HOME` (macOS: found via `java_home`).
 `useJdkRelease = true` (`-Xjdk-release=1.8`) makes JDK 9+ API calls a compile
