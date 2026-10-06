@@ -96,6 +96,18 @@ push, so:
   default), so caches never pile up per PR and no cleanup workflow is needed.
   Required checks still come from the PR run, attached to the merged SHA. After
   a dependency-changing merge, seed now: `gh workflow run build.yml --ref dev`.
+- **The caches one `dev` run restores must fit GitHub's free 10 GB repo limit.**
+  Every lane job saves its own Gradle-home entries (about 0.4 GB of
+  dependencies each), so a new lane, target or toolchain download grows the
+  total. Past the limit GitHub evicts least-recently-used entries, including
+  ones the same run needs, and setup-gradle does not re-save an evicted entry
+  while its job key still matches, so the loss lasts until the next `dev`
+  commit. After such a change, compare `gh api repos/{owner}/{repo}/actions/cache/usage`
+  with the sizes of entries the latest `dev` run accessed (`gh cache list
+  --json key,lastAccessedAt,sizeInBytes`). The KMP check cells run no npm and
+  download no Node.js partly for this reason (see their build scripts).
+  Wrapper zips stay cached: downloading Gradle in every lane costs more lane
+  time than their ~1.2 GB saves.
 
 ## `${{ !env.X }}` / bare `env.X` in a boolean position = constant, not condition
 GitHub coerces a non-empty string → `true`, and an `env:` value is ALWAYS a
