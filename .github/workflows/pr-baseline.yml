@@ -12,6 +12,8 @@ permissions:
   # issues to post a comment to a pull request.
   pull-requests: write
   issues: write
+  # Dispatches build.yml after pushing refreshed baselines (see that step).
+  actions: write
 
 jobs:
   pr-deps:
@@ -113,6 +115,7 @@ jobs:
           # a newer commit a contributor (or Dependabot) pushed between
           # checkout and push.
           GITHUB_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [ -n "$(git diff --name-only --cached)" ]; then
             # Show what's available.
@@ -132,6 +135,12 @@ jobs:
             git push \
               --force-with-lease="refs/heads/${GITHUB_HEAD_REF}:${GITHUB_HEAD_SHA}" \
               -v origin "HEAD:refs/heads/${GITHUB_HEAD_REF}"
+
+            # A GITHUB_TOKEN push starts no workflow, so the new head would
+            # never get the build.yml checks the branch ruleset requires and
+            # the PR could not merge. A dispatch is the exception GitHub
+            # allows; its check runs attach to the pushed commit.
+            gh workflow run build.yml --ref "${GITHUB_HEAD_REF}"
           else
             echo "No changes needed."
           fi

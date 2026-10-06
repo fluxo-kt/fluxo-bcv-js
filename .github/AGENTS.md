@@ -80,7 +80,7 @@ all-green, except owner bypass pushes; EXCLUDES advisory CodeQL). A job rename d
 badge → renders grey "unknown" (NOT red) → update `nameFilter` in lockstep.
 Tracks `dev`, not `main`.
 
-## GITHUB_TOKEN push suppression (load-bearing across 3 workflows)
+## GITHUB_TOKEN push suppression (load-bearing in several workflows)
 GitHub does NOT fire `push:`/`pull_request:closed`-triggered workflows on
 GITHUB_TOKEN pushes (recursion guard). The `/ff` bot merges via a GITHUB_TOKEN
 push, so:
@@ -96,6 +96,10 @@ push, so:
   default), so caches never pile up per PR and no cleanup workflow is needed.
   Required checks still come from the PR run, attached to the merged SHA. After
   a dependency-changing merge, seed now: `gh workflow run build.yml --ref dev`.
+- **`pr-baseline.yml` MUST dispatch `build.yml` after pushing baselines** to a
+  Dependabot PR (`gh workflow run build.yml --ref <head branch>`, needs
+  `actions: write`). Its push starts no workflow, so without the dispatch the
+  new head never gets the ruleset's required contexts and the PR cannot merge.
 - **The caches one `dev` run restores must fit GitHub's free 10 GB repo limit.**
   Every lane job saves its own Gradle-home entries (about 0.4 GB of
   dependencies each), so a new lane, target or toolchain download grows the
