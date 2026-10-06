@@ -286,7 +286,12 @@ Commits, flat `--ff-only` (`CONTRIBUTING.md`).
   fluxo-kmp-conf sets it to `projectName`, which also renames the artifact.
   Any non-`file:` publish, `publishPlugins` included, fails without the
   `SIGNING_KEY` PGP key (`release.yml` passes it), and with the key the
-  release signs with PGP as well as Sigstore. After a fluxo-kmp-conf bump,
+  release signs with PGP as well as Sigstore. Signing ignores key expiry, so
+  a green release can publish `.asc` files that verifiers report as made by
+  an expired key: after a release, verify one downloaded `.asc` against the
+  key fetched from keyserver.ubuntu.com, and when it has lapsed extend the
+  expiry and re-upload the public key (existing signatures then verify
+  cleanly, no re-release). After a fluxo-kmp-conf bump,
   diff the published POM, `.module` and marker in `build/checks-repo`
   against the previous revision.
 - **`:plugin:verifyPluginPortalMetadata` (a `:check` dependency) fails
