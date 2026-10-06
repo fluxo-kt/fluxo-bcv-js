@@ -44,6 +44,7 @@ private const val SUFFIX_BUILD = "Build"
 private const val SUFFIX_DUMP = "Dump"
 private const val SUFFIX_CHECK = "Check"
 private const val OTHER_GROUP = "other"
+private const val LIBRARY_LINK_TASK_PREFIX = "compileProductionLibrary"
 
 internal const val KTS_API = "Kotlin/TypeScript API"
 
@@ -233,25 +234,29 @@ private fun Project.configureTarget(
     }
 
     val targetName = target.name
-    val linkTasksFromBinaries = binaries.mapTo(LinkedHashSet()) { it.linkTask.get() }
-    val linkTasksCollection =
-        target.project.tasks.withType(KotlinJsIrLink::class.java).matching {
-            it.modeCompat == KotlinJsBinaryMode.PRODUCTION &&
-                !it.name.contains("Test", ignoreCase = true) &&
-                it.name.contains(targetName, ignoreCase = true) &&
-                (target.platformType != KotlinPlatformType.js ||
-                    !it.name.contains("wasm", ignoreCase = true))
+    // The target's own production binaries name its link tasks exactly. Matching
+    // by task name is only the fallback for when the binaries shim reads nothing:
+    // KGP names them `compile<Binary>Kotlin<Target>`, so the name must END with
+    // this target (a `contains` also matched `jsLibrary`/`jsNode` tasks for `js`).
+    val candidates: Set<KotlinJsIrLink> = binaries
+        .mapTo(LinkedHashSet()) { it.linkTask.get() }
+        .ifEmpty {
+            target.project.tasks.withType(KotlinJsIrLink::class.java).matching {
+                it.modeCompat == KotlinJsBinaryMode.PRODUCTION &&
+                    !it.name.contains("Test", ignoreCase = true) &&
+                    it.name.endsWith("Kotlin$targetName", ignoreCase = true)
+            }
         }
-    val candidates: Set<KotlinJsIrLink> = linkTasksCollection + linkTasksFromBinaries
 
     // Wire ONE link task: each extra one is a whole production link per `apiBuild`,
     // for declarations that are byte-identical (library vs executable, checked on
     // Kotlin 2.5.0-Beta1 for js `.d.ts` and wasmJs `.d.mts`). Library first: it is
-    // the npm-facing contract if the two ever diverge. KGP puts the binary kind in
-    // the task name (`compileProductionLibraryKotlinJs`); if that naming drifts, the
-    // rank falls back to name order, which stays deterministic across machines.
+    // the npm-facing contract if the two ever diverge. KGP names the binary kind
+    // right after `compile` (`compileProductionLibraryKotlinJs`), which a target name
+    // containing "Library" cannot fake; if that naming drifts, the rank falls back
+    // to name order, which stays deterministic across machines.
     val linkTask = candidates.minWithOrNull(
-        compareBy({ !it.name.contains("Library") }, { it.name }),
+        compareBy({ !it.name.startsWith(LIBRARY_LINK_TASK_PREFIX) }, { it.name }),
     )
     if (candidates.size > 1) {
         logger.info(

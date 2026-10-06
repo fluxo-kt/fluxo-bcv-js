@@ -13,6 +13,9 @@
   now links only the library binary for its `.d.ts` API tasks (both
   emit the same declarations), instead of linking both and logging a
   false "ambiguous" error. `binaries.library()` alone is supported too.
+  Link tasks now come from the target's own binaries, so a target no
+  longer picks up another JS target's link task whose name contains
+  its own (e.g. `jsLibrary` for `js`).
 - `preferEmbedded = true` now switches the whole `.d.ts` pipeline, not
   just the lifecycle line: baselines move to KGP's dump directory in the
   per-target layout (`api/ts/`, `api/wasmTs/`) and BCV's opt-outs no
