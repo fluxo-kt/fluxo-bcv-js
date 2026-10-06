@@ -74,6 +74,20 @@ apiValidation {
 // ("Task with path '…' not found") instead of passing on nothing.
 tasks.named("check") { dependsOn("tsApiCheck", "wasmTsApiCheck") }
 
+// Library first: with both binaries declared, the `.d.ts` tasks must link only the
+// library. A wrong pick passes every baseline (both emit the same declarations),
+// so check the link tasks the `.d.ts` build tasks depend on.
+gradle.taskGraph.whenReady {
+    val graph = this
+    for (task in graph.allTasks.filter { it.name == "tsApiBuild" || it.name == "wasmTsApiBuild" }) {
+        val links = graph.getDependencies(task).map { it.name }
+            .filter { it.startsWith("compileProduction") }
+        check(links.isNotEmpty() && links.all { it.startsWith("compileProductionLibrary") }) {
+            "${task.name} must link only the library binary, but depends on $links"
+        }
+    }
+}
+
 // These cells run no npm: the plugin's `.d.ts` tasks need only the link tasks, and the
 // npm toolchain feeds only JS/Wasm test tasks, which these cells lack. Left on, the yarn
 // installs (`KotlinNpmInstallTask`, the wasm `KotlinToolingSetupTask`) were most of every
