@@ -119,7 +119,8 @@ class — `fluxo.bcvts.FluxoBcvTsPlugin`. Plugin ID:
   `TargetConfig.kt` — small/structural; purpose evident from filename.
 
 ## Tasks the plugin creates
-- Umbrella: `apiBuild` / `apiDump` / `apiCheck` (auto-wired into `check`).
+- Umbrella: `apiDump` / `apiCheck` (`apiCheck` auto-wired into `check`); no
+  umbrella `apiBuild`.
 - Per JS/Wasm target: `${targetTsName}ApiBuild`, `…ApiDump`, `…ApiCheck`.
   `targetTsName` = `ts` for bare `js`; replaces `js`→`Ts` in mixed names;
   else appends `Ts`.

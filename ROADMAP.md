@@ -17,17 +17,23 @@ Highest consequence first.
 - Remove `@Incubating` from `FluxoBcvTsExtension` in 1.3.0 (1.2.0 changed
   what `preferEmbedded` does, so the stability promise moved one minor).
 - CI guard that `./gradlew check --dry-run` still lists `:plugin:detektMain`
-  and `:plugin:lint`: fluxo-kmp-conf 0.13 once turned both off by default and
-  `check` stayed green for months. New enforcement, so it needs a maintainer
-  decision first.
+  and `:plugin:lint`: fluxo-kmp-conf 0.13+ turns both off by default, so
+  losing either opt-in leaves `check` green while running neither. New
+  enforcement, so it needs a maintainer decision first.
 - AGP Kotlin Multiplatform Android target lane: a single BCV-platform target
-  without BCV tasks once crashed configuration (`androidApiBuild` not
+  without BCV tasks must not fail configuration (`androidApiBuild` not
   found). Covered only by code today; a lane costs an Android SDK in CI.
+- Support BCV applied only to the root project (BCV's documented layout):
+  today the plugin sees BCV only where it is applied, so such subprojects get
+  embedded mode or nothing. Supporting it means detecting BCV through the
+  ancestors' extension and extending the BCV < 0.15 refusal there too (that
+  BCV's root-configured `apiDump` would still delete per-target baselines);
+  needs a multi-project cell.
 - Integration tests — incl. resolving the *published* plugin end-to-end
   from the Plugin Portal (`plugins{}`) and JitPack (`useModule`).
   `checks/js-only` resolves the published marker + jar from a local repo,
-  but no lane hits either real repository (a wrong JitPack coordinate
-  shipped undetected in 1.1.0)
+  but no lane hits either real repository, so a wrong coordinate in the
+  README or the published metadata ships undetected
 - Pull requests for
   - ★4000 https://github.com/square/wire
   - ★49 https://github.com/DrewCarlson/mobius.kt

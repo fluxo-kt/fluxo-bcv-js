@@ -44,7 +44,7 @@ Compatibility tested with:
 
 |  Version   |       BCV[^1]        | Kotlin  | Gradle |
 |:----------:|:--------------------:|:-------:|:------:|
-|  1.2.0[^2] | 0.8 - 0.18.2 OR KGP-embedded[^3] | 1.7.22+ (tested up to 2.5.0-Beta1) | 7.6+ (tested 7.6.6, 8.14.5, 9.8.0) |
+|  1.2.0[^2] | 0.8 - 0.18.2 (tested 0.8.0, 0.16.3, 0.18.2) OR KGP-embedded[^3] | 1.7.22+ (tested 1.7.22, 2.2.21, 2.4.20, 2.5.0-Beta1) | 7.6+[^4] (tested 7.6.6, 8.14.5, 9.8.0) |
 |  1.1.0[^2] | 0.8 - 0.18.1 OR KGP-embedded[^3] | 1.7.22+ |  7.6+  |
 |   1.0.0    |      0.8 - 0.15      | 1.7.22+ |  7.6+  |
 |   0.3.0    |      0.8 - 0.14      | 1.6.20+ |  7.6+  |
@@ -52,7 +52,8 @@ Compatibility tested with:
 
 [^1]: "BCV" denotes the ABI-validation source — until 1.0.x only the external [KotlinX Binary Compatibility Validator][bcv]; in 1.1.0 also KGP-embedded `abiValidation { }` (Kotlin 2.2+).
 [^2]: External KotlinX BCV is [in maintenance mode](https://github.com/Kotlin/binary-compatibility-validator#readme): bug-fix releases only; new features go to KGP-embedded `abiValidation`.
-[^3]: KGP-embedded `abiValidation { }` activates the embedded mode without applying the external BCV plugin. Requires Kotlin 2.2+ and the consumer-side `@OptIn(ExperimentalAbiValidation::class)` ceremony. See [Dual-mode usage](#dual-mode-usage-110) below.
+[^3]: KGP-embedded `abiValidation { }` activates the embedded mode without applying the external BCV plugin. Requires Kotlin 2.2+ and the consumer-side `@OptIn(ExperimentalAbiValidation::class)` ceremony; the full pipeline is tested on 2.4.20 and 2.5.0-Beta1, embedded detection also on 2.3.21. See [Dual-mode usage](#dual-mode-usage-110) below.
+[^4]: Configure `fluxoBcvTs { }` from build scripts there. On Gradle older than 8.3 (embedded Kotlin before 1.9; reproduced on 7.6.6), a `kotlin-dsl` convention plugin (buildSrc or an included build) that references `FluxoBcvTsExtension` fails to compile against the plugin's Kotlin metadata 2.0 unless it adds `-Xskip-metadata-version-check`.
 
 
 ### How to use
@@ -126,10 +127,10 @@ When **both** are present, by default the external plugin is preferred for backw
 
 The selected mode decides where `.d.ts` baselines live and which opt-outs apply:
 
-- **external** — BCV's `apiDumpDirectory` and layout (`api/` for a single JVM target, else per target), and BCV's `ignoredProjects` / `validationDisabled`.
+- **external** — BCV's `apiDumpDirectory` and layout (`api/` unless there are several JVM/Android targets, then per target), and BCV's `ignoredProjects` / `validationDisabled`.
 - **embedded** — KGP's `abiValidation { referenceDumpDir }` (default `api/`), always per target (`api/ts/`, `api/wasmTs/`); BCV's opt-outs do not apply.
 
-Switching a project to embedded mode therefore moves its baselines: run `./gradlew apiDump` once and commit the new files. With an external BCV older than 0.15, `preferEmbedded = true` is ignored with a warning, because that BCV's `apiDump` syncs the whole dump directory and would delete them.
+Switching a project to embedded mode therefore moves its baselines: run `./gradlew apiDump` once and commit the new files. External mode needs the BCV plugin applied to the module itself: BCV applied only to the root project counts as absent there. With an external BCV older than 0.15, `preferEmbedded = true` is ignored with a warning, because that BCV's `apiDump` syncs the whole dump directory and would delete them.
 
 ```kotlin
 // in the `build.gradle.kts` of the target module.

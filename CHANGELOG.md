@@ -16,12 +16,22 @@
   Link tasks now come from the target's own binaries, so a target no
   longer picks up another JS target's link task whose name contains
   its own (e.g. `jsLibrary` for `js`).
-- `preferEmbedded = true` now switches the whole `.d.ts` pipeline, not
-  just the lifecycle line: baselines move to KGP's dump directory in the
-  per-target layout (`api/ts/`, `api/wasmTs/`) and BCV's opt-outs no
-  longer apply. Run `apiDump` once after switching and commit the files.
+- **Breaking:** embedded mode now owns the whole `.d.ts` pipeline, not
+  just the lifecycle line: baselines live in KGP's dump directory in the
+  per-target layout (`api/ts/`, `api/wasmTs/`), and BCV's
+  `apiDumpDirectory`, `ignoredProjects` and `validationDisabled` no longer
+  apply. This moves baselines when upgrading with `preferEmbedded = true`,
+  with a custom `abiValidation { referenceDumpDir }`, or in a subproject
+  that enables `abiValidation` while BCV is applied only to the root
+  project (the plugin sees BCV only where it is applied). In
+  those projects run `apiDump`, commit the new files and delete the old
+  `.d.ts` baselines.
 - The `fluxoBcvTs` extension stays `@Incubating`; its stability target
   moves to 1.3.0.
+
+### Added
+- The Plugin Portal listing declares configuration-cache support;
+  isolated projects are declared unsupported.
 
 ### Updated
 - Tested with Kotlin up to 2.5.0-Beta1, BCV up to 0.18.2, and Gradle
