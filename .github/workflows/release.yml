@@ -37,6 +37,14 @@ jobs:
       - name: Prepare release settings
         run: |
           echo "GITHUB_REF_NAME: $GITHUB_REF_NAME"
+          # The release title and Portal probe use the tag, but the build publishes
+          # `fluxoBcvJs` from the catalog, and a Portal version can never be
+          # republished: stop before anything is created on a mismatch.
+          CATALOG=$(sed -n 's/^fluxoBcvJs = "\(.*\)"$/\1/p' gradle/libs.versions.toml)
+          if [ "$CATALOG" != "${GITHUB_REF_NAME#v}" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME != fluxoBcvJs \"$CATALOG\" in gradle/libs.versions.toml; fix one, then re-tag."
+            exit 1
+          fi
           RELEASE_PRE=false
           RELEASE_SUFFIX=""
           # Check release type
