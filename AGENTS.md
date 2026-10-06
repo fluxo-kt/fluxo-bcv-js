@@ -226,12 +226,12 @@ Commits, flat `--ff-only` (`CONTRIBUTING.md`).
   this is intentional, do NOT remove the gate at `ConfigureTsApiTasks.kt`.
 - **Dual-mode trigger** (1.1.0+): the pipeline fires on **either**
   external `org.jetbrains.kotlinx.binary-compatibility-validator` OR
-  KGP-embedded `kotlin { abiValidation { } }`. Detection of the
-  embedded path is **task-based** (`tasks.names` contains
-  `checkKotlinAbi`/`updateKotlinAbi`, KGP 2.4+) — extension-shape probes
-  break on the Kotlin 2.4-RC `.enabled`-property removal. KGP 2.2/2.3 fall
-  back to reading `enabled`; never match 2.2's `*LegacyAbi` tasks, which
-  exist in every KMP project whether or not validation is on. Reading the
+  KGP-embedded `kotlin { abiValidation { } }`. Embedded detection reads the
+  extension's `enabled` flag first (KGP 2.2/2.3) and only when no readable
+  flag exists (KGP 2.4 removed it; its getter throws) checks `tasks.names`
+  for `checkKotlinAbi`/`updateKotlinAbi`. Never let the tasks decide while a
+  flag exists: KGP 2.3 registers them in every KMP project, and 2.2
+  registers `*LegacyAbi` tasks in every one, validation on or off. Reading the
   KGP 2.4.20+ extension itself (e.g. `referenceDumpDir`) needs the
   `kotlin.getAbiValidation()` getter: it is not in the extension container,
   so `extensions.findByName("abiValidation")` returns null. If a future KGP

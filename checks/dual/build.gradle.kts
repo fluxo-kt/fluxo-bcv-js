@@ -20,10 +20,9 @@ plugins {
     id("io.github.fluxo-kt.binary-compatibility-validator-js")
 }
 
-// Kotlin 2.4-RC API drift: `abiValidation` no longer exposes `.enabled`
-// (see `CompatibilityUtils.kt` task-based detection). An empty block
-// is the activation idiom; presence in the build script + KGP-created
-// `:checkKotlinAbi` task is what makes our shim report Enabled.
+// On Kotlin 2.4+ an empty `abiValidation { }` block switches validation on
+// (2.4 removed `.enabled`); KGP then creates `:checkKotlinAbi`, which is what
+// the plugin's embedded detection sees.
 @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
 kotlin {
     @OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class)

@@ -250,8 +250,8 @@ internal val KotlinJsIrLink.modeCompat: KotlinJsBinaryMode?
 // Fully reflective: types and package paths drift across Kotlin
 // versions, and consuming the typed `AbiValidationMultiplatformExtension`
 // would create a hard compile-time bond to a still-experimental KGP
-// surface. On any reflection failure we fail-closed (return Absent /
-// false) so a broken shim never spuriously fires the embedded pipeline.
+// surface. On any reflection failure we fail closed (not enabled) so a
+// broken shim never spuriously fires the embedded pipeline.
 //
 // Known names KGP has used (or may use) for the extension. Add new
 // keys here when KGP renames — and remove the old one only after the
@@ -307,50 +307,40 @@ internal fun Project.externalBcvSyncsWholeDumpDir(): Boolean = safe {
     false
 } ?: true
 
+/** The `enabled` flag of a KGP 2.2/2.3 `abiValidation` extension; `null` = no readable flag. */
 private fun Any.readAbiEnabled(): Boolean? = safe {
-    val m = javaClass.methods.firstOrNull {
+    val getter = javaClass.methods.firstOrNull {
         it.name == "getEnabled" && it.parameterCount == 0
-    } ?: return@safe null
-    @Suppress("UNCHECKED_CAST")
-    (m.invoke(this) as? org.gradle.api.provider.Property<Boolean>)?.orNull
+    }
+    // An unset flag means "not enabled", never "unreadable".
+    (getter?.invoke(this) as? org.gradle.api.provider.Property<*>)?.let { it.orNull == true }
 }
 
 // KGP 2.4+ creates these tasks when (and only when) the user activates
-// `abiValidation` — plain `kotlin { abiValidation { } }` or
-// `abiValidation()`. KGP 2.2.21 creates none of them, even with
-// `abiValidation { enabled.set(true) }`. Task-based detection bypasses
-// the unstable extension-shape API (2.4 removed `.enabled` while
-// keeping the extension reachable, which would otherwise false-
-// positive a presence-based check).
+// `abiValidation` — plain `kotlin { abiValidation { } }` or `abiValidation()`.
+// They prove nothing on older KGP: 2.3.x registers both in every KMP project,
+// with or without `abiValidation` (2.2.21 registers neither), so they are read
+// only when no `enabled` flag exists.
 // Never add KGP 2.2's `checkLegacyAbi`/`updateLegacyAbi`/`dumpLegacyAbi`: 2.2.21
-// registers them in every KMP project, with `abiValidation` absent or disabled,
-// so they would report embedded mode everywhere. On 2.2/2.3 detection falls
-// through to the extension's `enabled` property below.
+// registers them in every KMP project too.
 private const val CHECK_KOTLIN_ABI_TASK = "checkKotlinAbi"
 private const val UPDATE_KOTLIN_ABI_TASK = "updateKotlinAbi"
 
 /**
- * `null` = no `abiValidation` extension; `false` = extension present but not
- * enabled; `true` = enabled. A nullable Boolean rather than an enum: the plugin
- * runs on Gradle's embedded Kotlin stdlib (1.7.10 on Gradle 7.6), and enum
- * classes compiled with Kotlin 1.9+ call `kotlin.enums.EnumEntries`, which that
- * stdlib lacks (`NoClassDefFoundError` at plugin apply).
+ * Whether the user switched on KGP-embedded ABI validation for this project.
+ * KGP 2.2/2.3: the extension's `enabled` flag decides. KGP 2.4+: that flag is
+ * gone (its getter throws, so it reads as unreadable) and the tasks above decide.
  */
-private fun Project.abiLookup(): Boolean? {
-    // Task-based primary signal. `tasks.names` is lazy (no task
-    // realization), CC-safe, and present in every supported Gradle.
-    val taskNames = tasks.names
-    if (CHECK_KOTLIN_ABI_TASK in taskNames || UPDATE_KOTLIN_ABI_TASK in taskNames) {
-        return true
-    }
-    // Extension-based fallback for older KGP that doesn't materialise
-    // the tasks (or where naming has drifted further). Preserves the
-    // 2.2/2.3 contract where `enabled: Property<Boolean>` is the opt-
-    // in signal.
-    val abiExts = extensions.findByName("kotlin")?.abiScopes()
-        ?.mapNotNull { it.findAbiExt() }
+private fun Project.abiValidationEnabled(): Boolean {
+    val enabledFlags = extensions.findByName("kotlin")?.abiScopes()
+        ?.mapNotNull { it.findAbiExt()?.readAbiEnabled() }
         .orEmpty()
-    return if (abiExts.isEmpty()) null else abiExts.any { it.readAbiEnabled() == true }
+    if (enabledFlags.isNotEmpty()) {
+        return true in enabledFlags
+    }
+    // `tasks.names` is lazy (no task realization) and CC-safe.
+    val taskNames = tasks.names
+    return CHECK_KOTLIN_ABI_TASK in taskNames || UPDATE_KOTLIN_ABI_TASK in taskNames
 }
 
 /**
@@ -373,29 +363,14 @@ private fun Any.abiScopes(): List<Any> {
 }
 
 /**
- * True iff KGP's `abiValidation` extension is observable on the kotlin
- * extension or any of its targets. A presence check — does NOT imply
- * the user has opted into embedded validation. Use for diagnostic
- * flow only (e.g. logging "embedded extension present but `enabled`
- * cannot be read — shim might be broken"); use [kgpAbiValidationEnabledCompat]
- * for trigger decisions.
- *
- * @see org.jetbrains.kotlin.gradle.dsl.abi.AbiValidationMultiplatformExtension
- * @see org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation
- */
-internal val Project.kgpAbiValidationDetectedCompat: Boolean
-    get() = abiLookup() != null
-
-/**
- * True iff KGP's embedded ABI validation is detected AND its
- * `enabled` flag reads true on at least one scope (top-level or any
- * target). Drives the embedded-mode trigger in [FluxoBcvTsPlugin].
+ * True iff the user switched on KGP's embedded ABI validation, top-level or
+ * on any target. Drives the embedded-mode trigger in [FluxoBcvTsPlugin].
  *
  * @see org.jetbrains.kotlin.gradle.dsl.abi.AbiValidationMultiplatformExtension
  * @see org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation
  */
 internal val Project.kgpAbiValidationEnabledCompat: Boolean
-    get() = abiLookup() == true
+    get() = abiValidationEnabled()
 
 
 // Reflective compat seams: swallow API-drift exceptions, propagate JVM

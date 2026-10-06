@@ -52,6 +52,13 @@
 - The lifecycle line is printed whenever configuration runs, so a build
   that reuses a configuration-cache entry prints none; the docs claimed
   every build invocation.
+- On Kotlin 2.3, every Kotlin Multiplatform project counted as using
+  KGP-embedded `abiValidation`, because KGP 2.3 creates its ABI tasks in
+  every project: `preferEmbedded = true` moved the `.d.ts` baselines to a
+  validator that was off, and a project with no validator ran instead of
+  reporting it. Kotlin 2.2/2.3 now go by `abiValidation`'s `enabled` flag.
+- The setup hints suggested `abiValidation { enabled.set(true) }`, which
+  does not compile on Kotlin 2.4+; they now give the form for each version.
 
 
 ## [1.1.0] - 2026-05-18

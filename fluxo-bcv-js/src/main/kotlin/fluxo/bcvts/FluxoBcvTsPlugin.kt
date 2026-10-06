@@ -16,6 +16,13 @@ internal const val PLUGIN_ID_BCV = "org.jetbrains.kotlinx.binary-compatibility-v
 // integration-test contract.
 internal const val LIFECYCLE_TAG = "[fluxo-bcv-ts]"
 
+// The switch differs by KGP version: 2.4 removed `enabled` (a compile error there),
+// while on 2.2/2.3 an empty block leaves validation off.
+private const val ENABLE_ABI_VALIDATION_HINT =
+    "`kotlin { abiValidation { } }` (Kotlin 2.4+) or " +
+        "`kotlin { abiValidation { enabled.set(true) } }` (Kotlin 2.2/2.3), " +
+        "with @OptIn(ExperimentalAbiValidation::class)"
+
 public class FluxoBcvTsPlugin : Plugin<Project> {
     private companion object {
         // Single-fire latch key. `plugins.withId(...)` may fire once for
@@ -89,18 +96,8 @@ public class FluxoBcvTsPlugin : Plugin<Project> {
                     "Apply the external plugin (see " +
                     "https://github.com/Kotlin/binary-compatibility-validator#setup" +
                     ") OR enable embedded mode via " +
-                    "`kotlin { @OptIn(ExperimentalAbiValidation::class) " +
-                    "abiValidation { enabled.set(true) } }`."
+                    "$ENABLE_ABI_VALIDATION_HINT."
                 logger.error(message)
-                // Diagnostic refinement: the extension was found by name
-                // but `enabled` couldn't be read — shim drift likely.
-                if (kgpAbiValidationDetectedCompat) {
-                    logger.lifecycle(
-                        "$LIFECYCLE_TAG embedded abiValidation extension detected but " +
-                            "`enabled` could not be read — KGP shim drift suspected; " +
-                            "see CompatibilityUtils.kt ABI_EXT_NAMES.",
-                    )
-                }
             }
         }
     }
@@ -186,8 +183,7 @@ public class FluxoBcvTsPlugin : Plugin<Project> {
             logger.lifecycle(
                 "$LIFECYCLE_TAG preferEmbedded=true but KGP-embedded abiValidation " +
                     "is not enabled — falling back to external BCV. " +
-                    "Set `kotlin { abiValidation { enabled.set(true) } }` " +
-                    "(requires @OptIn(ExperimentalAbiValidation::class)).",
+                    "Enable it with $ENABLE_ABI_VALIDATION_HINT.",
             )
         }
         if (preference == false && !external) {

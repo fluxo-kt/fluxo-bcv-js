@@ -4,12 +4,10 @@
   <CurrentIssues>
     <ID>ForbiddenComment:FluxoBcvTsPlugin.kt$FluxoBcvTsPlugin$// FIXME: Support lazy initialization of the targets and extension.</ID>
     <ID>UnreachableCode:CompatibilityUtils.kt$(getTargets.invoke(kotlinExt) as? Iterable&lt;*&gt;)?.forEach { tgt -&gt; if (tgt != null) scopes.add(tgt) }</ID>
-    <ID>UnreachableCode:CompatibilityUtils.kt$(m.invoke(this) as? org.gradle.api.provider.Property&lt;Boolean&gt;)?.orNull</ID>
     <ID>UnreachableCode:CompatibilityUtils.kt$m.invoke(this) as? org.gradle.api.provider.Property&lt;KotlinJsBinaryMode&gt;</ID>
     <ID>UnreachableCode:CompatibilityUtils.kt$orNull</ID>
     <ID>UnreachableCode:CompatibilityUtils.kt$return@run { @Suppress("UNCHECKED_CAST") (m.invoke(this) as? org.gradle.api.provider.Property&lt;KotlinJsBinaryMode&gt;) ?.orNull }</ID>
     <ID>UnreachableCode:CompatibilityUtils.kt$val getTargets = kotlinExt.javaClass.methods.firstOrNull { it.name == "getTargets" &amp;&amp; it.parameterCount == 0 } ?: return@safe</ID>
     <ID>UnreachableCode:CompatibilityUtils.kt$val m = clazz.methods.firstOrNull { it.parameterCount == 0 &amp;&amp; (it.name == "getModeProperty" || it.name.startsWith("getModeProperty\$")) } ?: return@safe</ID>
-    <ID>UnreachableCode:CompatibilityUtils.kt$val m = javaClass.methods.firstOrNull { it.name == "getEnabled" &amp;&amp; it.parameterCount == 0 } ?: return@safe null</ID>
   </CurrentIssues>
 </SmellBaseline>
