@@ -59,6 +59,9 @@
   reporting it. Kotlin 2.2/2.3 now go by `abiValidation`'s `enabled` flag.
 - The setup hints suggested `abiValidation { enabled.set(true) }`, which
   does not compile on Kotlin 2.4+; they now give the form for each version.
+- `apiCheck` could fail with "Input file does not exist" in a project with
+  one JVM target and the external BCV: the `.d.ts` file removed before
+  BCV's check was still seen as present, so it was not rebuilt.
 
 
 ## [1.1.0] - 2026-05-18

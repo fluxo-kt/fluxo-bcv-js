@@ -392,6 +392,10 @@ private fun Project.configureCheckTasks(
         // external BCV plugin (and its classes) is present; see KotlinTsApiDumpTask.
         val bcvCheckCleaner = tasks.maybeRegister(bcvCheckTaskName + "TsCompatCleaner") {
             group = OTHER_GROUP
+            // Declared, so Gradle forgets its cached state of the file: an
+            // undeclared delete let file-system watching still report it present,
+            // `apiBuildTask` then ran as UP-TO-DATE and `apiCheck` found no input.
+            destroyables.register(buildFile)
             doLast {
                 val file = buildFile.get().asFile
                 if (file.delete()) {
