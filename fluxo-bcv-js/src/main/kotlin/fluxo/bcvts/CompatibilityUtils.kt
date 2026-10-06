@@ -296,7 +296,7 @@ private fun Any.referenceDumpDirOrNull(): DirectoryProperty? =
  * Whether the applied external BCV dumps with a directory `Sync` that deletes
  * every file in the dump dir it did not produce, which would erase `.d.ts`
  * baselines kept in their own subdirectories. BCV 0.14 does (it references
- * `org.gradle.api.tasks.Sync`); 0.16+ copies single files with
+ * `org.gradle.api.tasks.Sync`); 0.15+ copies single files with
  * `kotlinx.validation.SyncFile`. Probing that class tests the behaviour itself,
  * with no version parsing. Unknown counts as `true`: refusing embedded mode
  * costs a layout switch, deleting baselines costs user data.

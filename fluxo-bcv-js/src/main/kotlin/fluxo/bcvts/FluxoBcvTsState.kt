@@ -12,12 +12,9 @@ internal class FluxoBcvTsState(
     // with a custom KGP `referenceDumpDir`.
     val referenceDumpDir: Provider<Directory>,
     val dirConfig: Provider<DirConfig>,
-    // Nullable since 1.1.0: in embedded-only mode the external BCV
-    // plugin's `ApiValidationExtension` does not exist on the project,
-    // so `apiValidationExtensionOrNull` returns null. Callers use the
-    // nullable-aware `apiCheckEnabled(...)` overload, and
-    // `apiDumpDirectoryCompat` (extension property on the nullable
-    // receiver) already handles the null case via `DEFAULT_API_DIR`.
+    // Null in embedded mode, even when the external BCV is applied: KGP drives,
+    // so BCV's dump dir, layout and opt-outs are ignored. `apiCheckEnabled` and
+    // `apiDumpDirectoryCompat` read null as "no BCV" (checks on, `api/`).
     val bcv: ApiValidationExtension?,
     val commonApiDump: TaskProvider<Task>,
     val commonApiCheck: TaskProvider<Task>,

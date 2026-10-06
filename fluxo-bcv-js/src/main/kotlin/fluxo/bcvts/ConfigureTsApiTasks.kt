@@ -53,11 +53,9 @@ private val BCV_PLATFORMS = arrayOf(
     KotlinPlatformType.androidJvm,
 )
 
-// Default-on: only an active BCV extension can opt the project out
-// (globally disabled or in `ignoredProjects`). In embedded-only mode
-// `bcv == null`, so checks stay enabled. No `contract { }` here — the
-// previous `returns(true) implies (bcv != null)` was a lie since the
-// `bcv == null` branch also returns true (1.1.0 nullable-bcv refactor).
+// Default-on: only a driving BCV extension can opt the project out
+// (globally disabled or in `ignoredProjects`). In embedded mode
+// `bcv == null`, so checks stay enabled.
 private fun apiCheckEnabled(projectName: String, bcv: ApiValidationExtension?): Boolean =
     bcv == null || (!bcv.validationDisabled && projectName !in bcv.ignoredProjects)
 
@@ -102,10 +100,9 @@ internal fun Project.configureTsApiTasks(useEmbedded: Boolean) {
     // next to KGP's own ABI dumps wherever the user moved them.
     val dumpDirectory = bcv.apiDumpDirectoryCompat
     val defaultDumpDir = layout.projectDirectory.dir(dumpDirectory)
-    val referenceDumpDir: Provider<Directory> = when {
-        useEmbedded -> kgpReferenceDumpDirCompat?.orElse(defaultDumpDir)
-        else -> null
-    } ?: provider { defaultDumpDir }
+    val referenceDumpDir: Provider<Directory> =
+        (if (useEmbedded) kgpReferenceDumpDirCompat?.orElse(defaultDumpDir) else null)
+            ?: provider { defaultDumpDir }
 
     // Common BCV tasks for multiplatform
     // Create the own ones (for the raw Kotlin/JS module)
@@ -159,7 +156,7 @@ internal fun Project.configureTsApiTasks(useEmbedded: Boolean) {
             // targets are invisible), so follow the committed baselines:
             // top-level `.d.ts` in the dump dir means COMMON, else TARGET_DIR.
             apiTaskName(single, SUFFIX_CHECK) !in tasks.names -> {
-                val hasCommonBaseline = layout.projectDirectory.dir(dumpDirectory).asFile
+                val hasCommonBaseline = defaultDumpDir.asFile
                     .listFiles { f -> f.name.endsWith(EXT) }?.isNotEmpty() == true
                 if (hasCommonBaseline) DirConfig.COMMON(null) else DirConfig.TARGET_DIR
             }
@@ -278,7 +275,6 @@ private fun Project.configureTarget(
     }
 
     val targetConfig = TargetConfig(
-        project = target.project,
         apiDumpDirectory = state.apiDumpDir,
         referenceDumpDir = state.referenceDumpDir,
         targetTsName = targetTsName,
@@ -378,7 +374,7 @@ private fun Project.configureCheckTasks(
 
     // Special case
     // BCV has the 'COMMON' dir strategy and uses 'api' dir for comparison.
-    val dirConfig = config.dirConfig?.get()
+    val dirConfig = config.dirConfig.get()
     if (dirConfig is DirConfig.COMMON && dirConfig.bcvTargetName != null) {
         val bcvTargetName = dirConfig.bcvTargetName
         logger.info(
@@ -404,8 +400,6 @@ private fun Project.configureCheckTasks(
             doLast {
                 val file = buildFile.get().asFile
                 if (file.delete()) {
-                    // Single level — users opt into verbose lifecycle output
-                    // via `--info`/`--debug`; the DBG build-toggle is gone.
                     logger.info(
                         " >> Removed {} file for compatibility with '{}' task: {}",
                         KTS_API, bcvCheckTaskName, file,

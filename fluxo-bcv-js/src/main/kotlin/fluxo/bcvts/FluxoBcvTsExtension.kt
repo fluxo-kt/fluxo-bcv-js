@@ -20,9 +20,10 @@ import org.gradle.api.provider.Property
  *
  * ### Lifecycle observable (integration-test contract)
  *
- * Each configuration run that activates the pipeline emits exactly one
- * machine-parseable line to Gradle's lifecycle log (a build that reuses a
- * configuration-cache entry skips configuration, so it prints none):
+ * Each configuration run that finds a validator (external BCV or embedded
+ * `abiValidation`) emits exactly one machine-parseable line to Gradle's
+ * lifecycle log, even if BCV's opt-outs then skip the project (a build that
+ * reuses a configuration-cache entry skips configuration, so it prints none):
  *
  * ```
  * [fluxo-bcv-ts] trigger=<external|embedded> preferEmbedded=<auto|true|false>
