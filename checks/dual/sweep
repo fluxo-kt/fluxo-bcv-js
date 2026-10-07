@@ -8,8 +8,9 @@
 #    `api/wasmTs/`). Both layouts hold byte-identical baselines, so apiCheck alone
 #    passes either way and cannot tell whether preferEmbedded switched the layout.
 # Then it proves the checks can FAIL (every other lane only sees matching
-# baselines), and covers two setups no cell builds: an old BCV whose apiDump would
-# delete embedded baselines, and Kotlin 2.3, whose ABI tasks exist in every project.
+# baselines), and covers three setups no cell builds: an old BCV whose apiDump would
+# delete embedded baselines, external BCV without `abiValidation { }` (must stay
+# external on the default), and Kotlin 2.3, whose ABI tasks exist in every project.
 # Used by CI (build.yml), so CI and local runs share the same assertions.
 set -euo pipefail
 cd "$(dirname "$0")"
