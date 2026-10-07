@@ -44,7 +44,7 @@ Compatibility tested with:
 
 |  Version   |       BCV[^1]        | Kotlin  | Gradle |
 |:----------:|:--------------------:|:-------:|:------:|
-|  1.3.0[^2] | 0.8 - 0.18.2 (tested 0.8.0, 0.14.0, 0.16.3, 0.18.2) OR KGP-embedded[^3] | 1.7.22+ (tested 1.7.22, 2.2.21, 2.4.20, 2.5.0-Beta1) | 7.6+[^4] (tested 7.6.6, 8.14.5, 9.8.0) |
+|  1.3.0[^2] | 0.8 - 0.18.2 (tested 0.8.0, 0.16.3, 0.18.2) OR KGP-embedded[^3] | 1.7.22+ (tested 1.7.22, 2.2.21, 2.4.20, 2.5.0-Beta1) | 7.6+[^4] (tested 7.6.6, 8.14.5, 9.8.0) |
 |  1.2.0[^2] | 0.8 - 0.18.2 (tested 0.8.0, 0.16.3, 0.18.2) OR KGP-embedded[^3] | 1.7.22+ (tested 1.7.22, 2.2.21, 2.4.20, 2.5.0-Beta1) | 7.6+[^4] (tested 7.6.6, 8.14.5, 9.8.0) |
 |  1.1.0[^2] | 0.8 - 0.18.1 OR KGP-embedded[^3] | 1.7.22+ |  7.6+  |
 |   1.0.0    |      0.8 - 0.15      | 1.7.22+ |  7.6+  |
@@ -104,7 +104,7 @@ pluginManagement {
   }
   resolutionStrategy.eachPlugin {
     if (requested.id.toString() == "io.github.fluxo-kt.binary-compatibility-validator-js")
-      useModule("com.github.fluxo-kt.fluxo-bcv-js:fluxo-bcv-ts:1.3.0") // <-- specify a release tag or a commit.
+      useModule("com.github.fluxo-kt.fluxo-bcv-js:fluxo-bcv-ts:v1.3.0") // <-- specify a release tag or a commit.
   }
 }
 ```

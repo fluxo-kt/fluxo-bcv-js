@@ -45,7 +45,11 @@ class — `fluxo.bcvts.FluxoBcvTsPlugin`. Plugin ID:
   derives it from the plugin name), so the JitPack coordinate is
   `…fluxo-bcv-js:fluxo-bcv-ts:<ver>`, NOT `:plugin:` (that's the Gradle *task*
   path / local jar name). README's JitPack `useModule` must use the published
-  artifactId — `:plugin:` 404s on JitPack (shipped broken in 1.1.0). The Portal
+  artifactId — `:plugin:` 404s on JitPack (shipped broken in 1.1.0). Its
+  version is the tag name (`v1.3.0`): JitPack builds each requested
+  version string once and keeps a failed result, and only the repo owner
+  can delete it on jitpack.io. After a release, fetch the README's exact
+  coordinate's `.pom` from jitpack.io; it must return 200. The Portal
   consumer uses `plugins { id(…) version }` (the plugin id), never this raw
   coordinate.
 - `fluxo-bcv-js/src/main/kotlin/fluxo/bcvts/` — all sources, single package.
