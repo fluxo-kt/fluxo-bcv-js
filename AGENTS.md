@@ -264,7 +264,8 @@ Commits, flat `--ff-only` (`CONTRIBUTING.md`).
 - **`FluxoBcvTsExtension` is an `@Incubating` `interface`** (1.1.0).
   Managed type with abstract `Property<T>` getters — Gradle's
   ManagedFactory synthesizes the impl. Stability commitment moment
-  is targeted for 1.3.0 (remove `@Incubating`). Until then any 1.x
+  is targeted for 1.4.0 (remove `@Incubating`): 1.2.0 and 1.3.0 each
+  changed what `preferEmbedded` does. Until then any 1.x
   minor may break the extension shape.
 - **Sigstore signing is RELEASE-only** (1.1.0+). `dev.sigstore.sign` auto-wires
   `sigstoreSign*Publication` into **every** `MavenPublication`'s publish chain —

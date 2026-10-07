@@ -19,10 +19,9 @@ Highest consequence first.
   (Dependabot's bump PR cannot refresh baselines; procedure in AGENTS.md
   "Compatibility matrix"). Check that CodeQL's bundled Kotlin ceiling
   covers 2.5 first: CodeQL builds the plugin at build-side Kotlin.
-- Remove `@Incubating` from `FluxoBcvTsExtension` in 1.3.0 (1.2.0 changed
-  what `preferEmbedded` does, so the stability promise moved one minor).
-  The unreleased default flip changes it again, so by the same reason the
-  target is open: decide 1.3.0 or later when that release is cut.
+- Remove `@Incubating` from `FluxoBcvTsExtension` in 1.4.0. 1.2.0 and 1.3.0
+  each changed what `preferEmbedded` does, and the promise waits for a
+  release that does not; another such change moves it again.
 - AGP Kotlin Multiplatform Android target lane: a single BCV-platform target
   without BCV tasks must not fail configuration (`androidApiBuild` not
   found). Covered only by code today; a lane costs an Android SDK in CI.

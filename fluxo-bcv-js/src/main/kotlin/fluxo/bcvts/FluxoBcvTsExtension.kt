@@ -38,12 +38,12 @@ import org.gradle.api.provider.Property
  * that cannot be satisfied, or embedded mode refused for an old BCV), a
  * notice line follows.
  * Format is stable across 1.x minor releases — `checks/dual/sweep`
- * asserts exact whole-line equality via `grep -Fxq`. External CI
+ * asserts it as an exact whole line. External CI
  * integrations can rely on the same shape.
  *
- * Marked `@Incubating` while the dual-mode contract beds in: 1.2.0
- * changed what `preferEmbedded` does, so removal of `@Incubating` is
- * targeted for 1.3.0.
+ * Marked `@Incubating` while the dual-mode contract beds in: 1.2.0 and
+ * 1.3.0 each changed what `preferEmbedded` does, so removal of
+ * `@Incubating` is targeted for 1.4.0, after a release that keeps it.
  */
 @Incubating
 public interface FluxoBcvTsExtension {
