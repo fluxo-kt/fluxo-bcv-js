@@ -39,6 +39,10 @@ diffutils = "4.17"
 # `kotlinMin = 1.7.22` is preserved via JVM bytecode target 1.8 plus
 # `-Xskip-metadata-version-check` (build.gradle.kts), NOT via source
 # language version. Kotlin 2.3 dropped `languageVersion = 1.7/1.8`.
+# 2.0 is also the ceiling for the Gradle 7.6 floor: with 2.1 or 2.2 the
+# jar's `META-INF/*.kotlin_module` fails to parse ("invalid tag (zero)")
+# when Gradle 7.6's embedded Kotlin 1.7.10 compiles a consumer build
+# script, so `checks/js-only` fails (measured on Kotlin 2.4.20).
 # https://github.com/Kotlin/binary-compatibility-validator/blob/0.13.2/build.gradle.kts#L101
 javaLangTarget = "1.8"
 kotlinLangVersion = "2.0"

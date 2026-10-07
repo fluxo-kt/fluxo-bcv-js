@@ -7,9 +7,13 @@ Highest consequence first.
 
 - `kotlinLangVersion = 2.0` warns "deprecated, will be removed" on Kotlin
   2.4.20, and becomes a build blocker on the Kotlin release that removes it.
-  Raising it changes the Kotlin metadata that Gradle 7.6's embedded Kotlin
-  1.7 must read for the `fluxoBcvTs { }` DSL, so `checks/js-only` (the
-  Gradle 7.6 floor) decides whether a raise keeps the floor.
+  Raising it to 2.1+ breaks the Gradle 7.6 floor (reason in
+  `gradle/libs.versions.toml`), so that release forces a choice: keep the
+  build-side compiler on the last Kotlin accepting 2.0, raise the Gradle
+  floor (needs a ruling; first find the lowest Gradle whose embedded Kotlin
+  reads the new module file), or ship the jar without
+  `META-INF/*.kotlin_module` (only internal top-level functions need it;
+  unproven).
 - When Kotlin 2.5.0 goes GA: move build-side `kotlin` onto it and
   `kotlinLatest` to the next preview, then run `./updateBaseline`
   (Dependabot's bump PR cannot refresh baselines; procedure in AGENTS.md
