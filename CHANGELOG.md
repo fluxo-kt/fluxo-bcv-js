@@ -5,6 +5,9 @@
 
 [//]: # (Changed, Added, Removed, Fixed, Updated)
 
+
+## [1.3.0] - 2026-10-07
+
 ### Changed
 - **Breaking:** with both the external BCV plugin and KGP-embedded
   `abiValidation` active and `preferEmbedded` unset, embedded mode now
@@ -15,6 +18,8 @@
   says this. Embedded mode is still refused, with a warning, next to an
   external BCV older than 0.15. The per-build "consider
   `preferEmbedded`" hint is gone.
+- `FluxoBcvTsExtension` stays `@Incubating`; its removal is now targeted
+  for 1.4.0, because this release changes what `preferEmbedded` does.
 
 
 ## [1.2.0] - 2026-10-06
@@ -356,6 +361,7 @@ _Minor update release._
 
 ## Notes
 
+[1.3.0]: https://github.com/fluxo-kt/fluxo-bcv-js/releases/tag/v1.3.0
 [1.2.0]: https://github.com/fluxo-kt/fluxo-bcv-js/releases/tag/v1.2.0
 [1.1.0]: https://github.com/fluxo-kt/fluxo-bcv-js/releases/tag/v1.1.0
 [1.0.0]: https://github.com/fluxo-kt/fluxo-bcv-js/releases/tag/v1.0.0

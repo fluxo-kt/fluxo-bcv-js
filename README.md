@@ -44,6 +44,7 @@ Compatibility tested with:
 
 |  Version   |       BCV[^1]        | Kotlin  | Gradle |
 |:----------:|:--------------------:|:-------:|:------:|
+|  1.3.0[^2] | 0.8 - 0.18.2 (tested 0.8.0, 0.14.0, 0.16.3, 0.18.2) OR KGP-embedded[^3] | 1.7.22+ (tested 1.7.22, 2.2.21, 2.4.20, 2.5.0-Beta1) | 7.6+[^4] (tested 7.6.6, 8.14.5, 9.8.0) |
 |  1.2.0[^2] | 0.8 - 0.18.2 (tested 0.8.0, 0.16.3, 0.18.2) OR KGP-embedded[^3] | 1.7.22+ (tested 1.7.22, 2.2.21, 2.4.20, 2.5.0-Beta1) | 7.6+[^4] (tested 7.6.6, 8.14.5, 9.8.0) |
 |  1.1.0[^2] | 0.8 - 0.18.1 OR KGP-embedded[^3] | 1.7.22+ |  7.6+  |
 |   1.0.0    |      0.8 - 0.15      | 1.7.22+ |  7.6+  |
@@ -65,7 +66,7 @@ Compatibility tested with:
 plugins {
   kotlin("multiplatform") version "2.4.20" // <-- any Kotlin 1.7.22+ (see Compatibility above)
   id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.18.2" // <-- 0.8 .. 0.18.2
-  id("io.github.fluxo-kt.binary-compatibility-validator-js") version "1.2.0" // <-- add here
+  id("io.github.fluxo-kt.binary-compatibility-validator-js") version "1.3.0" // <-- add here
 }
 kotlin {
   js(IR) {
@@ -103,7 +104,7 @@ pluginManagement {
   }
   resolutionStrategy.eachPlugin {
     if (requested.id.toString() == "io.github.fluxo-kt.binary-compatibility-validator-js")
-      useModule("com.github.fluxo-kt.fluxo-bcv-js:fluxo-bcv-ts:1.2.0") // <-- specify a release tag or a commit.
+      useModule("com.github.fluxo-kt.fluxo-bcv-js:fluxo-bcv-ts:1.3.0") // <-- specify a release tag or a commit.
   }
 }
 ```
@@ -136,7 +137,7 @@ Switching a project to embedded mode, including by upgrading to 1.3.0 with both 
 // in the `build.gradle.kts` of the target module.
 plugins {
   kotlin("multiplatform") version "2.4.20"
-  id("io.github.fluxo-kt.binary-compatibility-validator-js") version "1.2.0"
+  id("io.github.fluxo-kt.binary-compatibility-validator-js") version "1.3.0"
   // NOTE: NO `org.jetbrains.kotlinx.binary-compatibility-validator` —
   // embedded mode replaces the external plugin entirely.
 }
@@ -165,7 +166,7 @@ The plugin emits a single machine-parseable lifecycle line whenever configuratio
 [fluxo-bcv-ts] trigger=external|embedded preferEmbedded=auto|true|false
 ```
 
-The `fluxoBcvTs` extension is marked `@Incubating`. It may change in any 1.x minor release; the stability commitment moment is targeted for 1.3.0. The KGP-side `abiValidation` extension is itself `@OptIn(ExperimentalAbiValidation::class)` — that ceremony is consumer-side and is independent of `fluxoBcvTs`.
+The `fluxoBcvTs` extension is marked `@Incubating`. It may change in any 1.x minor release; the stability commitment moment is targeted for 1.4.0. The KGP-side `abiValidation` extension is itself `@OptIn(ExperimentalAbiValidation::class)` — that ceremony is consumer-side and is independent of `fluxoBcvTs`.
 
 
 ### Versioning
