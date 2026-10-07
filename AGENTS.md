@@ -292,8 +292,11 @@ Commits, flat `--ff-only` (`CONTRIBUTING.md`).
   key fetched from keyserver.ubuntu.com, and when it has lapsed extend the
   expiry and re-upload the public key (existing signatures then verify
   cleanly, no re-release). After a fluxo-kmp-conf bump,
-  diff the published POM, `.module` and marker in `build/checks-repo`
-  against the previous revision.
+  diff the jar's classes, POM and `.module` in `build/checks-repo`
+  against the latest release on the Plugin Portal (`curl -L`: it
+  redirects; skip the marker POM, which the Portal rewrites). Never use a
+  `git archive` copy of the previous revision as the reference: it builds
+  a different jar (Kotlin null-check intrinsics kept) from the same source.
 - **`:plugin:verifyPluginPortalMetadata` (a `:check` dependency) fails
   the build when a field `publishPlugins` requires is blank.** Without it
   such a gap surfaces only inside `release.yml`, after the signed tag is
