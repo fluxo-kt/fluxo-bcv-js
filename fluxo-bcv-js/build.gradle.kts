@@ -213,6 +213,11 @@ tasks.matching { it.name.startsWith("sigstoreSign") }.configureEach {
 }
 tasks.named("check") { dependsOn(verifyPluginPortalMetadata) }
 
+// Named so `check` fails ("Task with path 'detektMain' not found") when a
+// fluxo-kmp-conf change stops creating Detekt or Lint tasks; it once turned
+// both off by default and `check` stayed green while running neither.
+tasks.named("check") { dependsOn("detektMain", "lint") }
+
 // The shipped classes must stay class-file major 52 (Java 8): Gradle 7.6, the supported
 // floor, still runs on Java 8, and no lane does. fluxo-kmp-conf applies `javaLangTarget`
 // (version catalog) and has changed defaults silently before; `useJdkRelease` does not

@@ -304,12 +304,11 @@ Commits, flat `--ff-only` (`CONTRIBUTING.md`).
 - **Detekt and Android Lint run only because `fluxo-bcv-js/build.gradle.kts`
   sets `setupVerification = true` and `enableGenericAndroidLint = true`.**
   fluxo-kmp-conf 0.13+ defaults both to false and says nothing, so dropping
-  either line makes the `detekt*`/`lint*` tasks vanish while `check` stays
-  green. After a fluxo-kmp-conf bump, confirm
-  `./gradlew check --dry-run` still lists `:plugin:detektMain` and
-  `:plugin:lint`, then run a real `check`: a dry run executes no task, so
-  it cannot catch one that exists but fails (e.g. a newer Detekt that
-  fluxo-kmp-conf selects rejecting a key in `detekt.yml`). fluxo-kmp-conf
+  either line makes the `detekt*`/`lint*` tasks vanish. `check` depends on
+  `detektMain` and `lint` by name, so it fails ("Task with name … not
+  found") instead of staying green; never drop that line to get past the
+  error, restore the opt-in. After a fluxo-kmp-conf bump run a real
+  `check`: a newer Detekt it selects can reject a key in `detekt.yml`. fluxo-kmp-conf
   runs Detekt 2 here (Kotlin stdlib 2.2+), so `detekt.yml` takes Detekt 2
   keys only. Its type resolution does not get the SAM-with-receiver compiler
   plugin, so `Action` lambdas (`register(…) { dependsOn(…) }`) count as

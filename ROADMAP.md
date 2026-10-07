@@ -25,10 +25,6 @@ Highest consequence first.
   until then because switching moves every consumer's `.d.ts` baselines.
 - Remove `@Incubating` from `FluxoBcvTsExtension` in 1.3.0 (1.2.0 changed
   what `preferEmbedded` does, so the stability promise moved one minor).
-- CI guard that `./gradlew check --dry-run` still lists `:plugin:detektMain`
-  and `:plugin:lint`: fluxo-kmp-conf 0.13+ turns both off by default, so
-  losing either opt-in leaves `check` green while running neither. New
-  enforcement, so it needs a maintainer decision first.
 - AGP Kotlin Multiplatform Android target lane: a single BCV-platform target
   without BCV tasks must not fail configuration (`androidApiBuild` not
   found). Covered only by code today; a lane costs an Android SDK in CI.
