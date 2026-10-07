@@ -64,8 +64,11 @@ class — `fluxo.bcvts.FluxoBcvTsPlugin`. Plugin ID:
   line plus the baseline layout (`api/` external, `api/ts/` embedded). It is
   also the only place a check is shown to FAIL (planted baseline drift), and
   it runs configuration-only rows for setups no cell builds: BCV 0.14
-  (`-PbcvVersion`) and Kotlin 2.3 (`-PkotlinVersion`), via overrides in its
-  `settings.gradle.kts`. A new contract claim belongs there as an assertion.
+  (`-PbcvVersion`), Kotlin 2.3 (`-PkotlinVersion`), via overrides in its
+  `settings.gradle.kts`, and external BCV without `abiValidation { }`
+  (`-PexternalOnly`), which must stay external because the both-active
+  default would otherwise move its baselines. A new contract claim belongs
+  there as an assertion.
 - `checks/js-only/` — floor smoke (`bcvMin`, `kotlinMin`, legacy
   `kotlin("js")` plugin, the Gradle 7.6.x floor on JDK 17). Gradle 7.6 cannot
   build the plugin (KGP 2.x, plugin-publish 2.x), so this cell resolves the

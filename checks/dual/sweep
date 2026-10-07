@@ -90,6 +90,13 @@ for mode in auto true; do
 done
 echo "ok: BCV 0.14 refuses embedded mode with a warning"
 
+# Without `abiValidation { }`, Kotlin 2.4+ must not look embedded: detection
+# there rests on KGP's tasks, and a false positive would make the default move
+# an external-only project's baselines.
+gradle help -PexternalOnly || fail "external-only run failed"
+assert_line_once "external-only" external auto
+echo "ok: external-only project stays external on the default"
+
 # Kotlin 2.3 registers checkKotlinAbi in every project, so its embedded state
 # must come from the `enabled` flag: off by default, on with -PabiEnabledFlag.
 gradle help -PkotlinVersion=2.3.21 || fail "Kotlin 2.3 run failed"

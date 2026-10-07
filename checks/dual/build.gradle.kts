@@ -24,16 +24,19 @@ plugins {
 // (2.4 removed `.enabled`); KGP then creates `:checkKotlinAbi`, which is what
 // the plugin's embedded detection sees. Kotlin 2.2/2.3 need the `enabled` flag,
 // set only by the sweep's Kotlin 2.3 run (`-PabiEnabledFlag`); on 2.4+ its
-// getter throws.
+// getter throws. `-PexternalOnly` leaves the block out, so the sweep can prove a
+// project without it is not mistaken for embedded (which would move its baselines).
 val abiEnabledFlag = hasProperty("abiEnabledFlag")
 
 @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
 kotlin {
-    @OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class)
-    abiValidation {
-        if (abiEnabledFlag) {
-            @Suppress("DEPRECATION_ERROR")
-            enabled.set(true)
+    if (!hasProperty("externalOnly")) {
+        @OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class)
+        abiValidation {
+            if (abiEnabledFlag) {
+                @Suppress("DEPRECATION_ERROR")
+                enabled.set(true)
+            }
         }
     }
 
