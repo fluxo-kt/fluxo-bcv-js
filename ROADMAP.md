@@ -19,10 +19,6 @@ Highest consequence first.
   (Dependabot's bump PR cannot refresh baselines; procedure in AGENTS.md
   "Compatibility matrix"). Check that CodeQL's bundled Kotlin ceiling
   covers 2.5 first: CodeQL builds the plugin at build-side Kotlin.
-- Flip the dual-mode AUTO default to embedded (`preferEmbedded` unset +
-  both validators active) in the first minor after KGP drops the
-  `@ExperimentalAbiValidation` opt-in (KT-71172). External stays the default
-  until then because switching moves every consumer's `.d.ts` baselines.
 - Remove `@Incubating` from `FluxoBcvTsExtension` in 1.3.0 (1.2.0 changed
   what `preferEmbedded` does, so the stability promise moved one minor).
 - AGP Kotlin Multiplatform Android target lane: a single BCV-platform target

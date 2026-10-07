@@ -53,8 +53,8 @@ public class FluxoBcvTsPlugin : Plugin<Project> {
         val ext = target.extensions
             .create(EXTENSION_NAME, FluxoBcvTsExtension::class.java)
         // `preferEmbedded` deliberately has no convention: a null/unset
-        // value is the AUTO sentinel (prefer external for 1.0.x compat
-        // when both modes are active). `wireToKgpAbi` defaults to false
+        // value is the AUTO sentinel (see `resolveTrigger`), which the
+        // lifecycle line reports as `auto`. `wireToKgpAbi` defaults to false
         // — current call sites use `.orNull == true` which already
         // null-handles, but the convention forward-protects any future
         // `.get()` reader from `MissingValueException` and makes the
@@ -131,23 +131,25 @@ public class FluxoBcvTsPlugin : Plugin<Project> {
         // embedded = KGP's dump dir, per-target layout, BCV opt-outs ignored;
         // external = BCV's dump dir, layout and opt-outs (1.0.x behaviour).
         // Decision table:
-        //   preference=true,  embedded → embedded (unless BCV < 0.15, below)
-        //   preference=false, external → external
-        //   preference=null   (AUTO) or preference unreachable
-        //     → external if available, else embedded.
-        // An unreachable preference falls back to the available source with
-        // an explanation; AUTO + both-active prefers external, so upgrading
-        // the plugin moves nobody's baselines, and recommends the switch.
+        //   only one source active          → that one (a preference it
+        //                                     cannot satisfy is explained)
+        //   both active, preference=false   → external
+        //   both active, AUTO or true       → embedded, unless BCV < 0.15
+        // Both-active AUTO picks embedded: external BCV is in maintenance mode
+        // and new ABI work lands in KGP, while waiting for KGP to drop its
+        // experimental opt-in (KT-71172) bought nothing, since neither
+        // validator was ever declared stable. The cost: such projects' baselines
+        // move on upgrade, so the missing-baseline error explains the move and
+        // `preferEmbedded=false` keeps the old layout.
         // Embedded mode keeps `.d.ts` baselines in `<dump dir>/<target>/`, which a
         // directory-syncing BCV would delete on its next `apiDump`. Reachable:
         // BCV 0.14 builds Kotlin 2.2 output with `languageVersion` <= 1.9.
-        val unsafeForEmbedded = preference == true && embedded && external &&
+        val unsafeForEmbedded = embedded && external && preference != false &&
             externalBcvSyncsWholeDumpDir()
         val useEmbedded = when {
-            unsafeForEmbedded -> false
-            preference == true && embedded -> true
-            preference == false && external -> false
-            else -> !external
+            !embedded -> false
+            !external -> true
+            else -> preference != false && !unsafeForEmbedded
         }
         val trigger = if (useEmbedded) "embedded" else "external"
         val preferenceLabel = preference?.toString() ?: "auto"
@@ -155,7 +157,7 @@ public class FluxoBcvTsPlugin : Plugin<Project> {
 
         if (unsafeForEmbedded) {
             logger.warn(
-                "$LIFECYCLE_TAG preferEmbedded=true ignored: the external BCV plugin " +
+                "$LIFECYCLE_TAG embedded mode skipped: the external BCV plugin " +
                     "is older than 0.15 and its apiDump syncs the whole API dir, which " +
                     "would delete the .d.ts baselines. Upgrade BCV to 0.15+.",
             )
@@ -165,20 +167,12 @@ public class FluxoBcvTsPlugin : Plugin<Project> {
         return useEmbedded
     }
 
-    /** Explains why the resolved trigger differs from, or may soon differ from, the preference. */
+    /** Explains why the resolved trigger differs from the preference. */
     private fun Project.logTriggerFallbacks(
         preference: Boolean?,
         external: Boolean,
         embedded: Boolean,
     ) {
-        if (preference == null && external && embedded) {
-            logger.lifecycle(
-                "$LIFECYCLE_TAG both external BCV and KGP-embedded abiValidation " +
-                    "are active; using external (AUTO). Consider " +
-                    "`fluxoBcvTs { preferEmbedded.set(true) }` to migrate once " +
-                    "external BCV is removed (it is in maintenance mode upstream).",
-            )
-        }
         if (preference == true && !embedded) {
             logger.lifecycle(
                 "$LIFECYCLE_TAG preferEmbedded=true but KGP-embedded abiValidation " +

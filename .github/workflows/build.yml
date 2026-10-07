@@ -231,7 +231,7 @@ jobs:
               ./gradlew jvmApiCheck -PbcvVersion=0.14.0 --stacktrace &&
               ./gradlew tasks --all -PembeddedRow > build/embedded-row.txt &&
               { grep -F 'tsApiDump - Syncs API from build dir to abi/ts dir' build/embedded-row.txt ||
-              { echo '::error::-PembeddedRow: tsApiDump does not sync to abi/ts (KGP 2.2 embedded mode not detected, or legacyDump.referenceDumpDir ignored)'; exit 1; }; }
+              { echo '::error::-PembeddedRow: tsApiDump does not sync to abi/ts (KGP 2.2 embedded mode not detected, the both-active default not picking embedded, or legacyDump.referenceDumpDir ignored)'; exit 1; }; }
           # Embedded-only: KGP `abiValidation`, no external BCV; also verifies
           # KGP's KLIB ABI baseline. `apiDump --dry-run` stores AND reloads
           # the configuration-cache entry for the dump tasks without writing

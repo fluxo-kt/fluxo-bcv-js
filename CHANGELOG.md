@@ -5,6 +5,17 @@
 
 [//]: # (Changed, Added, Removed, Fixed, Updated)
 
+### Changed
+- **Breaking:** with both the external BCV plugin and KGP-embedded
+  `abiValidation` active and `preferEmbedded` unset, embedded mode now
+  drives the `.d.ts` pipeline (it was external). Such projects' baselines
+  move to KGP's dump directory, per target (`api/ts/`, `api/wasmTs/`):
+  run `apiDump` once and delete the old `.d.ts` files, or keep the
+  previous layout with `preferEmbedded = false`. A missing baseline now
+  says this. Embedded mode is still refused, with a warning, next to an
+  external BCV older than 0.15. The per-build "consider
+  `preferEmbedded`" hint is gone.
+
 
 ## [1.2.0] - 2026-10-06
 

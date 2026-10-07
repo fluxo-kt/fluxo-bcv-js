@@ -123,14 +123,14 @@ The external [KotlinX BCV][bcv] plugin is [in maintenance mode](https://github.c
 - **external mode** — the external `org.jetbrains.kotlinx.binary-compatibility-validator` plugin is applied (the 1.0.x behaviour).
 - **embedded mode** — KGP-native `kotlin { abiValidation { } }` is configured (Kotlin 2.2+, opt-in via `@OptIn(ExperimentalAbiValidation::class)`).
 
-When **both** are present, by default the external plugin is preferred for backward-compatibility; a one-shot lifecycle hint recommends opting into embedded mode. The path is selectable via the `fluxoBcvTs` extension.
+When **both** are present, embedded mode drives by default (since 1.3.0; external before), because external BCV only gets bug fixes now. `preferEmbedded = false` in the `fluxoBcvTs` extension keeps external mode.
 
 The selected mode decides where `.d.ts` baselines live and which opt-outs apply:
 
 - **external** — BCV's `apiDumpDirectory` and layout (`api/` unless there are several JVM/Android targets, then per target), and BCV's `ignoredProjects` / `validationDisabled`.
 - **embedded** — KGP's `abiValidation { referenceDumpDir }` (default `api/`), always per target (`api/ts/`, `api/wasmTs/`); BCV's opt-outs do not apply.
 
-Switching a project to embedded mode therefore moves its baselines: run `./gradlew apiDump` once and commit the new files. External mode needs the BCV plugin applied to the module itself: BCV applied only to the root project counts as absent there. With an external BCV older than 0.15, `preferEmbedded = true` is ignored with a warning, because that BCV's `apiDump` syncs the whole dump directory and would delete them.
+Switching a project to embedded mode, including by upgrading to 1.3.0 with both validators active, therefore moves its baselines: run `./gradlew apiDump` once, commit the new files and delete the old `.d.ts` ones. External mode needs the BCV plugin applied to the module itself: BCV applied only to the root project counts as absent there. With an external BCV older than 0.15, embedded mode is refused with a warning, because that BCV's `apiDump` syncs the whole dump directory and would delete them.
 
 ```kotlin
 // in the `build.gradle.kts` of the target module.
@@ -154,7 +154,7 @@ kotlin {
 // Optional — only needed when BOTH external BCV and embedded
 // `abiValidation` are applied simultaneously, e.g. during migration.
 fluxoBcvTs {
-  preferEmbedded.set(true)  // force the embedded trigger to win
+  preferEmbedded.set(false) // keep external mode (the default picks embedded)
   // wireToKgpAbi.set(true)   // also run `:apiCheck` when `:checkKotlinAbi` runs (default: false)
 }
 ```

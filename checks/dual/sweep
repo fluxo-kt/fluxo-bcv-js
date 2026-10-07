@@ -55,15 +55,15 @@ assert_mode() {  # $1=gradle args  $2=trigger  $3=preferEmbedded label  $4=js di
   echo "ok: '$1' -> trigger=$2, baselines in $4 and $5"
 }
 
-assert_mode "" external auto api api
+assert_mode "" embedded auto api/ts api/wasmTs
 assert_mode "-PpreferEmbedded=true" embedded true api/ts api/wasmTs
 assert_mode "-PpreferEmbedded=false" external false api api
 
-# Drift must fail both checks, rendering a diff: one line planted in a `.d.ts`
-# baseline and in BCV's JVM dump. That runs java-diff-utils in the plugin and
-# in BCV, which share one resolved version. Restored from copies by absolute
-# path, whatever the outcome.
-TS_BASELINE=$DIR/api/check-dual.js.d.ts
+# Drift must fail both checks, rendering a diff: one line planted in the `.d.ts`
+# baseline the default (AUTO = embedded) mode reads and in BCV's JVM dump. That
+# runs java-diff-utils in the plugin and in BCV, which share one resolved
+# version. Restored from copies by absolute path, whatever the outcome.
+TS_BASELINE=$DIR/api/ts/check-dual.js.d.ts
 JVM_BASELINE=$DIR/api/check-dual.api
 BACKUP=$(mktemp -d)
 trap 'cp "$BACKUP/ts" "$TS_BASELINE"; cp "$BACKUP/jvm" "$JVM_BASELINE"; rm -rf "$BACKUP"' EXIT
@@ -78,12 +78,16 @@ cp "$BACKUP/ts" "$TS_BASELINE"
 cp "$BACKUP/jvm" "$JVM_BASELINE"
 echo "ok: drifted .d.ts and JVM baselines both fail apiCheck with a diff"
 
-# BCV 0.14, the last whose apiDump syncs the whole dump dir: preferEmbedded=true
-# must be refused (configuration only; this BCV cannot read Kotlin 2.x output).
-gradle help -PbcvVersion=0.14.0 -PpreferEmbedded=true || fail "BCV 0.14 run failed"
-assert_line_once "BCV 0.14" external true
-has "preferEmbedded=true ignored: the external BCV plugin is older than 0.15" ||
-  fail "BCV 0.14: no warning for the refused preferEmbedded=true"
+# BCV 0.14, the last whose apiDump syncs the whole dump dir: embedded mode must be
+# refused for both AUTO and preferEmbedded=true (configuration only; this BCV
+# cannot read Kotlin 2.x output).
+for mode in auto true; do
+  arg=""; [ "$mode" = true ] && arg="-PpreferEmbedded=true"
+  gradle help -PbcvVersion=0.14.0 ${arg:+"$arg"} || fail "BCV 0.14 ($mode) run failed"
+  assert_line_once "BCV 0.14 $mode" external "$mode"
+  has "embedded mode skipped: the external BCV plugin is older than 0.15" ||
+    fail "BCV 0.14 ($mode): no warning for the refused embedded mode"
+done
 echo "ok: BCV 0.14 refuses embedded mode with a warning"
 
 # Kotlin 2.3 registers checkKotlinAbi in every project, so its embedded state

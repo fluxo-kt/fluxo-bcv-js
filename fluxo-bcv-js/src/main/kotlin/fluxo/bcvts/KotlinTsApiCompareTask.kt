@@ -66,7 +66,14 @@ internal open class KotlinTsApiCompareTask : DefaultTask() {
         val expectedFile = projectApiFile ?: error(
             "Expected $KTS_API declaration '$nonExistingProjectApiFile' does not exist.\n" +
                 "Please ensure that ':apiDump' was executed " +
-                "in order to get API dump to compare the build against",
+                "in order to get API dump to compare the build against.\n" +
+                // Since 1.3.0 a project with both validators active defaults to
+                // embedded mode, which reads baselines from a different place:
+                // this error is where such an upgrade surfaces.
+                "If both the external BCV plugin and KGP abiValidation are active, " +
+                "baselines now live per target in KGP's referenceDumpDir: run apiDump " +
+                "and delete the old .d.ts files, or keep the previous layout with " +
+                "`fluxoBcvTs { preferEmbedded.set(false) }`.",
         )
 
         val path = projectPath

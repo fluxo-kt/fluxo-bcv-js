@@ -34,10 +34,9 @@ import org.gradle.api.provider.Property
  * - `preferEmbedded=auto` — `[preferEmbedded]` is unset.
  * - `preferEmbedded=true|false` — `[preferEmbedded]` was set to that value.
  *
- * When AUTO resolves with BOTH sources active, an additional
- * recommendation line follows (asking the consumer to migrate to
- * `preferEmbedded=true` once external BCV is removed); when a forced
- * preference cannot be satisfied, a fallback-notice line follows.
+ * When the chosen mode differs from the preference (a forced preference
+ * that cannot be satisfied, or embedded mode refused for an old BCV), a
+ * notice line follows.
  * Format is stable across 1.x minor releases — `checks/dual/sweep`
  * asserts exact whole-line equality via `grep -Fxq`. External CI
  * integrations can rely on the same shape.
@@ -62,14 +61,17 @@ public interface FluxoBcvTsExtension {
      *
      * Values:
      * - **unset / `null`** (AUTO, the default): the only active validator,
-     *   or external when both are active, plus a logged recommendation.
-     * - **`true`**: embedded even when external BCV is applied. Switching
-     *   moves the `.d.ts` baselines, so run `apiDump` once and commit them.
-     *   Falls back to external, with a logged reason, if embedded validation
-     *   is not enabled, or if the external BCV is older than 0.15 (its
-     *   `apiDump` syncs the whole dump dir and would delete the baselines).
-     * - **`false`**: external; falls back to embedded, with a logged
-     *   reason, if the external plugin is absent.
+     *   or embedded when both are active (since 1.3.0; external before).
+     *   A project upgrading with both active has its `.d.ts` baselines
+     *   moved: run `apiDump` once and commit them, or set `false`.
+     * - **`true`**: embedded; falls back to external, with a logged
+     *   reason, if embedded validation is not enabled.
+     * - **`false`**: external, keeping the 1.0–1.2 layout; falls back to
+     *   embedded, with a logged reason, if the external plugin is absent.
+     *
+     * With both active, embedded is never chosen alongside an external BCV
+     * older than 0.15: its `apiDump` syncs the whole dump dir and would
+     * delete the baselines, so external drives, with a logged reason.
      *
      * The resolved choice is printed as the
      * `[fluxo-bcv-ts] trigger=… preferEmbedded=…` lifecycle line.
