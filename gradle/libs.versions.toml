@@ -56,7 +56,7 @@ kotlinApiVersion = "2.0"
 # emit bytecode/metadata quirks that leak into the published plugin
 # JAR. `kotlin` also drives `checks/dual` (a consumer cell on the newest
 # stable release).
-kotlin = "2.4.20"
+kotlin = "2.4.21"
 kotlinMin = "1.7.22"
 # `kotlinLatest` drives `checks/latest` and `checks/kgp-only` only — not the
 # published JAR — so tracking the newest Kotlin preview is acceptable. The
